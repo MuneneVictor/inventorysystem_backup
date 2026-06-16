@@ -312,7 +312,7 @@ body {
                 if ($role === 'super_admin') {
                     $items[] = ['Price list', '/inventory_system/devices/price_list.php', 'fas fa-dollar-sign'];
                 }
-                $sections['Devices'] = ['icon' => 'fas fa-laptop', 'items' => $items];
+                $sections['DEVICES'] = ['icon' => 'fas fa-laptop', 'items' => $items];
             }
 
             // Monitors
@@ -379,7 +379,7 @@ body {
                 }
                 $charger_items[] = ['Charger Logs', '/inventory_system/chargers/charger_logs.php', 'fas fa-clipboard-list'];
                 if (!empty($charger_items)) {
-                    $sections['Chargers'] = ['icon' => 'fas fa-bolt', 'items' => $charger_items];
+                    $sections['CHARGERS'] = ['icon' => 'fas fa-bolt', 'items' => $charger_items];
                 }
             }
 
@@ -396,7 +396,7 @@ body {
                     $sw_items[] = ['Software Logs', '/inventory_system/software/software_logs.php', 'fas fa-clipboard-list'];
                 }
                 if (!empty($sw_items)) {
-                    $sections['Software Dep'] = ['icon' => 'fas fa-code-branch', 'items' => $sw_items];
+                    $sections['SOFTWARE DEP'] = ['icon' => 'fas fa-code-branch', 'items' => $sw_items];
                 }
             }
 
@@ -409,12 +409,12 @@ body {
                 }
                 $repair_items[] = ['Under Repair', '/inventory_system/repairs/under_repair.php', 'fas fa-tools'];
                 $repair_items[] = ['Repair Logs', '/inventory_system/repairs/repair_logs.php', 'fas fa-clipboard-list'];
-                $sections['Repairs'] = ['icon' => 'fas fa-wrench', 'items' => $repair_items];
+                $sections['REPAIRS'] = ['icon' => 'fas fa-wrench', 'items' => $repair_items];
             }
 
             // Sales
             if ($role === 'sales') {
-                $sections['Sales'] = [
+                $sections['SALES'] = [
                     'icon' => 'fas fa-chart-line',
                     'items' => [
                         ['Sell Device', '/inventory_system/sales/sell_device.php', 'fas fa-money-bill-wave'],
@@ -447,13 +447,13 @@ body {
                     $log_items[] = ['Activity Logs', '/inventory_system/logs/activity.php', 'fas fa-chart-bar'];
                 }
                 if (!empty($log_items)) {
-                    $sections['Logs'] = ['icon' => 'fas fa-history', 'items' => $log_items];
+                    $sections['LOGS'] = ['icon' => 'fas fa-history', 'items' => $log_items];
                 }
             }
 
             // Admin (super_admin only)
             if ($role === 'super_admin') {
-                $sections['Admin'] = [
+                $sections['ADMIN'] = [
                     'icon' => 'fas fa-cogs',
                     'items' => [
                         ['Generate Code', '/inventory_system/auth/generate_code.php', 'fas fa-key'],

@@ -464,7 +464,7 @@ $roles = ['manager','inventory_admin','technician','maintenance','sales'];
             Generate Registration Code
         </h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/index.php"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <span> / </span>
             <a href="view_users.php">Users</a>
             <span> / </span>

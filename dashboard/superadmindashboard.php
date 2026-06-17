@@ -35,23 +35,23 @@ $totalInStock = $stmt ? (int)$stmt->fetchColumn() : 0;
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'Sold'");
 $totalSoldDevices = $stmt ? (int)$stmt->fetchColumn() : 0;
 
-// ========== SALES STATISTICS ==========
-$stmt = secureQuery($conn, "SELECT COUNT(*) FROM sold_devices");
+// ========== SALES STATISTICS (FROM devices TABLE) ==========
+$stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'Sold'");
 $totalSalesCount = $stmt ? (int)$stmt->fetchColumn() : 0;
 
-$stmt = secureQuery($conn, "SELECT COUNT(*) FROM sold_devices WHERE DATE(sold_at) = CURDATE()");
+$stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'Sold' AND DATE(sold_at) = CURDATE()");
 $todaysSalesCount = $stmt ? (int)$stmt->fetchColumn() : 0;
 
-$stmt = secureQuery($conn, "SELECT COALESCE(SUM(price), 0) FROM sold_devices");
+$stmt = secureQuery($conn, "SELECT COALESCE(SUM(selling_price), 0) FROM devices WHERE status = 'Sold'");
 $totalRevenue = $stmt ? (float)$stmt->fetchColumn() : 0;
 
-$stmt = secureQuery($conn, "SELECT COALESCE(SUM(price), 0) FROM sold_devices WHERE DATE(sold_at) = CURDATE()");
+$stmt = secureQuery($conn, "SELECT COALESCE(SUM(selling_price), 0) FROM devices WHERE status = 'Sold' AND DATE(sold_at) = CURDATE()");
 $todaysRevenue = $stmt ? (float)$stmt->fetchColumn() : 0;
 
-$stmt = secureQuery($conn, "SELECT COALESCE(SUM(price), 0) FROM sold_devices WHERE MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())");
+$stmt = secureQuery($conn, "SELECT COALESCE(SUM(selling_price), 0) FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())");
 $monthlyRevenue = $stmt ? (float)$stmt->fetchColumn() : 0;
 
-$stmt = secureQuery($conn, "SELECT COUNT(*) FROM sold_devices WHERE MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())");
+$stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())");
 $monthlySales = $stmt ? (int)$stmt->fetchColumn() : 0;
 
 // ========== INVENTORY SUMMARY ==========
@@ -72,6 +72,13 @@ $inventorySsds = $stmt ? (int)$stmt->fetchColumn() : 0;
 
 $stmt = secureQuery($conn, "SELECT COALESCE(SUM(quantity), 0) FROM chargers");
 $inventoryChargers = $stmt ? (int)$stmt->fetchColumn() : 0;
+
+// --- NEW: Accessories & Smartboards ---
+$stmt = secureQuery($conn, "SELECT COALESCE(SUM(quantity), 0) FROM accessories");
+$inventoryAccessories = $stmt ? (int)$stmt->fetchColumn() : 0;
+
+$stmt = secureQuery($conn, "SELECT COUNT(*) FROM smartboards WHERE status = 'instock'");
+$inventorySmartboards = $stmt ? (int)$stmt->fetchColumn() : 0;
 
 // ========== ACCESSORIES GIVEN ==========
 $stmt = secureQuery($conn, "SELECT COALESCE(SUM(quantity), 0) FROM rams_ssds_logs");
@@ -121,12 +128,13 @@ if (count($lowStockItems) < 5) {
     }
 }
 
-// ========== TOP SELLING ITEMS ==========
+// ========== TOP SELLING ITEMS (FROM devices TABLE) ==========
 $topSellingItems = [];
 $stmt = secureQuery($conn, "
-    SELECT model_name as item_name, COUNT(*) as quantity_sold, COALESCE(SUM(price), 0) as revenue
-    FROM sold_devices 
-    WHERE MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
+    SELECT model_name as item_name, COUNT(*) as quantity_sold, COALESCE(SUM(selling_price), 0) as revenue
+    FROM devices
+    WHERE status = 'Sold'
+      AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
     GROUP BY model_name
     ORDER BY quantity_sold DESC
     LIMIT 5");
@@ -137,12 +145,13 @@ if ($stmt) {
 // ========== TOP SELLING CATEGORIES ==========
 $topCategories = [];
 $stmt = secureQuery($conn, "
-    SELECT c.category_name, COUNT(*) as count, COALESCE(SUM(sd.price), 0) as revenue
-    FROM sold_devices sd 
-    JOIN categories c ON sd.category_id = c.id 
-    WHERE MONTH(sd.sold_at) = MONTH(CURDATE()) AND YEAR(sd.sold_at) = YEAR(CURDATE())
-    GROUP BY c.category_name 
-    ORDER BY count DESC 
+    SELECT c.category_name, COUNT(d.serial_number) as count, COALESCE(SUM(d.selling_price), 0) as revenue
+    FROM devices d
+    JOIN categories c ON d.category_id = c.id
+    WHERE d.status = 'Sold'
+      AND MONTH(d.sold_at) = MONTH(CURDATE()) AND YEAR(d.sold_at) = YEAR(CURDATE())
+    GROUP BY c.category_name
+    ORDER BY count DESC
     LIMIT 5");
 if ($stmt) {
     $topCategories = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -156,11 +165,11 @@ $maxChartValue = 1;
 for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
     $chartLabels[] = date('D', strtotime($date));
-    
-    $stmt = secureQuery($conn, "SELECT COALESCE(SUM(price), 0) FROM sold_devices WHERE DATE(sold_at) = :date", ['date' => $date]);
+
+    $stmt = secureQuery($conn, "SELECT COALESCE(SUM(selling_price), 0) FROM devices WHERE status = 'Sold' AND DATE(sold_at) = :date", ['date' => $date]);
     $dailyTotal = $stmt ? (float)$stmt->fetchColumn() : 0;
     $chartData[] = $dailyTotal;
-    
+
     if ($dailyTotal > $maxChartValue) $maxChartValue = $dailyTotal;
 }
 if ($maxChartValue == 0) $maxChartValue = 1;
@@ -171,43 +180,47 @@ $recentActivities = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
 // ========== RECENT SOLD DEVICES (LAST 5) ==========
 $stmt = secureQuery($conn, "
-    SELECT sd.*, c.category_name, u.full_name as sold_by_name
-    FROM sold_devices sd 
-    LEFT JOIN categories c ON sd.category_id = c.id
-    LEFT JOIN users u ON sd.sold_by = u.id
-    ORDER BY sd.sold_at DESC LIMIT 5");
+    SELECT d.serial_number, d.model_name, d.ram, d.storage_type, d.storage_capacity, d.selling_price as price,
+           c.category_name, u.full_name as sold_by_name
+    FROM devices d
+    LEFT JOIN categories c ON d.category_id = c.id
+    LEFT JOIN users u ON d.sold_by = u.id
+    WHERE d.status = 'Sold'
+    ORDER BY d.sold_at DESC LIMIT 5");
 $recentSoldDevices = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
 // ========== RECENT DEVICES ADDED (LAST 5) ==========
 $stmt = secureQuery($conn, "
     SELECT d.serial_number, d.model_name, c.category_name, d.status, d.date_added,
            d.ram, d.storage_type, d.storage_capacity
-    FROM devices d 
-    JOIN categories c ON d.category_id = c.id 
+    FROM devices d
+    JOIN categories c ON d.category_id = c.id
     ORDER BY d.date_added DESC LIMIT 5");
 $recentDevices = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
 // ========== BRANCH SALES (CURRENT MONTH) ==========
 $branchSales = [];
 $stmt = secureQuery($conn, "
-    SELECT u.branch, COUNT(sd.id) as sales_count, COALESCE(SUM(sd.price), 0) as total_revenue
-    FROM sold_devices sd
-    JOIN users u ON sd.sold_by = u.id
-    WHERE MONTH(sd.sold_at) = MONTH(CURDATE()) AND YEAR(sd.sold_at) = YEAR(CURDATE())
+    SELECT u.branch, COUNT(d.serial_number) as sales_count, COALESCE(SUM(d.selling_price), 0) as total_revenue
+    FROM devices d
+    JOIN users u ON d.sold_by = u.id
+    WHERE d.status = 'Sold'
+      AND MONTH(d.sold_at) = MONTH(CURDATE()) AND YEAR(d.sold_at) = YEAR(CURDATE())
     GROUP BY u.branch");
 if ($stmt) {
     $branchSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// ========== TOP SALES PEOPLE (CURRENT MONTH, TOP 5) ==========
+// ========== TOP SALES PEOPLE (CURRENT MONTH, BY REVENUE) ==========
 $topSalesPeople = [];
 $stmt = secureQuery($conn, "
-    SELECT u.full_name, u.branch, COUNT(sd.id) as sales_count, COALESCE(SUM(sd.price), 0) as total_revenue
-    FROM sold_devices sd
-    JOIN users u ON sd.sold_by = u.id
-    WHERE MONTH(sd.sold_at) = MONTH(CURDATE()) AND YEAR(sd.sold_at) = YEAR(CURDATE())
+    SELECT u.full_name, u.branch, COUNT(d.serial_number) as sales_count, COALESCE(SUM(d.selling_price), 0) as total_revenue
+    FROM devices d
+    JOIN users u ON d.sold_by = u.id
+    WHERE d.status = 'Sold'
+      AND MONTH(d.sold_at) = MONTH(CURDATE()) AND YEAR(d.sold_at) = YEAR(CURDATE())
     GROUP BY u.id
-    ORDER BY sales_count DESC
+    ORDER BY total_revenue DESC
     LIMIT 5");
 if ($stmt) {
     $topSalesPeople = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -233,8 +246,8 @@ else $greeting = 'Good evening';
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* (All existing CSS unchanged – place the same styles here) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -265,17 +278,12 @@ else $greeting = 'Good evening';
             --radius-xl: 1rem;
             --font-sans: 'Inter', system-ui, sans-serif;
         }
-
         body { font-family: var(--font-sans); background: var(--gray-100); color: var(--gray-800); line-height: 1.5; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; }
-        
         .main-content { padding: 2rem 2rem 1rem; margin-left: 260px; width: calc(100% - 260px); min-height: 100vh; background: var(--gray-100); transition: all 0.3s ease; flex: 1; }
-        
         .header-row { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; margin-bottom: 2rem; background: white; padding: 1.25rem 2rem; border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); flex-wrap: wrap; }
         .page-title { font-size: 2rem; color: var(--primary-dark); font-weight: 700; }
         .welcome-text { font-size: 0.95rem; color: var(--gray-500); margin-top: 0.25rem; }
         .logo img { height: 48px; width: auto; max-width: 100%; }
-        
-        /* Stats Cards Row */
         .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
         .stat-card { background: white; border-radius: var(--radius-xl); padding: 1.25rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); transition: all 0.3s ease; position: relative; overflow: hidden; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
@@ -294,33 +302,25 @@ else $greeting = 'Good evening';
         .stat-card:nth-child(4) .stat-icon, .stat-card:nth-child(4) .stat-value { color: var(--purple); }
         .toggle-btn { background: none; border: 1px solid var(--gray-300); padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.7rem; color: var(--gray-500); margin-top: 0.5rem; transition: all 0.2s; }
         .toggle-btn:hover { background: var(--gray-100); border-color: var(--primary); color: var(--primary); }
-        
-        /* Section Cards */
         .section { margin-bottom: 2rem; background: white; padding: 1.5rem; border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); overflow-x: auto; }
         .section h4 { margin: 0 0 1rem 0; color: var(--gray-800); font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border-left: 3px solid var(--primary); padding-left: 0.75rem; }
         .section h4 i { color: var(--primary); font-size: 1.2rem; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
         .view-all-link { color: var(--primary); text-decoration: none; font-size: 0.75rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem; }
         .view-all-link:hover { text-decoration: underline; }
-        
-        /* Tables */
         .table-responsive { overflow-x: auto; width: 100%; }
         .table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         .table th { padding: 0.75rem 0.5rem; background: var(--gray-50); color: var(--gray-600); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid var(--gray-200); text-align: left; }
         .table td { padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); vertical-align: middle; }
         .table code { background: var(--gray-100); padding: 0.2rem 0.4rem; border-radius: var(--radius-sm); font-family: monospace; font-size: 0.75rem; }
-        
         .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 500; white-space: nowrap; }
         .badge-success { background: #d1fae5; color: #065f46; }
         .badge-warning { background: #fed7aa; color: #92400e; }
         .badge-danger { background: #fee2e2; color: #991b1b; }
         .badge-primary { background: #dcfce7; color: #166534; }
         .badge-info { background: #dbeafe; color: #1e40af; }
-        
         .btn-view { background: var(--info); color: white; border: none; border-radius: var(--radius-sm); padding: 0.25rem 0.6rem; font-size: 0.7rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; transition: background 0.2s; }
         .btn-view:hover { background: #2563eb; }
-        
-        /* Stats Grid for Inventory Summary */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-top: 1rem; }
         .stat-item { background: var(--gray-50); border-radius: var(--radius-lg); padding: 1rem; text-align: center; border: 1px solid var(--gray-200); transition: all 0.2s ease; }
         .stat-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary-light); }
@@ -332,38 +332,29 @@ else $greeting = 'Good evening';
         .stat-item.rams .stat-number { color: var(--purple); }
         .stat-item.ssds .stat-number { color: var(--pink); }
         .stat-item.chargers .stat-number { color: var(--accent); }
-        
-        /* Categories Grid */
+        .stat-item.accessories .stat-number { color: #14b8a6; }
+        .stat-item.smartboards .stat-number { color: #f43f5e; }
         .categories-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-top: 1rem; }
         .category-card { background: linear-gradient(135deg, var(--gray-50) 0%, white 100%); border-radius: var(--radius-lg); padding: 1rem; text-align: center; border: 1px solid var(--gray-200); transition: all 0.2s ease; }
         .category-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--primary); }
         .category-card .category-count { font-size: 1.8rem; font-weight: 700; color: var(--primary); margin-bottom: 0.25rem; }
         .category-card .category-name { font-size: 0.85rem; color: var(--gray-600); font-weight: 500; }
         .category-card .category-revenue { font-size: 0.7rem; color: var(--gray-400); margin-top: 0.25rem; }
-        
-        /* Chart */
         .chart-container { margin-top: 1rem; }
         .chart-bars { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.5rem; height: 150px; margin: 1rem 0; flex-wrap: nowrap; }
         .chart-bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; min-width: 40px; }
         .chart-bar { width: 100%; max-width: 50px; background: linear-gradient(180deg, var(--primary-light) 0%, var(--primary) 100%); border-radius: var(--radius-sm) var(--radius-sm) 0 0; transition: height 0.3s ease; min-height: 5px; margin: 0 auto; }
         .chart-label { font-size: 0.65rem; color: var(--gray-500); text-align: center; }
         .chart-value { font-size: 0.65rem; font-weight: 600; color: var(--primary-dark); text-align: center; white-space: nowrap; }
-        
-        /* Three Column Layout */
         .three-column { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
         .full-width { width: 100%; margin-bottom: 2rem; }
-        
         .link-btn { padding: 0.5rem 1rem; background: var(--info); color: white !important; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 500; font-size: 0.85rem; transition: all 0.2s ease; }
         .link-btn:hover { background: #2563eb; transform: translateY(-2px); }
-        
         footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 2rem; font-size: 0.8rem; color: var(--gray-500); border-top: 1px solid var(--gray-200); }
-        
         .text-success { color: var(--success); }
         .text-muted { color: var(--gray-400); }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .stats-row, .section, .header-row { animation: fadeIn 0.4s ease-out forwards; }
-        
         @media (max-width: 1200px) {
             .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
             .header-row { flex-direction: column; align-items: flex-start; position: relative; padding-right: 70px !important; }
@@ -372,7 +363,6 @@ else $greeting = 'Good evening';
             .stats-row { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
             .three-column { grid-template-columns: 1fr; gap: 1rem; }
         }
-        
         @media (max-width: 768px) {
             .main-content { padding: 1rem 0.75rem 0.75rem !important; padding-top: 4.5rem !important; }
             .page-title { font-size: 1.5rem !important; }
@@ -389,7 +379,6 @@ else $greeting = 'Good evening';
             .chart-label { font-size: 0.55rem; }
             .welcome-text { font-size: 0.9rem; }
         }
-        
         @media (max-width: 480px) {
             .main-content { padding: 0.75rem 0.5rem 0.5rem !important; padding-top: 4rem !important; }
             .header-row { padding: 0.75rem !important; padding-right: 60px !important; }
@@ -472,6 +461,8 @@ else $greeting = 'Good evening';
             <div class="stat-item rams"><div class="stat-number"><?= number_format($inventoryRams) ?></div><div class="stat-label"><i class="fas fa-memory"></i> RAMs</div></div>
             <div class="stat-item ssds"><div class="stat-number"><?= number_format($inventorySsds) ?></div><div class="stat-label"><i class="fas fa-hdd"></i> SSDs</div></div>
             <div class="stat-item chargers"><div class="stat-number"><?= number_format($inventoryChargers) ?></div><div class="stat-label"><i class="fas fa-bolt"></i> Chargers</div></div>
+            <div class="stat-item accessories"><div class="stat-number"><?= number_format($inventoryAccessories) ?></div><div class="stat-label"><i class="fas fa-plug"></i> Accessories</div></div>
+            <div class="stat-item smartboards"><div class="stat-number"><?= number_format($inventorySmartboards) ?></div><div class="stat-label"><i class="fas fa-chalkboard"></i> Smartboards</div></div>
         </div>
     </div>
 
@@ -488,8 +479,8 @@ else $greeting = 'Good evening';
         </div>
         <div class="section" style="margin-bottom:0">
             <div class="flex-between"><h4><i class="fas fa-trophy" style="color: var(--accent);"></i> Top Sales People</h4><a href="/inventory_system/users/sales_team.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
-            <div class="table-responsive"><table class="table"><thead><tr><th>#</th><th>Sales Person</th><th>Branch</th><th>Sales</th></tr></thead>
-            <tbody><?php if(!empty($topSalesPeople)): $i=1; foreach($topSalesPeople as $p): ?><tr><td class="badge badge-primary" style="text-align:center; width:35px"><?= $i++ ?></td><td><i class="fas fa-user"></i> <?= htmlspecialchars(substr($p['full_name'], 0, 15)) ?></td><td><?= htmlspecialchars($p['branch']) ?></td><td class="badge badge-info" style="text-align:center"><?= number_format($p['sales_count']) ?></td></tr><?php endforeach; else: ?><tr><td colspan="4" class="text-muted">No sales data</td></tr><?php endif; ?></tbody></table></div>
+            <div class="table-responsive"><table class="table"><thead><tr><th>#</th><th>Sales Person</th><th>Branch</th><th>Revenue</th></tr></thead>
+            <tbody><?php if(!empty($topSalesPeople)): $i=1; foreach($topSalesPeople as $p): ?><tr><td class="badge badge-primary" style="text-align:center; width:35px"><?= $i++ ?></td><td><i class="fas fa-user"></i> <?= htmlspecialchars(substr($p['full_name'], 0, 15)) ?></td><td><?= htmlspecialchars($p['branch']) ?></td><td class="text-success">Ksh <?= number_format($p['total_revenue'], 0) ?></td></tr><?php endforeach; else: ?><tr><td colspan="4" class="text-muted">No sales data</td></tr><?php endif; ?></tbody></table></div>
         </div>
     </div>
 
@@ -558,6 +549,7 @@ else $greeting = 'Good evening';
        <div class="section" style="margin-bottom: 0;">
     <div class="flex-between">
         <h4><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Low Stock Items</h4>
+        <a href="/inventory_system/reports/low_stock.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
     </div>
     <div class="table-responsive">
         <table class="table">
@@ -605,7 +597,7 @@ else $greeting = 'Good evening';
 
     <!-- Recent Activity Logs -->
     <div class="section">
-        <div class="flex-between"><h4><i class="fas fa-history"></i> Recent Activity Logs</h4><a href="/inventory_system/logs/activity_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
+        <div class="flex-between"><h4><i class="fas fa-history"></i> Recent Activity Logs</h4><a href="/inventory_system/logs/activity.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
         <div class="table-responsive"><table class="table"><thead><tr><th>User</th><th>Action</th><th>Time</th></tr></thead>
         <tbody><?php foreach($recentActivities as $a): ?><tr><td><strong><?= htmlspecialchars($a['done_by_name'] ?? 'System') ?></strong></td><td><span class="badge badge-info"><?= htmlspecialchars($a['action'] ?? '') ?></span> <?= htmlspecialchars(substr($a['details'] ?? '', 0, 60)) ?></td><td><?= date('M j, H:i', strtotime($a['created_at'] ?? '')) ?></td></tr><?php endforeach; ?></tbody></table></div>
     </div>
@@ -659,7 +651,7 @@ function toggleMonthRevenue() {
 document.addEventListener('DOMContentLoaded', function() {
     function adjustMobile() {
         const main = document.querySelector('.main-content');
-        const sidebar = document.getElementById('sidebar');
+        const sidebar = document.querySelector('.sidebar');
         if (window.innerWidth <= 1200) {
             if (main) { main.style.marginLeft = '0'; main.style.width = '100%'; main.style.paddingTop = '5rem'; }
         } else {

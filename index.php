@@ -3,9 +3,9 @@ date_default_timezone_set('Africa/Nairobi');
 session_start();
 require_once "config/db.php";
 
-require_once 'inventory_system/PHPMailer-master/src/PHPMailer.php';
-require_once 'inventory_system/PHPMailer-master/src/SMTP.php';
-require_once 'inventory_system/PHPMailer-master/src/Exception.php';
+require_once 'PHPMailer-master/src/PHPMailer.php';
+require_once 'PHPMailer-master/src/SMTP.php';
+require_once 'PHPMailer-master/src/Exception.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -92,19 +92,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $update = $conn->prepare("UPDATE users SET failed_attempts = 0, account_locked_until = NULL, last_login = NOW() WHERE id = :id");
                 $update->execute(['id' => $user['id']]);
                 if ($_SESSION['role'] === 'super_admin') {
-                    header("Location: inventory_system/dashboard/superadmindashboard.php");
+                    header("Location: dashboard/superadmindashboard.php");
                 } elseif ($_SESSION['role'] === 'manager') {
-                    header("Location: inventory_system/dashboard/managerdashboard.php");
+                    header("Location: dashboard/managerdashboard.php");
                 } elseif ($_SESSION['role'] === 'inventory_admin') {
-                    header("Location: inventory_system/dashboard/inventorydashboard.php");
+                    header("Location: dashboard/inventorydashboard.php");
                 } elseif ($_SESSION['role'] === 'sales'){
-                    header("Location: inventory_system/dashboard/salesdashboard.php");
+                    header("Location: dashboard/salesdashboard.php");
                 } elseif ($_SESSION['role'] === 'software'){
-                    header("Location: inventory_system/dashboard/softwaredashboard.php");
+                    header("Location: dashboard/softwaredashboard.php");
                 } elseif ($_SESSION['role'] === 'technician'){
-                    header("Location: inventory_system/dashboard/techniciandashboard.php");
+                    header("Location: dashboard/techniciandashboard.php");
                 } elseif ($_SESSION['role'] === 'cashier'){
-                    header("Location: inventory_system/dashboard/cashierdashboard.php");
+                    header("Location: dashboard/cashierdashboard.php");
                 }
                     exit();
             } else {
@@ -394,7 +394,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="login-card">
     <div class="card-header">
         <div class="logo-wrapper">
-            <img src="inventory_system/assets/MC-LOGO.png" alt="Mombasacomputers Logo">
+            <img src="assets/MC-LOGO.png" alt="Mombasacomputers Logo">
         </div>
         <h1>Inventory System</h1>
         <p>Secure Access Portal</p>

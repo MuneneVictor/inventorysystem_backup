@@ -23,6 +23,7 @@ $foundDevices = [];
 $notFoundSerials = [];
 $singleDevice = null;
 
+// --- SEARCH ---
 if (isset($_POST['search_serial'])) {
     $input = trim($_POST['serial_number']);
     if (empty($input)) {
@@ -58,74 +59,110 @@ if (isset($_POST['search_serial'])) {
     }
 }
 
+// --- SINGLE SALE ---
 if (isset($_POST['sell_device'])) {
     $serial = trim($_POST['serial_number']);
-    $stmt = $conn->prepare("SELECT * FROM devices WHERE serial_number = ? AND status = 'In Stock' AND branch = ?");
-    $stmt->execute([$serial, $user_branch]);
-    $device = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($device) {
-        try {
-            $conn->beginTransaction();
-            $insert = $conn->prepare("INSERT INTO sold_devices 
-                (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, device_condition, sold_by, price, sold_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-            $insert->execute([
-                $device['serial_number'], $device['category_id'], $device['model_name'],
-                $device['processor'], $device['graphics'], $device['ram'],
-                $device['storage_type'], $device['storage_capacity'], $device['touch'] ?? null,
-                $device['device_condition'], $user_id, $device['price']
-            ]);
-            $update = $conn->prepare("UPDATE devices SET status = 'Sold' WHERE serial_number = ?");
-            $update->execute([$serial]);
-            $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Sold device', ?)");
-            $log->execute([$user_id, "Sold device SN: $serial for KES " . number_format($device['price'], 2)]);
-            $conn->commit();
-            $success = "Device sold successfully!";
-            $singleDevice = null;
-        } catch (Exception $e) {
-            $conn->rollBack();
-            $error = "Error: " . $e->getMessage();
-        }
+    $selling_price = trim($_POST['selling_price']);
+
+    if ($selling_price === '' || !is_numeric($selling_price) || $selling_price <= 0) {
+        $error = "Please enter a valid selling price.";
     } else {
-        $error = "Device not found in your branch or already sold.";
+        $stmt = $conn->prepare("SELECT * FROM devices WHERE serial_number = ? AND status = 'In Stock' AND branch = ?");
+        $stmt->execute([$serial, $user_branch]);
+        $device = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($device) {
+            try {
+                $conn->beginTransaction();
+
+                $update = $conn->prepare("
+                    UPDATE devices 
+                    SET status = 'Sold', 
+                        selling_price = ?, 
+                        sold_at = NOW(), 
+                        sold_by = ? 
+                    WHERE serial_number = ?
+                ");
+                $update->execute([$selling_price, $user_id, $serial]);
+
+                $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Sold device', ?)");
+                $log->execute([$user_id, "Sold device SN: $serial for KES " . number_format($selling_price, 2)]);
+
+                $conn->commit();
+                $success = "Device sold successfully!";
+                $singleDevice = null;
+            } catch (Exception $e) {
+                $conn->rollBack();
+                $error = "Error: " . $e->getMessage();
+            }
+        } else {
+            $error = "Device not found in your branch or already sold.";
+        }
     }
 }
 
+// --- BULK SALE ---
 if (isset($_POST['sell_bulk_devices'])) {
     $selectedSerials = $_POST['selected_serials'] ?? [];
     if (empty($selectedSerials)) {
         $error = "No devices selected.";
     } else {
-        $soldCount = 0;
+        $prices = [];
         foreach ($selectedSerials as $serial) {
-            $stmt = $conn->prepare("SELECT * FROM devices WHERE serial_number = ? AND status = 'In Stock' AND branch = ?");
-            $stmt->execute([$serial, $user_branch]);
-            $device = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($device) {
-                $conn->beginTransaction();
-                $insert = $conn->prepare("INSERT INTO sold_devices 
-                    (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, device_condition, sold_by, price, sold_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-                $insert->execute([
-                    $device['serial_number'], $device['category_id'], $device['model_name'],
-                    $device['processor'], $device['graphics'], $device['ram'],
-                    $device['storage_type'], $device['storage_capacity'], $device['touch'] ?? null,
-                    $device['device_condition'], $user_id, $device['price']
-                ]);
-                $update = $conn->prepare("UPDATE devices SET status = 'Sold' WHERE serial_number = ?");
-                $update->execute([$serial]);
-                $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Sold device', ?)");
-                $log->execute([$user_id, "Sold device SN: $serial for KES " . number_format($device['price'], 2)]);
-                $conn->commit();
-                $soldCount++;
+            $priceField = 'selling_price_' . $serial;
+            $price = trim($_POST[$priceField] ?? '');
+            if ($price === '' || !is_numeric($price) || $price <= 0) {
+                $error = "Please enter a valid selling price for all selected devices.";
+                break;
             }
+            $prices[$serial] = $price;
         }
-        if ($soldCount > 0) {
-            $success = "$soldCount device(s) sold successfully.";
-            $foundDevices = [];
-            $notFoundSerials = [];
-        } else {
-            $error = "No devices could be sold.";
+
+        if (!$error) {
+            $soldCount = 0;
+            $failedSerials = [];
+            foreach ($prices as $serial => $price) {
+                $stmt = $conn->prepare("SELECT * FROM devices WHERE serial_number = ? AND status = 'In Stock' AND branch = ?");
+                $stmt->execute([$serial, $user_branch]);
+                $device = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($device) {
+                    try {
+                        $conn->beginTransaction();
+
+                        $update = $conn->prepare("
+                            UPDATE devices 
+                            SET status = 'Sold', 
+                                selling_price = ?, 
+                                sold_at = NOW(), 
+                                sold_by = ? 
+                            WHERE serial_number = ?
+                        ");
+                        $update->execute([$price, $user_id, $serial]);
+
+                        $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Sold device', ?)");
+                        $log->execute([$user_id, "Sold device SN: $serial for KES " . number_format($price, 2)]);
+
+                        $conn->commit();
+                        $soldCount++;
+                    } catch (Exception $e) {
+                        $conn->rollBack();
+                        $failedSerials[] = $serial;
+                    }
+                } else {
+                    $failedSerials[] = $serial;
+                }
+            }
+
+            if ($soldCount > 0) {
+                $msg = "$soldCount device(s) sold successfully.";
+                if (!empty($failedSerials)) {
+                    $msg .= " Failed: " . implode(', ', $failedSerials);
+                }
+                $success = $msg;
+                $foundDevices = [];
+                $notFoundSerials = [];
+            } else {
+                $error = "No devices could be sold.";
+            }
         }
     }
 }
@@ -137,7 +174,6 @@ elseif ($hour < 17) $greeting = 'Good afternoon';
 else $greeting = 'Good evening';
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -147,7 +183,6 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Same base styles */
         :root {
             --primary: #1a4b2a;
             --gray-50: #f9fafb;
@@ -174,12 +209,11 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         .card { background: white; border-radius: var(--radius-xl); border: 1px solid var(--gray-200); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 1.5rem; }
         .card-header { background: var(--gray-50); padding: 1rem 1.5rem; border-bottom: 1px solid var(--gray-200); font-weight: 600; }
         .card-body { padding: 1.5rem; }
-        .info-box { background: var(--gray-50); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid var(--primary); }
         .form-group { margin-bottom: 1.5rem; }
         .form-group label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--gray-700); }
-        .form-group textarea, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); background: white; }
+        .form-group textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); background: white; font-family: inherit; }
+        .price-input { width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); font-size: 0.9rem; background: white; }
         .btn { padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; width: 100%; justify-content: center; }
-        .btn-secondary { background: var(--gray-500); }
         .alert { padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; }
         .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
         .alert-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
@@ -187,9 +221,11 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--gray-200); }
         th { background: var(--gray-50); }
         .checkbox-cell { text-align: center; }
+        .price-cell input { width: 140px; padding: 0.4rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); }
+        .suggested { font-size: 0.65rem; color: var(--gray-500); display: block; }
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
         @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
-        @media (max-width: 768px) { .card-body { padding: 1rem; } }
+        @media (max-width: 768px) { .card-body { padding: 1rem; } .price-cell input { width: 100%; } }
     </style>
 </head>
 <body>
@@ -237,9 +273,21 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                     <tr><th>Processor</th><td><?= htmlspecialchars($singleDevice['processor']) ?></td></tr>
                     <tr><th>RAM</th><td><?= $singleDevice['ram'] ?> GB</td></tr>
                     <tr><th>Storage</th><td><?= htmlspecialchars($singleDevice['storage_type'] . ' ' . $singleDevice['storage_capacity'] . 'GB') ?></td></tr>
-                    <tr><th>Price</th><td><?= $singleDevice['price'] ? 'KES ' . number_format($singleDevice['price'], 2) : 'Not priced' ?></td></tr>
+                    <tr>
+                        <th>Selling Price (KES)</th>
+                        <td>
+                            <input type="number" name="selling_price" form="singleSaleForm" step="0.01" min="0.01"
+                                   value="<?= $singleDevice['price'] ?? '' ?>"
+                                   placeholder="Enter selling price" required style="width:200px; padding:0.5rem; border:1px solid var(--gray-300); border-radius:var(--radius-md);">
+                            <?php if ($singleDevice['price']): ?>
+                                <span style="font-size:0.8rem; color:var(--gray-500);"> (suggested: <?= number_format($singleDevice['price'], 2) ?>)</span>
+                            <?php else: ?>
+                                <span style="font-size:0.8rem; color:var(--gray-500);"> (no suggested price)</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
                 </table>
-                <form method="POST">
+                <form method="POST" id="singleSaleForm">
                     <input type="hidden" name="serial_number" value="<?= htmlspecialchars($singleDevice['serial_number']) ?>">
                     <button type="submit" name="sell_device" class="btn">Confirm Sale</button>
                 </form>
@@ -254,7 +302,17 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                 <form method="POST">
                     <p><input type="checkbox" id="selectAll" onchange="selectAllCheckboxes(this)"> <label for="selectAll">Select All</label></p>
                     <table>
-                        <thead><tr><th class="checkbox-cell">Sell</th><th>Serial</th><th>Model</th><th>Category</th><th>Processor</th><th>RAM</th><th>Price</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th class="checkbox-cell">Sell</th>
+                                <th>Serial</th>
+                                <th>Model</th>
+                                <th>Category</th>
+                                <th>Processor</th>
+                                <th>RAM</th>
+                                <th style="min-width:140px;">Selling Price (KES)</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             <?php foreach ($foundDevices as $d): ?>
                             <tr>
@@ -264,12 +322,19 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                                 <td><?= htmlspecialchars($d['category_name']) ?></td>
                                 <td><?= htmlspecialchars($d['processor']) ?></td>
                                 <td><?= $d['ram'] ?> GB</td>
-                                <td><?= $d['price'] ? 'KES ' . number_format($d['price'], 2) : '-' ?></td>
+                                <td class="price-cell">
+                                    <input type="number" name="selling_price_<?= htmlspecialchars($d['serial_number']) ?>" step="0.01" min="0.01"
+                                           value="<?= $d['price'] ?? '' ?>"
+                                           placeholder="Enter price" required>
+                                    <?php if ($d['price']): ?>
+                                        <span class="suggested">suggested: <?= number_format($d['price'], 2) ?></span>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <button type="submit" name="sell_bulk_devices" class="btn" style="margin-top:1rem;">Sell Selected (<?= count($foundDevices) ?>)</button>
+                    <button type="submit" name="sell_bulk_devices" class="btn" style="margin-top:1rem;">Sell Selected</button>
                 </form>
             </div>
         </div>

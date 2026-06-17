@@ -292,7 +292,7 @@ body {
 
             <!-- My Profile (always visible) -->
             <a href="/inventory_system/auth/myaccount.php" class="menu-item">
-                <i class="fas fa-user"></i> My profile
+                <i class="fas fa-user"></i> MY PROFILE
             </a>
 
             <?php
@@ -313,6 +313,12 @@ body {
                     $items[] = ['Price list', '/inventory_system/devices/price_list.php', 'fas fa-dollar-sign'];
                 }
                 $sections['DEVICES'] = ['icon' => 'fas fa-laptop', 'items' => $items];
+            }
+            if (in_array($role, ['super_admin', 'inventory_system'])){
+                $items = [
+                    ['Add Smartboard', '/inventory_system/smartboards/add_smartboard.php', 'fas fa-plus']
+                ];
+                $sections['SMARTBOARDS'] = ['icon' => 'fas fa-chalkboard','items' => $items];
             }
 
             // Monitors
@@ -339,6 +345,12 @@ body {
                         ['Sold', '/inventory_system/printers/soldprinters.php', 'fas fa-money-bill-wave'],
                     ]
                 ];
+            }
+            if (in_array($role, ['super_admin','manager','inventory_admin'])){
+                $items = [
+                    ['Add Accessory', '/inventory_system/accessories/add_accessories.php', 'fas fa-plus']
+                ];
+                $sections['ACCESSORIES'] = ['icon' => 'fas fa-headphones', 'items' => $items];
             }
 
             // RAMs & SSDs

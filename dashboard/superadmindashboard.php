@@ -25,36 +25,190 @@ function secureQuery($conn, $sql, $params = []) {
     }
 }
 
-// ========== DEVICE STATISTICS ==========
+// ========== HELPER: Unify sales data (revenue, counts, etc.) ==========
+function getUnifiedSales($conn, $whereClause = '', $params = [], $orderBy = '') {
+    $sql = "
+        SELECT 
+            'Device' as source_table,
+            d.model_name as item_name,
+            COALESCE(c.category_name, 'Device') as category,
+            d.selling_price as price,
+            d.sold_at as sold_at,
+            d.sold_by,
+            d.branch
+        FROM devices d
+        LEFT JOIN categories c ON d.category_id = c.id
+        WHERE d.status = 'Sold'
+        
+        UNION ALL
+        
+        SELECT 
+            'Monitor',
+            m.model_name,
+            'Monitor',
+            m.selling_price,
+            m.sold_at,
+            m.sold_by,
+            m.branch
+        FROM monitors m
+        WHERE m.status = 'Sold'
+        
+        UNION ALL
+        
+        SELECT 
+            'Printer',
+            p.model_name,
+            'Printer',
+            p.selling_price,
+            p.date_sold,
+            p.sold_by,
+            p.branch
+        FROM printers p
+        WHERE p.status = 'Sold'
+        
+        UNION ALL
+        
+        SELECT 
+            'Smartboard',
+            s.model,
+            'Smartboard',
+            s.selling_price,
+            s.sold_at,
+            s.sold_by,
+            s.branch
+        FROM smartboards s
+        WHERE s.status = 'sold'
+        
+        UNION ALL
+        
+        SELECT 
+            'Accessory',
+            sa.accessory_name,
+            'Accessory',
+            sa.selling_price,
+            sa.date_sold,
+            sa.sold_by,
+            sa.branch
+        FROM sold_accessories sa
+        
+        UNION ALL
+        
+        SELECT 
+            'Charger',
+            sc.charger_type,
+            'Charger',
+            sc.selling_price,
+            sc.date_sold,
+            sc.sold_by,
+            sc.branch
+        FROM sold_chargers sc
+    ";
+    
+    if ($whereClause) {
+        $fullSql = "SELECT * FROM ($sql) AS unified_sales WHERE " . $whereClause . " " . $orderBy;
+    } else {
+        $fullSql = "SELECT * FROM ($sql) AS unified_sales " . $orderBy;
+    }
+    
+    $stmt = secureQuery($conn, $fullSql, $params);
+    return $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+}
+
+// ========== DEVICE STATISTICS (stock counts) ==========
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices");
 $totalDevices = $stmt ? (int)$stmt->fetchColumn() : 0;
 
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'In Stock'");
 $totalInStock = $stmt ? (int)$stmt->fetchColumn() : 0;
 
-$stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'Sold'");
-$totalSoldDevices = $stmt ? (int)$stmt->fetchColumn() : 0;
+// ========== UNIFIED SALES STATISTICS ==========
+// Total sales count (all sold items)
+$totalSalesCount = 0;
+$stmt = secureQuery($conn, "
+    SELECT COUNT(*) FROM (
+        SELECT 1 FROM devices WHERE status = 'Sold' UNION ALL
+        SELECT 1 FROM monitors WHERE status = 'Sold' UNION ALL
+        SELECT 1 FROM printers WHERE status = 'Sold' UNION ALL
+        SELECT 1 FROM smartboards WHERE status = 'sold' UNION ALL
+        SELECT 1 FROM sold_accessories UNION ALL
+        SELECT 1 FROM sold_chargers
+    ) AS all_sales
+");
+if ($stmt) $totalSalesCount = (int)$stmt->fetchColumn();
 
-// ========== SALES STATISTICS (FROM devices TABLE) ==========
-$stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'Sold'");
-$totalSalesCount = $stmt ? (int)$stmt->fetchColumn() : 0;
+// Today's sales count
+$todaysSalesCount = 0;
+$stmt = secureQuery($conn, "
+    SELECT COUNT(*) FROM (
+        SELECT 1 FROM devices WHERE status = 'Sold' AND DATE(sold_at) = CURDATE() UNION ALL
+        SELECT 1 FROM monitors WHERE status = 'Sold' AND DATE(sold_at) = CURDATE() UNION ALL
+        SELECT 1 FROM printers WHERE status = 'Sold' AND DATE(date_sold) = CURDATE() UNION ALL
+        SELECT 1 FROM smartboards WHERE status = 'sold' AND DATE(sold_at) = CURDATE() UNION ALL
+        SELECT 1 FROM sold_accessories WHERE DATE(date_sold) = CURDATE() UNION ALL
+        SELECT 1 FROM sold_chargers WHERE DATE(date_sold) = CURDATE()
+    ) AS todays_sales
+");
+if ($stmt) $todaysSalesCount = (int)$stmt->fetchColumn();
 
-$stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'Sold' AND DATE(sold_at) = CURDATE()");
-$todaysSalesCount = $stmt ? (int)$stmt->fetchColumn() : 0;
+// Total revenue (all time)
+$totalRevenue = 0;
+$stmt = secureQuery($conn, "
+    SELECT COALESCE(SUM(price), 0) FROM (
+        SELECT selling_price AS price FROM devices WHERE status = 'Sold' UNION ALL
+        SELECT selling_price AS price FROM monitors WHERE status = 'Sold' UNION ALL
+        SELECT selling_price AS price FROM printers WHERE status = 'Sold' UNION ALL
+        SELECT selling_price AS price FROM smartboards WHERE status = 'sold' UNION ALL
+        SELECT selling_price AS price FROM sold_accessories UNION ALL
+        SELECT selling_price AS price FROM sold_chargers
+    ) AS all_prices
+");
+if ($stmt) $totalRevenue = (float)$stmt->fetchColumn();
 
-$stmt = secureQuery($conn, "SELECT COALESCE(SUM(selling_price), 0) FROM devices WHERE status = 'Sold'");
-$totalRevenue = $stmt ? (float)$stmt->fetchColumn() : 0;
+// Today's revenue
+$todaysRevenue = 0;
+$stmt = secureQuery($conn, "
+    SELECT COALESCE(SUM(price), 0) FROM (
+        SELECT selling_price AS price, sold_at FROM devices WHERE status = 'Sold' UNION ALL
+        SELECT selling_price AS price, sold_at FROM monitors WHERE status = 'Sold' UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' UNION ALL
+        SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers
+    ) AS today_prices
+    WHERE DATE(sold_at) = CURDATE()
+");
+if ($stmt) $todaysRevenue = (float)$stmt->fetchColumn();
 
-$stmt = secureQuery($conn, "SELECT COALESCE(SUM(selling_price), 0) FROM devices WHERE status = 'Sold' AND DATE(sold_at) = CURDATE()");
-$todaysRevenue = $stmt ? (float)$stmt->fetchColumn() : 0;
+// Monthly revenue
+$monthlyRevenue = 0;
+$stmt = secureQuery($conn, "
+    SELECT COALESCE(SUM(price), 0) FROM (
+        SELECT selling_price AS price, sold_at FROM devices WHERE status = 'Sold' UNION ALL
+        SELECT selling_price AS price, sold_at FROM monitors WHERE status = 'Sold' UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' UNION ALL
+        SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers
+    ) AS month_prices
+    WHERE MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
+");
+if ($stmt) $monthlyRevenue = (float)$stmt->fetchColumn();
 
-$stmt = secureQuery($conn, "SELECT COALESCE(SUM(selling_price), 0) FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())");
-$monthlyRevenue = $stmt ? (float)$stmt->fetchColumn() : 0;
+// Monthly sales count
+$monthlySales = 0;
+$stmt = secureQuery($conn, "
+    SELECT COUNT(*) FROM (
+        SELECT 1 FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT 1 FROM monitors WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT 1 FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT 1 FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT 1 FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT 1 FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+    ) AS monthly_sales
+");
+if ($stmt) $monthlySales = (int)$stmt->fetchColumn();
 
-$stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())");
-$monthlySales = $stmt ? (int)$stmt->fetchColumn() : 0;
-
-// ========== INVENTORY SUMMARY ==========
+// ========== INVENTORY SUMMARY (unchanged) ==========
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'In Stock'");
 $inventoryDevices = $stmt ? (int)$stmt->fetchColumn() : 0;
 
@@ -73,14 +227,13 @@ $inventorySsds = $stmt ? (int)$stmt->fetchColumn() : 0;
 $stmt = secureQuery($conn, "SELECT COALESCE(SUM(quantity), 0) FROM chargers");
 $inventoryChargers = $stmt ? (int)$stmt->fetchColumn() : 0;
 
-// --- NEW: Accessories & Smartboards ---
 $stmt = secureQuery($conn, "SELECT COALESCE(SUM(quantity), 0) FROM accessories");
 $inventoryAccessories = $stmt ? (int)$stmt->fetchColumn() : 0;
 
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM smartboards WHERE status = 'instock'");
 $inventorySmartboards = $stmt ? (int)$stmt->fetchColumn() : 0;
 
-// ========== ACCESSORIES GIVEN ==========
+// ========== ACCESSORIES GIVEN (unchanged) ==========
 $stmt = secureQuery($conn, "SELECT COALESCE(SUM(quantity), 0) FROM rams_ssds_logs");
 $totalRamGiven = $stmt ? (int)$stmt->fetchColumn() : 0;
 
@@ -88,7 +241,7 @@ $stmt = secureQuery($conn, "SELECT COALESCE(SUM(quantity), 0) FROM charger_logs"
 $totalChargersGiven = $stmt ? (int)$stmt->fetchColumn() : 0;
 $totalAccessoriesGiven = $totalRamGiven + $totalChargersGiven;
 
-// ========== REPAIR STATISTICS ==========
+// ========== REPAIR STATISTICS (unchanged) ==========
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM repairs");
 $totalRepairs = $stmt ? (int)$stmt->fetchColumn() : 0;
 
@@ -98,7 +251,7 @@ $pendingRepairs = $stmt ? (int)$stmt->fetchColumn() : 0;
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM repairs WHERE fix_status = 'Fixed'");
 $completedRepairs = $stmt ? (int)$stmt->fetchColumn() : 0;
 
-// ========== LOW STOCK ITEMS (LIMIT 5) ==========
+// ========== LOW STOCK ITEMS (unchanged) ==========
 $lowStockItems = [];
 
 $stmt = secureQuery($conn, "SELECT id, category, type, storage, quantity, branch FROM rams_ssds WHERE quantity < 10 ORDER BY quantity ASC LIMIT 5");
@@ -128,36 +281,57 @@ if (count($lowStockItems) < 5) {
     }
 }
 
-// ========== TOP SELLING ITEMS (FROM devices TABLE) ==========
+// ========== TOP SELLING ITEMS (UNIFIED, by revenue, top 6) ==========
 $topSellingItems = [];
 $stmt = secureQuery($conn, "
-    SELECT model_name as item_name, COUNT(*) as quantity_sold, COALESCE(SUM(selling_price), 0) as revenue
-    FROM devices
-    WHERE status = 'Sold'
-      AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
-    GROUP BY model_name
-    ORDER BY quantity_sold DESC
-    LIMIT 5");
+    SELECT 
+        item_name,
+        COUNT(*) as quantity_sold,
+        COALESCE(SUM(price), 0) as revenue
+    FROM (
+        SELECT model_name AS item_name, selling_price AS price FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT model_name, selling_price FROM monitors WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT model_name, selling_price FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT model, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT accessory_name, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT charger_type, selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+    ) AS all_sales_current_month
+    GROUP BY item_name
+    ORDER BY revenue DESC
+    LIMIT 6
+");
 if ($stmt) {
     $topSellingItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// ========== TOP SELLING CATEGORIES ==========
+// ========== TOP CATEGORIES (UNIFIED) ==========
 $topCategories = [];
 $stmt = secureQuery($conn, "
-    SELECT c.category_name, COUNT(d.serial_number) as count, COALESCE(SUM(d.selling_price), 0) as revenue
-    FROM devices d
-    JOIN categories c ON d.category_id = c.id
-    WHERE d.status = 'Sold'
-      AND MONTH(d.sold_at) = MONTH(CURDATE()) AND YEAR(d.sold_at) = YEAR(CURDATE())
-    GROUP BY c.category_name
+    SELECT 
+        category_name,
+        COUNT(*) as count,
+        COALESCE(SUM(price), 0) as revenue
+    FROM (
+        SELECT c.category_name, d.selling_price AS price
+        FROM devices d
+        JOIN categories c ON d.category_id = c.id
+        WHERE d.status = 'Sold' AND MONTH(d.sold_at) = MONTH(CURDATE()) AND YEAR(d.sold_at) = YEAR(CURDATE())
+        UNION ALL
+        SELECT 'Monitor' AS category_name, selling_price FROM monitors WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT 'Printer' AS category_name, selling_price FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT 'Smartboard' AS category_name, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT 'Accessory' AS category_name, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT 'Charger' AS category_name, selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+    ) AS all_categories
+    GROUP BY category_name
     ORDER BY count DESC
-    LIMIT 5");
+    LIMIT 6
+");
 if ($stmt) {
     $topCategories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// ========== SALES TREND (LAST 7 DAYS) ==========
+// ========== SALES TREND (LAST 7 DAYS) – UNIFIED ==========
 $chartLabels = [];
 $chartData = [];
 $maxChartValue = 1;
@@ -166,7 +340,17 @@ for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
     $chartLabels[] = date('D', strtotime($date));
 
-    $stmt = secureQuery($conn, "SELECT COALESCE(SUM(selling_price), 0) FROM devices WHERE status = 'Sold' AND DATE(sold_at) = :date", ['date' => $date]);
+    $stmt = secureQuery($conn, "
+        SELECT COALESCE(SUM(price), 0) FROM (
+            SELECT selling_price AS price, sold_at FROM devices WHERE status = 'Sold' UNION ALL
+            SELECT selling_price AS price, sold_at FROM monitors WHERE status = 'Sold' UNION ALL
+            SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' UNION ALL
+            SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' UNION ALL
+            SELECT selling_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
+            SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers
+        ) AS daily_prices
+        WHERE DATE(sold_at) = :date
+    ", ['date' => $date]);
     $dailyTotal = $stmt ? (float)$stmt->fetchColumn() : 0;
     $chartData[] = $dailyTotal;
 
@@ -174,54 +358,96 @@ for ($i = 6; $i >= 0; $i--) {
 }
 if ($maxChartValue == 0) $maxChartValue = 1;
 
-// ========== RECENT ACTIVITIES (LAST 6) ==========
+// ========== RECENT ACTIVITIES (unchanged) ==========
 $stmt = secureQuery($conn, "SELECT a.*, u.full_name AS done_by_name FROM activity_logs a LEFT JOIN users u ON a.user_id = u.id ORDER BY a.created_at DESC LIMIT 6");
 $recentActivities = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
-// ========== RECENT SOLD DEVICES (LAST 5) ==========
+// ========== RECENTLY ADDED ITEMS (ONLY DEVICES) ==========
+$recentAddedItems = [];
 $stmt = secureQuery($conn, "
-    SELECT d.serial_number, d.model_name, d.ram, d.storage_type, d.storage_capacity, d.selling_price as price,
-           c.category_name, u.full_name as sold_by_name
+    SELECT 
+        d.serial_number AS id,
+        d.model_name AS item_name,
+        'Device' AS category,
+        d.date_added,
+        d.branch,
+        d.ram,
+        d.storage_type,
+        d.storage_capacity,
+        d.status
+    FROM devices d
+    ORDER BY d.date_added DESC
+    LIMIT 6
+");
+if ($stmt) {
+    $recentAddedItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// ========== RECENTLY SOLD ITEMS (ONLY DEVICES) ==========
+$recentSoldItems = [];
+$stmt = secureQuery($conn, "
+    SELECT 
+        d.serial_number AS id,
+        d.model_name AS item_name,
+        COALESCE(c.category_name, 'Device') AS category,
+        d.selling_price AS price,
+        d.sold_at,
+        d.branch,
+        d.ram,
+        d.storage_type,
+        d.storage_capacity
     FROM devices d
     LEFT JOIN categories c ON d.category_id = c.id
-    LEFT JOIN users u ON d.sold_by = u.id
     WHERE d.status = 'Sold'
-    ORDER BY d.sold_at DESC LIMIT 5");
-$recentSoldDevices = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    ORDER BY d.sold_at DESC
+    LIMIT 5
+");
+if ($stmt) {
+    $recentSoldItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
-// ========== RECENT DEVICES ADDED (LAST 5) ==========
-$stmt = secureQuery($conn, "
-    SELECT d.serial_number, d.model_name, c.category_name, d.status, d.date_added,
-           d.ram, d.storage_type, d.storage_capacity
-    FROM devices d
-    JOIN categories c ON d.category_id = c.id
-    ORDER BY d.date_added DESC LIMIT 5");
-$recentDevices = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-
-// ========== BRANCH SALES (CURRENT MONTH) ==========
+// ========== BRANCH SALES (UNIFIED) ==========
 $branchSales = [];
 $stmt = secureQuery($conn, "
-    SELECT u.branch, COUNT(d.serial_number) as sales_count, COALESCE(SUM(d.selling_price), 0) as total_revenue
-    FROM devices d
-    JOIN users u ON d.sold_by = u.id
-    WHERE d.status = 'Sold'
-      AND MONTH(d.sold_at) = MONTH(CURDATE()) AND YEAR(d.sold_at) = YEAR(CURDATE())
-    GROUP BY u.branch");
+    SELECT 
+        branch,
+        COUNT(*) as sales_count,
+        COALESCE(SUM(price), 0) as total_revenue
+    FROM (
+        SELECT branch, selling_price AS price FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT branch, selling_price FROM monitors WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT branch, selling_price FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT branch, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT branch, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT branch, selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+    ) AS branch_sales
+    GROUP BY branch
+");
 if ($stmt) {
     $branchSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// ========== TOP SALES PEOPLE (CURRENT MONTH, BY REVENUE) ==========
+// ========== TOP SALES PEOPLE (UNIFIED, BY REVENUE) ==========
 $topSalesPeople = [];
 $stmt = secureQuery($conn, "
-    SELECT u.full_name, u.branch, COUNT(d.serial_number) as sales_count, COALESCE(SUM(d.selling_price), 0) as total_revenue
-    FROM devices d
-    JOIN users u ON d.sold_by = u.id
-    WHERE d.status = 'Sold'
-      AND MONTH(d.sold_at) = MONTH(CURDATE()) AND YEAR(d.sold_at) = YEAR(CURDATE())
+    SELECT 
+        u.full_name,
+        u.branch,
+        COUNT(*) as sales_count,
+        COALESCE(SUM(s.price), 0) as total_revenue
+    FROM (
+        SELECT sold_by, selling_price AS price FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT sold_by, selling_price FROM monitors WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT sold_by, selling_price FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT sold_by, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
+        SELECT sold_by, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT sold_by, selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+    ) AS s
+    JOIN users u ON s.sold_by = u.id
     GROUP BY u.id
     ORDER BY total_revenue DESC
-    LIMIT 5");
+    LIMIT 5
+");
 if ($stmt) {
     $topSalesPeople = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -377,7 +603,7 @@ else $greeting = 'Good evening';
             .chart-bar-wrapper { min-width: 30px; }
             .chart-value { font-size: 0.55rem; white-space: normal; }
             .chart-label { font-size: 0.55rem; }
-            .welcome-text { font-size: 0.9rem; }
+            .welcome-text { font-size: 0.9rem; max-width: 70%; }
         }
         @media (max-width: 480px) {
             .main-content { padding: 0.75rem 0.5rem 0.5rem !important; padding-top: 4rem !important; }
@@ -389,6 +615,7 @@ else $greeting = 'Good evening';
             .chart-bars { height: 100px; gap: 0.2rem; }
             .chart-bar-wrapper { min-width: 25px; }
             .chart-value { font-size: 0.5rem; }
+            .welcome-text { font-size: 0.8rem; max-width: 60%; }
         }
     </style>
 </head>
@@ -410,13 +637,13 @@ else $greeting = 'Good evening';
             <div class="stat-icon"><i class="fas fa-box"></i></div>
             <div class="stat-value"><?= number_format($totalInStock) ?></div>
             <div class="stat-label">In Stock Devices</div>
-            <div class="stat-sub">of <?= number_format($totalDevices) ?> total</div>
+            <div class="stat-sub">of <?= number_format($totalDevices) ?> total devices</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
             <div class="stat-value"><?= number_format($todaysSalesCount) ?></div>
             <div class="stat-label">Today's Sales</div>
-            <div class="stat-sub">Transactions today</div>
+            <div class="stat-sub">All product types</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-wallet"></i></div>
@@ -484,67 +711,67 @@ else $greeting = 'Good evening';
         </div>
     </div>
 
-    <!-- Recently Added Devices (Full Width) -->
+    <!-- Recently Added Devices (only devices) -->
     <div class="full-width">
         <div class="section">
             <div class="flex-between"><h4><i class="fas fa-plus-circle"></i> Recently Added Devices</h4><a href="/inventory_system/devices/device_list.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
             <div class="table-responsive"><table class="table"><thead><tr><th>Serial</th><th>Model</th><th>Specs (RAM + Storage)</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody><?php if(!empty($recentDevices)): foreach($recentDevices as $d): ?><tr>
-                <td><code><?= htmlspecialchars(substr($d['serial_number'], 0, 12)) ?></code></td>
-                <td><?= htmlspecialchars($d['model_name']) ?></td>
+            <tbody><?php if(!empty($recentAddedItems)): foreach($recentAddedItems as $d): ?><tr>
+                <td><code><?= htmlspecialchars(substr($d['id'], 0, 12)) ?></code></td>
+                <td><?= htmlspecialchars($d['item_name']) ?></td>
                 <td><?= htmlspecialchars($d['ram'] ?? '-') ?>GB RAM, <?= htmlspecialchars($d['storage_type'] ?? '') ?> <?= htmlspecialchars($d['storage_capacity'] ?? '-') ?>GB</td>
                 <td><?= $d['status'] == 'In Stock' ? '<span class="badge badge-success">In Stock</span>' : '<span class="badge badge-warning">Sold</span>' ?></td>
-                <td><a href="/inventory_system/devices/view_device.php?sn=<?= urlencode($d['serial_number']) ?>" class="btn-view"><i class="fas fa-eye"></i> View</a></td>
+                <td><a href="/inventory_system/devices/view_device.php?sn=<?= urlencode($d['id']) ?>" class="btn-view"><i class="fas fa-eye"></i> View</a></td>
             </tr><?php endforeach; else: ?><tr><td colspan="5" class="text-muted">No recent devices</td></tr><?php endif; ?></tbody></table></div>
         </div>
     </div>
 
-    <!-- Recently Sold Devices (Full Width) -->
+    <!-- Recently Sold Devices (only devices) -->
     <div class="full-width">
-    <div class="section">
-        <div class="flex-between">
-            <h4><i class="fas fa-tags"></i> Recently Sold Devices</h4>
-            <a href="/inventory_system/sales/sales_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Serial</th>
-                        <th>Model</th>
-                        <th>Specs (RAM + Storage)</th>
-                        <th>Price</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if(!empty($recentSoldDevices)): ?>
-                        <?php foreach($recentSoldDevices as $sold): ?>
-                            <tr>
-                                <td><code><?= htmlspecialchars(substr($sold['serial_number'], 0, 12)) ?></code></td>
-                                <td><?= htmlspecialchars($sold['model_name'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($sold['ram'] ?? '-') ?>GB RAM, <?= htmlspecialchars($sold['storage_type'] ?? '') ?> <?= htmlspecialchars($sold['storage_capacity'] ?? '-') ?>GB</td>
-                                <td><span class="badge badge-success">Ksh <?= number_format($sold['price'] ?? 0, 0) ?></span></td>
-                                <td><a href="/inventory_system/devices/view_device.php?sn=<?= urlencode($sold['serial_number']) ?>" class="btn-view"><i class="fas fa-eye"></i> View</a></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
+        <div class="section">
+            <div class="flex-between">
+                <h4><i class="fas fa-tags"></i> Recently Sold Devices</h4>
+                <a href="/inventory_system/sales/sales_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
                         <tr>
-                            <td colspan="5" class="text-muted" style="text-align:center; padding: 2rem;">No recent sales</td>
+                            <th>Serial</th>
+                            <th>Model</th>
+                            <th>Specs (RAM + Storage)</th>
+                            <th>Price</th>
+                            <th>Action</th>
                         </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <?php if(!empty($recentSoldItems)): ?>
+                            <?php foreach($recentSoldItems as $sold): ?>
+                                <tr>
+                                    <td><code><?= htmlspecialchars(substr($sold['id'], 0, 12)) ?></code></td>
+                                    <td><?= htmlspecialchars($sold['item_name'] ?? '-') ?></td>
+                                    <td><?= htmlspecialchars($sold['ram'] ?? '-') ?>GB RAM, <?= htmlspecialchars($sold['storage_type'] ?? '') ?> <?= htmlspecialchars($sold['storage_capacity'] ?? '-') ?>GB</td>
+                                    <td><span class="badge badge-success">Ksh <?= number_format($sold['price'] ?? 0, 0) ?></span></td>
+                                    <td><a href="/inventory_system/devices/view_device.php?sn=<?= urlencode($sold['id']) ?>" class="btn-view"><i class="fas fa-eye"></i> View</a></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="5" class="text-muted" style="text-align:center; padding: 2rem;">No recent sales</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
 
     <!-- Branch Sales & Low Stock -->
     <div class="three-column">
         <div class="section" style="margin-bottom:0">
             <h4><i class="fas fa-store"></i> Branch Sales (This Month)</h4>
             <div class="table-responsive"><table class="table"><thead><tr><th>Branch</th><th>Sales</th><th>Revenue</th></tr></thead>
-            <tbody><?php if(!empty($branchSales)): foreach($branchSales as $branch): ?><tr><td><strong><?= htmlspecialchars($branch['branch']) ?></strong></td><td class="badge badge-info" style="text-align:center"><?= number_format($branch['sales_count']) ?></td><td class="text-success">Ksh <?= number_format($branch['total_revenue'], 0) ?></td></tr><?php endforeach; else: ?><td><td colspan="3" class="text-muted">No branch data</td></tr><?php endif; ?></tbody></table></div>
+            <tbody><?php if(!empty($branchSales)): foreach($branchSales as $branch): ?><tr><td><strong><?= htmlspecialchars($branch['branch']) ?></strong></td><td class="badge badge-info" style="text-align:center"><?= number_format($branch['sales_count']) ?></td><td class="text-success">Ksh <?= number_format($branch['total_revenue'], 0) ?></td></tr><?php endforeach; else: ?><tr><td colspan="3" class="text-muted">No branch data</td></tr><?php endif; ?></tbody></table></div>
         </div>
        <div class="section" style="margin-bottom: 0;">
     <div class="flex-between">
@@ -663,7 +890,5 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('sidebarToggled', adjustMobile);
 });
 </script>
-
-<?php require_once "../includes/footer.php"; ?>
 </body>
 </html>

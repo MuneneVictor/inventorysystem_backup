@@ -314,10 +314,17 @@ body {
                 }
                 $sections['DEVICES'] = ['icon' => 'fas fa-laptop', 'items' => $items];
             }
-            if (in_array($role, ['super_admin', 'inventory_system'])){
+            if (in_array($role, ['super_admin', 'inventory_admin'])){
                 $items = [
-                    ['Add Smartboard', '/inventory_system/smartboards/add_smartboard.php', 'fas fa-plus']
+                    ['Add Smartboard', '/inventory_system/smartboards/add_smartboard.php', 'fas fa-plus'],
+                    ['Bulk upload', '/inventory_system/smartboards/bulk_upload.php', 'fas fa-file-upload'],
+                    ['View stock', '/inventory_system/smartboards/smartboard_list.php', 'fas fa-box'],
+                    ['Sold', '/inventory_system/smartboards/sold_smartboards.php', 'fas fa-money-bill-wave'],                      
                 ];
+                if ($role === 'super_admin') {
+                    $items[] = ['Price list', '/inventory_system/smartboards/pricelist.php', 'fas fa-dollar-sign'];
+                    $items[] = ['Search Smartboard', '/inventory_system/smartboards/search.php', 'fas fa-search'];
+                }
                 $sections['SMARTBOARDS'] = ['icon' => 'fas fa-chalkboard','items' => $items];
             }
 
@@ -468,7 +475,7 @@ body {
                 $sections['ADMIN'] = [
                     'icon' => 'fas fa-cogs',
                     'items' => [
-                        ['Generate Code', '/inventory_system/auth/generate_code.php', 'fas fa-key'],
+                        ['Add New user', '/inventory_system/auth/generate_code.php', 'fas fa-key'],
                         ['View Users', '/inventory_system/auth/view_users.php', 'fas fa-users'],
                     ]
                 ];

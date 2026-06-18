@@ -15,12 +15,17 @@ if (!isset($_GET['sn'])) {
 
 $serial_number = trim($_GET['sn']);
 
-// Fetch device info using prepared statement
-$stmt = $conn->prepare("SELECT d.*, c.category_name, u.full_name AS added_by_name 
-                        FROM devices d 
-                        JOIN categories c ON d.category_id = c.id 
-                        LEFT JOIN users u ON d.added_by = u.id
-                        WHERE d.serial_number = :sn");
+// Fetch device info with added_by and sold_by names
+$stmt = $conn->prepare("
+    SELECT d.*, c.category_name, 
+           u_added.full_name AS added_by_name,
+           u_sold.full_name AS sold_by_name
+    FROM devices d 
+    JOIN categories c ON d.category_id = c.id 
+    LEFT JOIN users u_added ON d.added_by = u_added.id
+    LEFT JOIN users u_sold ON d.sold_by = u_sold.id
+    WHERE d.serial_number = :sn
+");
 $stmt->execute(['sn' => $serial_number]);
 $device = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -37,15 +42,15 @@ $maintenanceStmt = $conn->prepare("SELECT m.*, u.full_name AS performed_by_name
 $maintenanceStmt->execute(['sn' => $serial_number]);
 $maintenance_logs = $maintenanceStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch sold info if device is sold
+// Build sold info directly from device record
 $sold_info = null;
 if ($device['status'] === 'Sold') {
-    $saleStmt = $conn->prepare("SELECT sd.*, u.full_name as sold_by_name 
-                                FROM sold_devices sd
-                                LEFT JOIN users u ON sd.sold_by = u.id
-                                WHERE sd.serial_number = :sn");
-    $saleStmt->execute(['sn' => $serial_number]);
-    $sold_info = $saleStmt->fetch(PDO::FETCH_ASSOC);
+    $sold_info = [
+        'sold_by_name' => $device['sold_by_name'] ?? 'Unknown',
+        'sold_at'      => $device['sold_at'],
+        'selling_price' => $device['selling_price'],
+        'customer_name' => 'Walk-in Customer' // no customer field in devices
+    ];
 }
 
 $error = "";
@@ -93,6 +98,7 @@ if (($role == 'technician' || $role == 'maintenance') && isset($_POST['update_ac
     <title>View Device | <?= htmlspecialchars($device['serial_number']) ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* (CSS unchanged – same as original) */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -658,7 +664,7 @@ if (($role == 'technician' || $role == 'maintenance') && isset($_POST['update_ac
                 </div>
                 <div class="info-item">
                     <div class="info-label">Price</div>
-                    <div class="info-value"><strong style="color: #059669;">KES <?= number_format($sold_info['price'], 0) ?></strong></div>
+                    <div class="info-value"><strong style="color: #059669;">KES <?= number_format($sold_info['selling_price'], 0) ?></strong></div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Customer</div>
@@ -741,10 +747,12 @@ if (($role == 'technician' || $role == 'maintenance') && isset($_POST['update_ac
     <?php endif; ?>
 
     <!-- Action Buttons -->
+    <?php if($role == 'super_admin' || $role == 'inventory_admin' || $role == 'manager'): ?>
     <div class="action-buttons">
         <a href="device_list.php" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back to Device List
         </a>
+    <?php endif; ?>
         <?php if($role == 'super_admin' || $role == 'inventory_admin' || $role == 'manager'): ?>
             <a href="edit_device.php?sn=<?= urlencode($device['serial_number']) ?>" class="btn btn-primary">
                 <i class="fas fa-edit"></i> Edit Device

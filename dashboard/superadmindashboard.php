@@ -4,7 +4,11 @@ require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
 require_once "../includes/sidebar.php";
-
+$user_id = $_SESSION['user_id'];
+if (!isset($user_id)){
+    header("Location: ../login.php");
+    exit();
+}
 // STRICT ROLE CHECK - DIE IMMEDIATELY
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
     die("ACCESS DENIED: You do not have permission to access this page.");
@@ -284,21 +288,79 @@ if (count($lowStockItems) < 5) {
 // ========== TOP SELLING ITEMS (UNIFIED, by revenue, top 6) ==========
 $topSellingItems = [];
 $stmt = secureQuery($conn, "
+   SELECT 
+    item_name,
+    category,
+    COUNT(*) AS quantity_sold,
+    COALESCE(SUM(price),0) AS revenue
+FROM (
     SELECT 
-        item_name,
-        COUNT(*) as quantity_sold,
-        COALESCE(SUM(price), 0) as revenue
-    FROM (
-        SELECT model_name AS item_name, selling_price AS price FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
-        SELECT model_name, selling_price FROM monitors WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
-        SELECT model_name, selling_price FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
-        SELECT model, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
-        SELECT accessory_name, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
-        SELECT charger_type, selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
-    ) AS all_sales_current_month
-    GROUP BY item_name
-    ORDER BY revenue DESC
-    LIMIT 6
+        model_name COLLATE utf8mb4_general_ci AS item_name,
+        'Device' AS category,
+        selling_price AS price
+    FROM devices
+    WHERE status='Sold'
+    AND MONTH(sold_at)=MONTH(CURDATE())
+    AND YEAR(sold_at)=YEAR(CURDATE())
+
+    UNION ALL
+
+    SELECT 
+        model_name COLLATE utf8mb4_general_ci AS item_name,
+        'Monitor' AS category,
+        selling_price AS price
+    FROM monitors
+    WHERE status='Sold'
+    AND MONTH(sold_at)=MONTH(CURDATE())
+    AND YEAR(sold_at)=YEAR(CURDATE())
+
+    UNION ALL
+
+    SELECT 
+        model_name COLLATE utf8mb4_general_ci AS item_name,
+        'Printer' AS category,
+        selling_price AS price
+    FROM printers
+    WHERE status='Sold'
+    AND MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+
+    SELECT 
+        model COLLATE utf8mb4_general_ci AS item_name,
+        'Smartboard' AS category,
+        selling_price AS price
+    FROM smartboards
+    WHERE status='sold'
+    AND MONTH(sold_at)=MONTH(CURDATE())
+    AND YEAR(sold_at)=YEAR(CURDATE())
+
+    UNION ALL
+
+    SELECT 
+        accessory_name COLLATE utf8mb4_general_ci AS item_name,
+        'Accessory' AS category,
+        selling_price AS price
+    FROM sold_accessories
+    WHERE MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+
+    SELECT 
+        charger_type COLLATE utf8mb4_general_ci AS item_name,
+        'Charger' AS category,
+        selling_price AS price
+    FROM sold_chargers
+    WHERE MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+) AS all_sales_current_month
+
+GROUP BY item_name, category
+ORDER BY revenue DESC
+LIMIT 8
 ");
 if ($stmt) {
     $topSellingItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -324,7 +386,7 @@ $stmt = secureQuery($conn, "
         SELECT 'Charger' AS category_name, selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
     ) AS all_categories
     GROUP BY category_name
-    ORDER BY count DESC
+    ORDER BY revenue DESC
     LIMIT 6
 ");
 if ($stmt) {
@@ -400,7 +462,7 @@ $stmt = secureQuery($conn, "
     LEFT JOIN categories c ON d.category_id = c.id
     WHERE d.status = 'Sold'
     ORDER BY d.sold_at DESC
-    LIMIT 5
+    LIMIT 6
 ");
 if ($stmt) {
     $recentSoldItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -409,19 +471,56 @@ if ($stmt) {
 // ========== BRANCH SALES (UNIFIED) ==========
 $branchSales = [];
 $stmt = secureQuery($conn, "
-    SELECT 
-        branch,
-        COUNT(*) as sales_count,
-        COALESCE(SUM(price), 0) as total_revenue
-    FROM (
-        SELECT branch, selling_price AS price FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
-        SELECT branch, selling_price FROM monitors WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
-        SELECT branch, selling_price FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
-        SELECT branch, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
-        SELECT branch, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
-        SELECT branch, selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
-    ) AS branch_sales
-    GROUP BY branch
+   SELECT 
+    branch,
+    COUNT(*) AS sales_count,
+    COALESCE(SUM(price), 0) AS total_revenue
+FROM (
+    SELECT branch COLLATE utf8mb4_general_ci AS branch, selling_price AS price
+    FROM devices
+    WHERE status='Sold'
+    AND MONTH(sold_at)=MONTH(CURDATE())
+    AND YEAR(sold_at)=YEAR(CURDATE())
+
+    UNION ALL
+
+    SELECT branch COLLATE utf8mb4_general_ci, selling_price AS price
+    FROM monitors
+    WHERE status='Sold'
+    AND MONTH(sold_at)=MONTH(CURDATE())
+    AND YEAR(sold_at)=YEAR(CURDATE())
+
+    UNION ALL
+
+    SELECT branch COLLATE utf8mb4_general_ci, selling_price AS price
+    FROM printers
+    WHERE status='Sold'
+    AND MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+
+    SELECT branch COLLATE utf8mb4_general_ci, selling_price AS price
+    FROM smartboards
+    WHERE status='sold'
+    AND MONTH(sold_at)=MONTH(CURDATE())
+    AND YEAR(sold_at)=YEAR(CURDATE())
+
+    UNION ALL
+
+    SELECT branch COLLATE utf8mb4_general_ci, selling_price AS price
+    FROM sold_accessories
+    WHERE MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+
+    SELECT branch COLLATE utf8mb4_general_ci, selling_price AS price
+    FROM sold_chargers
+    WHERE MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+) AS branch_sales
+GROUP BY branch
 ");
 if ($stmt) {
     $branchSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -697,8 +796,8 @@ else $greeting = 'Good evening';
     <div class="three-column">
         <div class="section" style="margin-bottom:0">
             <div class="flex-between"><h4><i class="fas fa-fire" style="color: var(--accent);"></i> Top Selling Items</h4><a href="/inventory_system/reports/top_items.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
-            <div class="table-responsive"><table class="table"><thead><tr><th>#</th><th>Item Name</th><th>Qty</th><th>Revenue</th></tr></thead>
-            <tbody><?php if(!empty($topSellingItems)): $i=1; foreach($topSellingItems as $item): ?><tr><td class="badge badge-primary" style="text-align:center; width:35px"><?= $i++ ?></td><td><?= htmlspecialchars(substr($item['item_name'], 0, 30)) ?></td><td class="badge badge-info" style="text-align:center"><?= number_format($item['quantity_sold']) ?></td><td class="text-success">Ksh <?= number_format($item['revenue'], 0) ?></td></tr><?php endforeach; else: ?><tr><td colspan="4" class="text-muted">No sales data this month</td></tr><?php endif; ?></tbody></table></div>
+            <div class="table-responsive"><table class="table"><thead><tr><th>#</th><th>Item Name</th><th>Category</th><th>Qty</th><th>Revenue</th></tr></thead>
+            <tbody><?php if(!empty($topSellingItems)): $i=1; foreach($topSellingItems as $item): ?><tr><td class="badge badge-primary" style="text-align:center; width:35px"><?= $i++ ?></td><td><?= htmlspecialchars(substr($item['item_name'], 0, 30)) ?></td><td><?= htmlspecialchars($item['category']) ?></td><td class="badge badge-info" style="text-align:center"><?= number_format($item['quantity_sold']) ?></td><td class="text-success">Ksh <?= number_format($item['revenue'], 0) ?></td></tr><?php endforeach; else: ?><tr><td colspan="5" class="text-muted">No sales data this month</td></tr><?php endif; ?></tbody></table></div>
         </div>
         <div class="section" style="margin-bottom:0">
             <div class="flex-between"><h4><i class="fas fa-chart-pie"></i> Top Categories</h4><a href="/inventory_system/reports/category_report.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
@@ -834,9 +933,9 @@ else $greeting = 'Good evening';
         <a href="/inventory_system/ram_ssd/add_ram.php" class="link-btn"><i class="fas fa-memory"></i> Add RAM/SSD</a>
         <a href="/inventory_system/chargers/add_charger.php" class="link-btn"><i class="fas fa-bolt"></i> Add Charger</a>
         <a href="/inventory_system/devices/add_device.php" class="link-btn"><i class="fas fa-plus-circle"></i> Add Device</a>
-        <a href="/inventory_system/reports/sales_report.php" class="link-btn"><i class="fas fa-chart-line"></i> Sales Report</a>
-        <a href="/inventory_system/reports/software_report.php" class="link-btn"><i class="fas fa-code"></i> Software Report</a>
-        <a href="/inventory_system/reports/repair_report.php" class="link-btn"><i class="fas fa-tools"></i> Repair Report</a>
+        <a href="/inventory_system/sales/sales_logs.php" class="link-btn"><i class="fas fa-chart-line"></i> Sales Report</a>
+        <a href="/inventory_system/software/software_logs.php" class="link-btn"><i class="fas fa-code"></i> Software Report</a>
+        <a href="/inventory_system/repairs/repair_logs.php" class="link-btn"><i class="fas fa-tools"></i> Repair Report</a>
     </div>
 
     <footer><i class="fas fa-copyright"></i> <?= date('Y'); ?> Mombasa Computers. All rights reserved. <span style="margin:0 0.5rem">•</span> v2.0.0</footer>

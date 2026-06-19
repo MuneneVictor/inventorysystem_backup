@@ -50,7 +50,7 @@ sort($branches);
 
 // Base query with prepared statements
 $sql = "SELECT sd.*, c.category_name, u.full_name AS sold_by_name, u.branch
-        FROM sold_devices sd
+        FROM devices sd
         JOIN categories c ON sd.category_id = c.id
         JOIN users u ON sd.sold_by = u.id
         WHERE 1";

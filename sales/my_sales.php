@@ -5,55 +5,191 @@ require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
 require_once "../includes/sidebar.php";
 
+// Only sales role can access
 if ($_SESSION['role'] !== 'sales') {
     die("ACCESS DENIED. Only sales personnel can view their sales.");
 }
 
 $user_id = (int) $_SESSION['user_id'];
-$user_role = $_SESSION['role'];
+$user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 
-$filter_time = $_GET['filter_time'] ?? '';
-$search_sn = trim($_GET['sn'] ?? '');
-$search_model = trim($_GET['model'] ?? '');
+// Get filter inputs
+$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d', strtotime('-30 days'));
+$end_date   = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+$search     = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-$sql = "SELECT sd.*, c.category_name
-        FROM sold_devices sd
-        LEFT JOIN categories c ON sd.category_id = c.id
-        WHERE sd.sold_by = :uid";
-$params = ['uid' => $user_id];
+// ============================================================
+// FETCH ALL SALES FOR THIS SALESPERSON FROM ALL TABLES
+// ============================================================
+function fetchUnifiedSales($conn, $user_id, $start_date, $end_date, $search = '') {
+    $allSales = [];
 
-if ($filter_time === "today") {
-    $sql .= " AND DATE(sd.sold_at) = CURDATE()";
-} elseif ($filter_time === "week") {
-    $sql .= " AND YEARWEEK(sd.sold_at, 1) = YEARWEEK(CURDATE(), 1)";
-} elseif ($filter_time === "month") {
-    $sql .= " AND YEAR(sd.sold_at) = YEAR(CURDATE()) AND MONTH(sd.sold_at) = MONTH(CURDATE())";
-} elseif ($filter_time === "year") {
-    $sql .= " AND YEAR(sd.sold_at) = YEAR(CURDATE())";
+    $queries = [
+        // 1. Devices
+        "SELECT 
+            model_name AS item_name,
+            'Device' AS category,
+            serial_number AS id,
+            selling_price AS price,
+            sold_at,
+            branch
+        FROM devices
+        WHERE status = 'Sold' AND sold_by = :uid",
+
+        // 2. Monitors
+        "SELECT 
+            model_name AS item_name,
+            'Monitor' AS category,
+            serial_number AS id,
+            selling_price AS price,
+            sold_at,
+            branch
+        FROM monitors
+        WHERE status = 'Sold' AND sold_by = :uid",
+
+        // 3. Printers
+        "SELECT 
+            model_name AS item_name,
+            'Printer' AS category,
+            serial_number AS id,
+            selling_price AS price,
+            date_sold AS sold_at,
+            branch
+        FROM printers
+        WHERE status = 'Sold' AND sold_by = :uid",
+
+        // 4. Smartboards
+        "SELECT 
+            model AS item_name,
+            'Smartboard' AS category,
+            serial_number AS id,
+            selling_price AS price,
+            sold_at,
+            branch
+        FROM smartboards
+        WHERE status = 'sold' AND sold_by = :uid",
+
+        // 5. Sold Accessories
+        "SELECT 
+            accessory_name AS item_name,
+            'Accessory' AS category,
+            CAST(accessory_id AS CHAR) AS id,
+            selling_price AS price,
+            date_sold AS sold_at,
+            branch
+        FROM sold_accessories
+        WHERE sold_by = :uid",
+
+        // 6. Sold Chargers
+        "SELECT 
+            charger_type AS item_name,
+            'Charger' AS category,
+            CAST(charger_id AS CHAR) AS id,
+            selling_price AS price,
+            date_sold AS sold_at,
+            branch
+        FROM sold_chargers
+        WHERE sold_by = :uid",
+
+        // 7. Phones
+        "SELECT 
+            CONCAT(COALESCE(brand,''), ' ', COALESCE(model,'')) AS item_name,
+            'Phone' AS category,
+            serial_number AS id,
+            selling_price AS price,
+            date_sold AS sold_at,
+            branch
+        FROM phones
+        WHERE status = 'sold' AND sold_by = :uid",
+
+        // 8. UPS
+        "SELECT 
+            model AS item_name,
+            'UPS' AS category,
+            serial_number AS id,
+            selling_price AS price,
+            date_sold AS sold_at,
+            branch
+        FROM ups
+        WHERE status = 'sold' AND sold_by = :uid",
+
+        // 9. Sold RAM/SSD
+        "SELECT 
+            CONCAT(COALESCE(type,''), ' ', COALESCE(storage,''), 'GB') AS item_name,
+            category AS category,
+            CONCAT('ID:', ram_ssd_id) AS id,
+            total_price AS price,
+            date_sold AS sold_at,
+            branch
+        FROM sold_rams_ssds
+        WHERE sold_by = :uid",
+
+        // 10. Sold HDDs
+        "SELECT 
+            CONCAT(COALESCE(type,''), ' ', COALESCE(storage,'')) AS item_name,
+            'HDD' AS category,
+            CONCAT('ID:', hdd_id) AS id,
+            total_price AS price,
+            date_sold AS sold_at,
+            branch
+        FROM sold_hdds
+        WHERE sold_by = :uid",
+
+        // 11. Sold Graphics Cards
+        "SELECT 
+            CONCAT(COALESCE(type,''), ' ', COALESCE(storage_capacity,''), 'GB') AS item_name,
+            'Graphics Card' AS category,
+            CONCAT('ID:', graphic_card_id) AS id,
+            total_price AS price,
+            date_sold AS sold_at,
+            branch
+        FROM sold_graphics_cards
+        WHERE sold_by = :uid"
+    ];
+
+    foreach ($queries as $sql) {
+        $stmt = $conn->prepare($sql);
+        $stmt->execute(['uid' => $user_id]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $allSales = array_merge($allSales, $rows);
+    }
+
+    // Date range filter
+    if (!empty($start_date) && !empty($end_date)) {
+        $allSales = array_filter($allSales, function($sale) use ($start_date, $end_date) {
+            $sold_at = strtotime($sale['sold_at']);
+            return $sold_at >= strtotime($start_date) && $sold_at <= strtotime($end_date . ' 23:59:59');
+        });
+    }
+
+    // Search filter
+    if (!empty($search)) {
+        $searchLower = strtolower($search);
+        $allSales = array_filter($allSales, function($sale) use ($searchLower) {
+            return stripos($sale['item_name'], $searchLower) !== false ||
+                   stripos($sale['id'], $searchLower) !== false;
+        });
+    }
+
+    // Sort by sold_at descending
+    usort($allSales, function($a, $b) {
+        return strtotime($b['sold_at']) - strtotime($a['sold_at']);
+    });
+
+    return $allSales;
 }
 
-if (!empty($search_sn)) {
-    $sql .= " AND sd.serial_number LIKE :sn";
-    $params['sn'] = "%$search_sn%";
-}
-if (!empty($search_model)) {
-    $sql .= " AND sd.model_name LIKE :model";
-    $params['model'] = "%$search_model%";
-}
+$sales = fetchUnifiedSales($conn, $user_id, $start_date, $end_date, $search);
 
-$sql .= " ORDER BY sd.sold_at DESC";
-$stmt = $conn->prepare($sql);
-$stmt->execute($params);
-$sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$total_amount = array_sum(array_column($sales, 'price'));
+$total_count = count($sales);
+$total_revenue = array_sum(array_column($sales, 'price'));
+$avg_price = $total_count > 0 ? $total_revenue / $total_count : 0;
 
 date_default_timezone_set('Africa/Nairobi');
 $hour = date('G');
 if ($hour < 12) $greeting = 'Good morning';
 elseif ($hour < 17) $greeting = 'Good afternoon';
 else $greeting = 'Good evening';
-$user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 ?>
 
 <!DOCTYPE html>
@@ -98,18 +234,29 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
         .filter-group label { font-size: 0.85rem; font-weight: 500; color: var(--gray-600); }
         .filter-group input, .filter-group select { padding: 0.625rem 0.875rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); font-size: 0.9rem; background: white; }
-        .filter-actions { display: flex; gap: 0.75rem; align-items: flex-end; }
-        .btn { padding: 0.625rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+        .filter-group input[type="date"] { padding: 0.625rem 0.875rem; }
+        .filter-actions { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; }
+        .btn { padding: 0.625rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; font-size: 0.9rem; }
         .btn-secondary { background: var(--gray-500); }
+        .btn-excel { background: #217346; }
+        .btn:hover { opacity: 0.9; }
         .table-wrapper { background: white; border-radius: var(--radius-xl); border: 1px solid var(--gray-200); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; font-size: 0.9rem; }
         th { background: var(--gray-50); padding: 1rem; text-align: left; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); }
         td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
         .badge { display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; background: var(--gray-100); }
         .empty-state { text-align: center; padding: 3rem; color: var(--gray-500); }
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
-        @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
-        @media (max-width: 768px) { .filter-grid { grid-template-columns: 1fr; } .btn { width: 100%; justify-content: center; } .stats-row { flex-direction: column; } }
+        @media (max-width: 1200px) { 
+            .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } 
+        }
+        @media (max-width: 768px) { 
+            .filter-grid { grid-template-columns: 1fr; } 
+            .btn { width: 100%; justify-content: center; } 
+            .stats-row { flex-direction: column; } 
+            .filter-actions { flex-direction: column; align-items: stretch; }
+        }
+        .text-muted { color: var(--gray-500); }
     </style>
 </head>
 <body>
@@ -117,43 +264,38 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <div class="page-header">
         <h1><i class="fas fa-chart-line"></i> My Sales</h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/salesdashboard.php">Dashboard</a>
+            <a href="/inventory_system/dashboard/salesdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <span> / </span>
             <span>My Sales</span>
         </div>
     </div>
 
     <div class="stats-row">
-        <div class="stat-card"><div class="stat-value"><?= count($sales) ?></div><div class="stat-label">Total Sales</div></div>
-        <div class="stat-card"><div class="stat-value">KES <?= number_format($total_amount, 0) ?></div><div class="stat-label">Total Revenue</div></div>
+        <div class="stat-card"><div class="stat-value"><?= number_format($total_count) ?></div><div class="stat-label">Total Items Sold</div></div>
+        <div class="stat-card"><div class="stat-value">KES <?= number_format($total_revenue, 0) ?></div><div class="stat-label">Total Revenue</div></div>
+        <div class="stat-card"><div class="stat-value">KES <?= number_format($avg_price, 0) ?></div><div class="stat-label">Average Sale</div></div>
     </div>
 
     <div class="filter-section">
         <div class="filter-title"><i class="fas fa-filter"></i> Filter My Sales</div>
         <form method="GET" class="filter-grid">
             <div class="filter-group">
-                <label>Serial Number</label>
-                <input type="text" name="sn" placeholder="Search by serial..." value="<?= htmlspecialchars($search_sn) ?>">
+                <label>Keyword (item name or ID/serial)</label>
+                <input type="text" name="search" placeholder="Search..." value="<?= htmlspecialchars($search) ?>">
             </div>
             <div class="filter-group">
-                <label>Model</label>
-                <input type="text" name="model" placeholder="Search by model..." value="<?= htmlspecialchars($search_model) ?>">
+                <label>Start Date</label>
+                <input type="date" name="start_date" value="<?= htmlspecialchars($start_date) ?>" max="<?= date('Y-m-d') ?>">
             </div>
             <div class="filter-group">
-                <label>Time Period</label>
-                <select name="filter_time">
-                    <option value="">All Time</option>
-                    <option value="today" <?= $filter_time == 'today' ? 'selected' : '' ?>>Today</option>
-                    <option value="week" <?= $filter_time == 'week' ? 'selected' : '' ?>>This Week</option>
-                    <option value="month" <?= $filter_time == 'month' ? 'selected' : '' ?>>This Month</option>
-                    <option value="year" <?= $filter_time == 'year' ? 'selected' : '' ?>>This Year</option>
-                </select>
+                <label>End Date</label>
+                <input type="date" name="end_date" value="<?= htmlspecialchars($end_date) ?>" max="<?= date('Y-m-d') ?>">
             </div>
             <div class="filter-actions">
                 <button type="submit" class="btn"><i class="fas fa-search"></i> Filter</button>
-                <a href="my_sales.php" class="btn btn-secondary">Reset</a>
+                <a href="my_sales.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
                 <?php if (!empty($sales)): ?>
-                    <a href="download_sales_pdf.php?filter_time=<?= urlencode($filter_time) ?>&sn=<?= urlencode($search_sn) ?>&model=<?= urlencode($search_model) ?>" class="btn" style="background:#2563eb;"><i class="fas fa-download"></i> PDF</a>
+                    <a href="export_sales_excel.php?start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>&search=<?= urlencode($search) ?>" class="btn btn-excel"><i class="fas fa-file-excel"></i> Export to Excel</a>
                 <?php endif; ?>
             </div>
         </form>
@@ -161,26 +303,30 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 
     <div class="table-wrapper">
         <?php if (empty($sales)): ?>
-            <div class="empty-state"><i class="fas fa-chart-line"></i><p>No sales found matching your criteria.</p></div>
+            <div class="empty-state"><i class="fas fa-chart-line" style="font-size:2rem; display:block; margin-bottom:1rem;"></i><p>No sales found matching your criteria.</p></div>
         <?php else: ?>
             <table>
                 <thead>
                     <tr>
-                        <th>#</th><th>Serial</th><th>Category</th><th>Model</th><th>Processor</th><th>RAM</th><th>Storage</th><th>Price (KES)</th><th>Date Sold</th>
+                        <th>#</th>
+                        <th>Item Name</th>
+                        <th>Category</th>
+                        <th>ID / Serial</th>
+                        <th>Price (KES)</th>
+                        <th>Branch</th>
+                        <th>Date Sold</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php $i = 1; foreach ($sales as $sale): ?>
                     <tr>
                         <td><?= $i++ ?></td>
-                        <td><code><?= htmlspecialchars($sale['serial_number']) ?></code></td>
-                        <td><span class="badge"><?= htmlspecialchars($sale['category_name'] ?? '-') ?></span></td>
-                        <td><?= htmlspecialchars($sale['model_name']) ?></td>
-                        <td><?= htmlspecialchars($sale['processor']) ?></td>
-                        <td><?= $sale['ram'] ?> GB</span></td>
-                        <td><?= htmlspecialchars($sale['storage_type'] . ' ' . $sale['storage_capacity'] . 'GB') ?></td>
-                        <td><?= number_format($sale['price'], 0) ?></td>
-                        <td><?= date('M j, Y H:i', strtotime($sale['sold_at'])) ?></td>
+                        <td><strong><?= htmlspecialchars($sale['item_name']) ?></strong></td>
+                        <td><span class="badge"><?= htmlspecialchars($sale['category']) ?></span></td>
+                        <td><code><?= htmlspecialchars($sale['id'] ?? '-') ?></code></td>
+                        <td><span class="text-muted">KES <?= number_format($sale['price'] ?? 0, 0) ?></span></td>
+                        <td><?= htmlspecialchars($sale['branch'] ?? '-') ?></td>
+                        <td><?= date('M j, Y g:i A', strtotime($sale['sold_at'])) ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

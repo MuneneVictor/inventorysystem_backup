@@ -11,6 +11,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 $success = '';
 $error = '';
 $skippedSerials = [];
+$validationErrors = [];
 
 $added_by = $_SESSION['user_id'];
 $role = $_SESSION['role'];
@@ -32,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
             $sheet = $spreadsheet->getActiveSheet();
             $rows = $sheet->toArray();
 
+            // Skip header row
             $header = array_map(function($h) {
                 return strtolower(trim($h ?? ''));
             }, $rows[0]);
@@ -49,32 +51,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                 $duplicateCount = 0;
 
                 foreach ($rows as $rowIndex => $row) {
-                    $rowPadded = array_pad($row, count($header), '');
+                    // Ensure row has same number of columns as header
+                    $rowPadded = array_pad($row, count($header), null);
                     $data = array_combine($header, $rowPadded);
                     $rowNumber = $rowIndex + 2;
 
-                    $serial_number = trim($data['serial_number']);
-                    $model = trim($data['model']);
-                    $size_inches = (int)$data['size_inches'];
-                    $place = trim($data['place']);
-                    $branch = strtoupper(trim($data['branch']));
-                    $price = $hasPriceColumn && !empty(trim($data['price'])) ? (float)$data['price'] : null;
+                    // Safely extract values with null coalescing
+                    $serial_number = trim($data['serial_number'] ?? '');
+                    $model = trim($data['model'] ?? '');
+                    $size_inches = isset($data['size_inches']) ? (int)$data['size_inches'] : 0;
+                    $place = trim($data['place'] ?? '');
 
-                    // Validate
-                    if (empty($serial_number) || empty($model) || $size_inches <= 0) {
-                        $error .= " Row $rowNumber: Invalid data (serial, model, size required).";
-                        continue;
+                    // Branch: allow NULL if empty or blank
+                    $branch_raw = trim($data['branch'] ?? '');
+                    $branch = !empty($branch_raw) ? strtoupper($branch_raw) : null;
+
+                    // Price: allow NULL if empty
+                    $price = null;
+                    if ($hasPriceColumn && isset($data['price']) && trim($data['price']) !== '') {
+                        $price = (float)$data['price'];
+                    }
+
+                    // Validation
+                    $rowErrors = [];
+
+                    if (empty($serial_number)) {
+                        $rowErrors[] = "Serial number is required.";
+                    }
+                    if (empty($model)) {
+                        $rowErrors[] = "Model is required.";
+                    }
+                    if ($size_inches <= 0) {
+                        $rowErrors[] = "Size must be a positive integer.";
                     }
                     if (!in_array($place, ['store', 'warehouse'])) {
-                        $error .= " Row $rowNumber: Place must be 'store' or 'warehouse'.";
-                        continue;
+                        $rowErrors[] = "Place must be 'store' or 'warehouse'.";
                     }
-                    if (!in_array($branch, ['KIMATHI', 'MOI'])) {
-                        $error .= " Row $rowNumber: Branch must be 'KIMATHI' or 'MOI'.";
+                    // Branch validation: if not null, must be KIMATHI or MOI
+                    if ($branch !== null && !in_array($branch, ['KIMATHI', 'MOI'])) {
+                        $rowErrors[] = "Branch must be 'KIMATHI', 'MOI', or left empty (NULL).";
+                    }
+
+                    if (!empty($rowErrors)) {
+                        $validationErrors[] = "Row $rowNumber: " . implode(' ', $rowErrors);
                         continue;
                     }
 
-                    // Check duplicate
+                    // Check duplicate serial
                     $stmt = $conn->prepare("SELECT COUNT(*) FROM smartboards WHERE serial_number = :sn");
                     $stmt->execute(['sn' => $serial_number]);
                     if ($stmt->fetchColumn() > 0) {
@@ -83,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                         continue;
                     }
 
+                    // Insert smartboard
                     $insert = $conn->prepare("
                         INSERT INTO smartboards 
                         (serial_number, model, size_inches, place, branch, price, added_by, status)
@@ -98,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                         'added_by' => $added_by
                     ]);
 
-                    // Log
+                    // Log activity
                     $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (:uid, 'Bulk upload smartboard', :details)");
                     $log->execute([
                         'uid' => $added_by,
@@ -108,9 +132,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                     $addedCount++;
                 }
 
+                // Build success message
                 $success = "$addedCount smartboard(s) added successfully.";
                 if ($duplicateCount > 0) {
                     $success .= " $duplicateCount duplicate serial(s) were skipped.";
+                }
+                if (!empty($validationErrors)) {
+                    $error = "Some rows had errors:<br>" . implode('<br>', $validationErrors);
                 }
             }
         } catch (Exception $e) {
@@ -398,7 +426,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                         <tr><td>model</td><td class="required">Required</td><td>Model name</td><td>e.g., SMART 75-inch</td></tr>
                         <tr><td>size_inches</td><td class="required">Required</td><td>Size in inches</td><td>Integer > 0</td></tr>
                         <tr><td>place</td><td class="required">Required</td><td>Location</td><td>store, warehouse</td></tr>
-                        <tr><td>branch</td><td class="required">Required</td><td>Branch</td><td>KIMATHI, MOI</td></tr>
+                        <tr><td>branch</td><td class="required">Required</td><td>Branch (can be left empty for NULL)</td><td>KIMATHI, MOI, or empty</td></tr>
                         <tr><td>price</td><td class="optional">Optional</td><td>Purchase price (KES)</td><td>Decimal number</td></tr>
                     </tbody>
                 </table>
@@ -410,7 +438,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                     serial_number | model | size_inches | place | branch | price<br>
                     ----------------------------------------------------------------<br>
                     SB001 | SMART 75-inch | 75 | store | KIMATHI | 200000<br>
-                    SB002 | ViewSonic 65-inch | 65 | warehouse | MOI | 150000
+                    SB002 | ViewSonic 65-inch | 65 | warehouse | MOI | 150000<br>
+                    SB003 | Samsung 55-inch | 55 | warehouse | (empty) | 120000
                 </div>
                 <p style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--gray-500);">
                     <i class="fas fa-download"></i> 
@@ -454,7 +483,8 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         const csvContent = "serial_number,model,size_inches,place,branch,price\n" +
                            "SB001,SMART 75-inch,75,store,KIMATHI,200000\n" +
-                           "SB002,ViewSonic 65-inch,65,warehouse,MOI,150000";
+                           "SB002,ViewSonic 65-inch,65,warehouse,MOI,150000\n" +
+                           "SB003,Samsung 55-inch,55,warehouse,,120000";
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

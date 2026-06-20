@@ -106,6 +106,64 @@ function getUnifiedSales($conn, $whereClause = '', $params = [], $orderBy = '') 
             sc.sold_by,
             sc.branch
         FROM sold_chargers sc
+        
+        -- NEW TABLES
+        UNION ALL
+        SELECT 
+            'Phone',
+            CONCAT(COALESCE(brand,''), ' ', COALESCE(model,'')) AS item_name,
+            'Phone' AS category,
+            selling_price,
+            date_sold AS sold_at,
+            sold_by,
+            branch
+        FROM phones
+        WHERE status = 'sold'
+        
+        UNION ALL
+        SELECT 
+            'UPS',
+            model,
+            'UPS',
+            selling_price,
+            date_sold AS sold_at,
+            sold_by,
+            branch
+        FROM ups
+        WHERE status = 'sold'
+        
+        UNION ALL
+        SELECT 
+            'RAM/SSD',
+            CONCAT(COALESCE(type,''), ' ', COALESCE(storage,''), 'GB') AS item_name,
+            category,
+            selling_price,
+            date_sold AS sold_at,
+            sold_by,
+            branch
+        FROM sold_rams_ssds
+        
+        UNION ALL
+        SELECT 
+            'HDD',
+            CONCAT(COALESCE(type,''), ' ', COALESCE(storage,'')) AS item_name,
+            'HDD',
+            selling_price,
+            date_sold AS sold_at,
+            sold_by,
+            branch
+        FROM sold_hdds
+        
+        UNION ALL
+        SELECT 
+            'Graphics Card',
+            CONCAT(COALESCE(type,''), ' ', COALESCE(storage_capacity,''), 'GB') AS item_name,
+            'Graphics Card',
+            selling_price,
+            date_sold AS sold_at,
+            sold_by,
+            branch
+        FROM sold_graphics_cards
     ";
     
     if ($whereClause) {
@@ -135,7 +193,12 @@ $stmt = secureQuery($conn, "
         SELECT 1 FROM printers WHERE status = 'Sold' UNION ALL
         SELECT 1 FROM smartboards WHERE status = 'sold' UNION ALL
         SELECT 1 FROM sold_accessories UNION ALL
-        SELECT 1 FROM sold_chargers
+        SELECT 1 FROM sold_chargers UNION ALL
+        SELECT 1 FROM phones WHERE status = 'sold' UNION ALL
+        SELECT 1 FROM ups WHERE status = 'sold' UNION ALL
+        SELECT 1 FROM sold_rams_ssds UNION ALL
+        SELECT 1 FROM sold_hdds UNION ALL
+        SELECT 1 FROM sold_graphics_cards
     ) AS all_sales
 ");
 if ($stmt) $totalSalesCount = (int)$stmt->fetchColumn();
@@ -149,7 +212,12 @@ $stmt = secureQuery($conn, "
         SELECT 1 FROM printers WHERE status = 'Sold' AND DATE(date_sold) = CURDATE() UNION ALL
         SELECT 1 FROM smartboards WHERE status = 'sold' AND DATE(sold_at) = CURDATE() UNION ALL
         SELECT 1 FROM sold_accessories WHERE DATE(date_sold) = CURDATE() UNION ALL
-        SELECT 1 FROM sold_chargers WHERE DATE(date_sold) = CURDATE()
+        SELECT 1 FROM sold_chargers WHERE DATE(date_sold) = CURDATE() UNION ALL
+        SELECT 1 FROM phones WHERE status = 'sold' AND DATE(date_sold) = CURDATE() UNION ALL
+        SELECT 1 FROM ups WHERE status = 'sold' AND DATE(date_sold) = CURDATE() UNION ALL
+        SELECT 1 FROM sold_rams_ssds WHERE DATE(date_sold) = CURDATE() UNION ALL
+        SELECT 1 FROM sold_hdds WHERE DATE(date_sold) = CURDATE() UNION ALL
+        SELECT 1 FROM sold_graphics_cards WHERE DATE(date_sold) = CURDATE()
     ) AS todays_sales
 ");
 if ($stmt) $todaysSalesCount = (int)$stmt->fetchColumn();
@@ -163,7 +231,12 @@ $stmt = secureQuery($conn, "
         SELECT selling_price AS price FROM printers WHERE status = 'Sold' UNION ALL
         SELECT selling_price AS price FROM smartboards WHERE status = 'sold' UNION ALL
         SELECT selling_price AS price FROM sold_accessories UNION ALL
-        SELECT selling_price AS price FROM sold_chargers
+        SELECT selling_price AS price FROM sold_chargers UNION ALL
+        SELECT selling_price AS price FROM phones WHERE status = 'sold' UNION ALL
+        SELECT selling_price AS price FROM ups WHERE status = 'sold' UNION ALL
+        SELECT (selling_price * quantity) AS price FROM sold_rams_ssds UNION ALL
+        SELECT (selling_price * quantity) AS price FROM sold_hdds UNION ALL
+        SELECT (selling_price * quantity) AS price FROM sold_graphics_cards
     ) AS all_prices
 ");
 if ($stmt) $totalRevenue = (float)$stmt->fetchColumn();
@@ -177,7 +250,12 @@ $stmt = secureQuery($conn, "
         SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' UNION ALL
         SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' UNION ALL
         SELECT selling_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
-        SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers
+        SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM phones WHERE status = 'sold' UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM ups WHERE status = 'sold' UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_rams_ssds UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_hdds UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_graphics_cards
     ) AS today_prices
     WHERE DATE(sold_at) = CURDATE()
 ");
@@ -192,7 +270,12 @@ $stmt = secureQuery($conn, "
         SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' UNION ALL
         SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' UNION ALL
         SELECT selling_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
-        SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers
+        SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM phones WHERE status = 'sold' UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM ups WHERE status = 'sold' UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_rams_ssds UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_hdds UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_graphics_cards
     ) AS month_prices
     WHERE MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
 ");
@@ -207,12 +290,17 @@ $stmt = secureQuery($conn, "
         SELECT 1 FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
         SELECT 1 FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
         SELECT 1 FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
-        SELECT 1 FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        SELECT 1 FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT 1 FROM phones WHERE status = 'sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT 1 FROM ups WHERE status = 'sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT 1 FROM sold_rams_ssds WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT 1 FROM sold_hdds WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT 1 FROM sold_graphics_cards WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
     ) AS monthly_sales
 ");
 if ($stmt) $monthlySales = (int)$stmt->fetchColumn();
 
-// ========== INVENTORY SUMMARY (unchanged) ==========
+// ========== INVENTORY SUMMARY (NEW TABLES ADDED) ==========
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'In Stock'");
 $inventoryDevices = $stmt ? (int)$stmt->fetchColumn() : 0;
 
@@ -237,6 +325,19 @@ $inventoryAccessories = $stmt ? (int)$stmt->fetchColumn() : 0;
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM smartboards WHERE status = 'instock'");
 $inventorySmartboards = $stmt ? (int)$stmt->fetchColumn() : 0;
 
+// ---- NEW INVENTORY COUNTS ----
+$stmt = secureQuery($conn, "SELECT COUNT(*) FROM phones WHERE status = 'instock'");
+$inventoryPhones = $stmt ? (int)$stmt->fetchColumn() : 0;
+
+$stmt = secureQuery($conn, "SELECT COUNT(*) FROM ups WHERE status = 'instock'");
+$inventoryUps = $stmt ? (int)$stmt->fetchColumn() : 0;
+
+$stmt = secureQuery($conn, "SELECT COALESCE(SUM(quantity), 0) FROM hdds");
+$inventoryHdds = $stmt ? (int)$stmt->fetchColumn() : 0;
+
+$stmt = secureQuery($conn, "SELECT COALESCE(SUM(quantity), 0) FROM graphic_cards WHERE status = 'instock'");
+$inventoryGraphics = $stmt ? (int)$stmt->fetchColumn() : 0;
+
 // ========== ACCESSORIES GIVEN (unchanged) ==========
 $stmt = secureQuery($conn, "SELECT COALESCE(SUM(quantity), 0) FROM rams_ssds_logs");
 $totalRamGiven = $stmt ? (int)$stmt->fetchColumn() : 0;
@@ -255,10 +356,12 @@ $pendingRepairs = $stmt ? (int)$stmt->fetchColumn() : 0;
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM repairs WHERE fix_status = 'Fixed'");
 $completedRepairs = $stmt ? (int)$stmt->fetchColumn() : 0;
 
-// ========== LOW STOCK ITEMS (unchanged) ==========
+// ========== LOW STOCK ITEMS (UNIFIED FROM ALL INVENTORY TABLES) ==========
 $lowStockItems = [];
+$threshold = 10;
 
-$stmt = secureQuery($conn, "SELECT id, category, type, storage, quantity, branch FROM rams_ssds WHERE quantity < 10 ORDER BY quantity ASC LIMIT 5");
+// 1. RAM/SSD
+$stmt = secureQuery($conn, "SELECT id, category, type, storage, quantity, branch FROM rams_ssds WHERE quantity < :threshold ORDER BY quantity ASC", ['threshold' => $threshold]);
 if ($stmt) {
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as $r) {
@@ -267,25 +370,57 @@ if ($stmt) {
     }
 }
 
-if (count($lowStockItems) < 5) {
-    $stmt = secureQuery($conn, "SELECT id, charger_type, watts, quantity, branch FROM chargers WHERE quantity < 10 ORDER BY quantity ASC LIMIT " . (5 - count($lowStockItems)));
-    if ($stmt) {
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($rows as $c) {
-            $lowStockItems[] = [
-                'id' => $c['id'],
-                'category' => 'Charger',
-                'type' => $c['charger_type'],
-                'storage' => $c['watts'],
-                'quantity' => $c['quantity'],
-                'branch' => $c['branch'],
-                'source' => 'charger'
-            ];
-        }
+// 2. Chargers
+$stmt = secureQuery($conn, "SELECT id, charger_type AS type, watts AS storage, quantity, branch FROM chargers WHERE quantity < :threshold ORDER BY quantity ASC", ['threshold' => $threshold]);
+if ($stmt) {
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $r) {
+        $r['category'] = 'Charger';
+        $r['source'] = 'charger';
+        $lowStockItems[] = $r;
     }
 }
 
-// ========== TOP SELLING ITEMS (UNIFIED, by revenue, top 6) ==========
+// 3. HDDs
+$stmt = secureQuery($conn, "SELECT id, type, storage, quantity, branch FROM hdds WHERE quantity < :threshold ORDER BY quantity ASC", ['threshold' => $threshold]);
+if ($stmt) {
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $r) {
+        $r['category'] = 'HDD';
+        $r['source'] = 'hdd';
+        $lowStockItems[] = $r;
+    }
+}
+
+// 4. Graphics Cards
+$stmt = secureQuery($conn, "SELECT id, type, storage_capacity AS storage, quantity, branch FROM graphic_cards WHERE status = 'instock' AND quantity < :threshold ORDER BY quantity ASC", ['threshold' => $threshold]);
+if ($stmt) {
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $r) {
+        $r['category'] = 'Graphics Card';
+        $r['source'] = 'graphic_card';
+        $lowStockItems[] = $r;
+    }
+}
+
+// 5. Accessories
+$stmt = secureQuery($conn, "SELECT id, name AS type, NULL AS storage, quantity, branch FROM accessories WHERE quantity < :threshold ORDER BY quantity ASC", ['threshold' => $threshold]);
+if ($stmt) {
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $r) {
+        $r['category'] = 'Accessory';
+        $r['source'] = 'accessory';
+        $lowStockItems[] = $r;
+    }
+}
+
+// Sort by quantity ascending and limit to 5
+usort($lowStockItems, function($a, $b) {
+    return $a['quantity'] - $b['quantity'];
+});
+$lowStockItems = array_slice($lowStockItems, 0, 5);
+
+// ========== TOP SELLING ITEMS (UNIFIED, by revenue, top 8) ==========
 $topSellingItems = [];
 $stmt = secureQuery($conn, "
    SELECT 
@@ -356,6 +491,54 @@ FROM (
     WHERE MONTH(date_sold)=MONTH(CURDATE())
     AND YEAR(date_sold)=YEAR(CURDATE())
 
+    -- NEW TABLES
+    UNION ALL
+    SELECT 
+        CONCAT(COALESCE(brand,''), ' ', COALESCE(model,'')) COLLATE utf8mb4_general_ci AS item_name,
+        'Phone' AS category,
+        selling_price AS price
+    FROM phones
+    WHERE status='sold'
+    AND MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+    SELECT 
+        model COLLATE utf8mb4_general_ci AS item_name,
+        'UPS' AS category,
+        selling_price AS price
+    FROM ups
+    WHERE status='sold'
+    AND MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+    SELECT 
+        CONCAT(COALESCE(type,''), ' ', COALESCE(storage,''), 'GB') COLLATE utf8mb4_general_ci AS item_name,
+        category AS category,
+        selling_price * quantity AS price
+    FROM sold_rams_ssds
+    WHERE MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+    SELECT 
+        CONCAT(COALESCE(type,''), ' ', COALESCE(storage,'')) COLLATE utf8mb4_general_ci AS item_name,
+        'HDD' AS category,
+        selling_price * quantity AS price
+    FROM sold_hdds
+    WHERE MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+    SELECT 
+        CONCAT(COALESCE(type,''), ' ', COALESCE(storage_capacity,''), 'GB') COLLATE utf8mb4_general_ci AS item_name,
+        'Graphics Card' AS category,
+        selling_price * quantity AS price
+    FROM sold_graphics_cards
+    WHERE MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
 ) AS all_sales_current_month
 
 GROUP BY item_name, category
@@ -379,11 +562,26 @@ $stmt = secureQuery($conn, "
         JOIN categories c ON d.category_id = c.id
         WHERE d.status = 'Sold' AND MONTH(d.sold_at) = MONTH(CURDATE()) AND YEAR(d.sold_at) = YEAR(CURDATE())
         UNION ALL
-        SELECT 'Monitor' AS category_name, selling_price FROM monitors WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
-        SELECT 'Printer' AS category_name, selling_price FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
-        SELECT 'Smartboard' AS category_name, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
-        SELECT 'Accessory' AS category_name, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT 'Monitor' AS category_name, selling_price FROM monitors WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
+        UNION ALL
+        SELECT 'Printer' AS category_name, selling_price FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
+        SELECT 'Smartboard' AS category_name, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
+        UNION ALL
+        SELECT 'Accessory' AS category_name, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
         SELECT 'Charger' AS category_name, selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        -- NEW
+        UNION ALL
+        SELECT 'Phone' AS category_name, selling_price FROM phones WHERE status='sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
+        SELECT 'UPS' AS category_name, selling_price FROM ups WHERE status='sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
+        SELECT 'RAM/SSD' AS category_name, (selling_price * quantity) AS price FROM sold_rams_ssds WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
+        SELECT 'HDD' AS category_name, (selling_price * quantity) AS price FROM sold_hdds WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
+        SELECT 'Graphics Card' AS category_name, (selling_price * quantity) AS price FROM sold_graphics_cards WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
     ) AS all_categories
     GROUP BY category_name
     ORDER BY revenue DESC
@@ -409,7 +607,12 @@ for ($i = 6; $i >= 0; $i--) {
             SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' UNION ALL
             SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' UNION ALL
             SELECT selling_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
-            SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers
+            SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers UNION ALL
+            SELECT selling_price AS price, date_sold AS sold_at FROM phones WHERE status='sold' UNION ALL
+            SELECT selling_price AS price, date_sold AS sold_at FROM ups WHERE status='sold' UNION ALL
+            SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_rams_ssds UNION ALL
+            SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_hdds UNION ALL
+            SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_graphics_cards
         ) AS daily_prices
         WHERE DATE(sold_at) = :date
     ", ['date' => $date]);
@@ -519,6 +722,39 @@ FROM (
     FROM sold_chargers
     WHERE MONTH(date_sold)=MONTH(CURDATE())
     AND YEAR(date_sold)=YEAR(CURDATE())
+
+    -- NEW
+    UNION ALL
+    SELECT branch COLLATE utf8mb4_general_ci, selling_price AS price
+    FROM phones
+    WHERE status='sold'
+    AND MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+    SELECT branch COLLATE utf8mb4_general_ci, selling_price AS price
+    FROM ups
+    WHERE status='sold'
+    AND MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+    SELECT branch COLLATE utf8mb4_general_ci, (selling_price * quantity) AS price
+    FROM sold_rams_ssds
+    WHERE MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+    SELECT branch COLLATE utf8mb4_general_ci, (selling_price * quantity) AS price
+    FROM sold_hdds
+    WHERE MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
+
+    UNION ALL
+    SELECT branch COLLATE utf8mb4_general_ci, (selling_price * quantity) AS price
+    FROM sold_graphics_cards
+    WHERE MONTH(date_sold)=MONTH(CURDATE())
+    AND YEAR(date_sold)=YEAR(CURDATE())
 ) AS branch_sales
 GROUP BY branch
 ");
@@ -535,12 +771,28 @@ $stmt = secureQuery($conn, "
         COUNT(*) as sales_count,
         COALESCE(SUM(s.price), 0) as total_revenue
     FROM (
-        SELECT sold_by, selling_price AS price FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
-        SELECT sold_by, selling_price FROM monitors WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
-        SELECT sold_by, selling_price FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
-        SELECT sold_by, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE()) UNION ALL
-        SELECT sold_by, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE()) UNION ALL
+        SELECT sold_by, selling_price AS price FROM devices WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
+        UNION ALL
+        SELECT sold_by, selling_price FROM monitors WHERE status = 'Sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
+        UNION ALL
+        SELECT sold_by, selling_price FROM printers WHERE status = 'Sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
+        SELECT sold_by, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
+        UNION ALL
+        SELECT sold_by, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
         SELECT sold_by, selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        -- NEW
+        UNION ALL
+        SELECT sold_by, selling_price FROM phones WHERE status='sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
+        SELECT sold_by, selling_price FROM ups WHERE status='sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
+        SELECT sold_by, (selling_price * quantity) AS price FROM sold_rams_ssds WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
+        SELECT sold_by, (selling_price * quantity) AS price FROM sold_hdds WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        UNION ALL
+        SELECT sold_by, (selling_price * quantity) AS price FROM sold_graphics_cards WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
     ) AS s
     JOIN users u ON s.sold_by = u.id
     GROUP BY u.id
@@ -659,6 +911,11 @@ else $greeting = 'Good evening';
         .stat-item.chargers .stat-number { color: var(--accent); }
         .stat-item.accessories .stat-number { color: #14b8a6; }
         .stat-item.smartboards .stat-number { color: #f43f5e; }
+        /* New colors for added items */
+        .stat-item.phones .stat-number { color: #8b5cf6; }
+        .stat-item.ups .stat-number { color: #f59e0b; }
+        .stat-item.hdds .stat-number { color: #3b82f6; }
+        .stat-item.graphics .stat-number { color: #ec4899; }
         .categories-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-top: 1rem; }
         .category-card { background: linear-gradient(135deg, var(--gray-50) 0%, white 100%); border-radius: var(--radius-lg); padding: 1rem; text-align: center; border: 1px solid var(--gray-200); transition: all 0.2s ease; }
         .category-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--primary); }
@@ -777,7 +1034,7 @@ else $greeting = 'Good evening';
         </div>
     </div>
 
-    <!-- Inventory Summary -->
+    <!-- Inventory Summary (includes new tables) -->
     <div class="section">
         <h4><i class="fas fa-warehouse"></i> Inventory Summary</h4>
         <div class="stats-grid">
@@ -789,6 +1046,11 @@ else $greeting = 'Good evening';
             <div class="stat-item chargers"><div class="stat-number"><?= number_format($inventoryChargers) ?></div><div class="stat-label"><i class="fas fa-bolt"></i> Chargers</div></div>
             <div class="stat-item accessories"><div class="stat-number"><?= number_format($inventoryAccessories) ?></div><div class="stat-label"><i class="fas fa-plug"></i> Accessories</div></div>
             <div class="stat-item smartboards"><div class="stat-number"><?= number_format($inventorySmartboards) ?></div><div class="stat-label"><i class="fas fa-chalkboard"></i> Smartboards</div></div>
+            <!-- NEW ITEMS -->
+            <div class="stat-item phones"><div class="stat-number"><?= number_format($inventoryPhones) ?></div><div class="stat-label"><i class="fas fa-mobile-alt"></i> Phones</div></div>
+            <div class="stat-item ups"><div class="stat-number"><?= number_format($inventoryUps) ?></div><div class="stat-label"><i class="fas fa-battery-half"></i> UPS</div></div>
+            <div class="stat-item hdds"><div class="stat-number"><?= number_format($inventoryHdds) ?></div><div class="stat-label"><i class="fas fa-database"></i> HDDs</div></div>
+            <div class="stat-item graphics"><div class="stat-number"><?= number_format($inventoryGraphics) ?></div><div class="stat-label"><i class="fas fa-microchip"></i> Graphics</div></div>
         </div>
     </div>
 
@@ -891,11 +1153,19 @@ else $greeting = 'Good evening';
                     <?php foreach($lowStockItems as $item): ?>
                         <tr>
                             <td>
-                                <?php if($item['source'] === 'charger'): ?>
-                                    <?= htmlspecialchars(($item['type'] ?? 'Charger') . ($item['storage'] ? " {$item['storage']}W" : '')) ?>
-                                <?php else: ?>
-                                    <?= htmlspecialchars(($item['category'] ?? '') . ' ' . ($item['type'] ?? '-')) . (!empty($item['storage']) ? ' ' . $item['storage'] . 'GB' : '') ?>
-                                <?php endif; ?>
+                                <?php
+                                if($item['source'] === 'charger'){
+                                    echo htmlspecialchars(($item['type'] ?? 'Charger') . ($item['storage'] ? " {$item['storage']}W" : ''));
+                                } elseif($item['source'] === 'hdd'){
+                                    echo htmlspecialchars(($item['type'] ?? 'HDD') . ' ' . ($item['storage'] ?? ''));
+                                } elseif($item['source'] === 'graphic_card'){
+                                    echo htmlspecialchars(($item['type'] ?? 'Graphics') . ' ' . ($item['storage'] ?? '') . 'GB');
+                                } elseif($item['source'] === 'accessory'){
+                                    echo htmlspecialchars($item['type'] ?? 'Accessory');
+                                } else {
+                                    echo htmlspecialchars(($item['category'] ?? '') . ' ' . ($item['type'] ?? '-')) . (!empty($item['storage']) ? ' ' . $item['storage'] . 'GB' : '');
+                                }
+                                ?>
                             </td>
                             <td><span class="badge badge-danger"><?= (int)$item['quantity'] ?> left</span></td>
                             <td><?= htmlspecialchars($item['branch'] ?? '-') ?></td>

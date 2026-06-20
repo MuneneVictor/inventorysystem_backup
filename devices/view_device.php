@@ -660,11 +660,11 @@ if (($role == 'technician' || $role == 'maintenance') && isset($_POST['update_ac
                 </div>
                 <div class="info-item">
                     <div class="info-label">Sale Date</div>
-                    <div class="info-value"><?= date('M j, Y H:i', strtotime($sold_info['sold_at'])) ?></div>
+                    <div class="info-value"><?= !empty($sold_info['sold_at']) ? date('M j, Y H:i', strtotime($sold_info['sold_at'])) : '-' ?></div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Price</div>
-                    <div class="info-value"><strong style="color: #059669;">KES <?= number_format($sold_info['selling_price'], 0) ?></strong></div>
+                    <div class="info-value"><strong style="color: #059669;"><?= !empty($sold_info['selling_price']) ? 'KES ' . number_format($sold_info['selling_price'], 0) : '-' ?></strong></div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Customer</div>

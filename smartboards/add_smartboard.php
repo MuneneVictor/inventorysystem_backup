@@ -19,13 +19,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $model = trim($_POST['model']);
     $size_inches = (int)$_POST['size_inches'];
     $place = $_POST['place'];
-    $branch = $_POST['branch'];
+    
+    // Branch: allow NULL if empty
+    $branch_raw = trim($_POST['branch'] ?? '');
+    $branch = !empty($branch_raw) ? $branch_raw : null;
+    
     $price = !empty($_POST['price']) ? (float)$_POST['price'] : null;
     $added_by = $_SESSION['user_id'];
 
     // Validate
-    if (empty($serial_number) || empty($model) || $size_inches <= 0) {
-        $error = "Serial number, model, and size are required.";
+    $errors = [];
+    if (empty($serial_number)) {
+        $errors[] = "Serial number is required.";
+    }
+    if (empty($model)) {
+        $errors[] = "Model is required.";
+    }
+    if ($size_inches <= 0) {
+        $errors[] = "Size must be a positive integer.";
+    }
+    if (!in_array($place, ['store', 'warehouse'])) {
+        $errors[] = "Place must be 'store' or 'warehouse'.";
+    }
+    if ($branch !== null && !in_array($branch, ['KIMATHI', 'MOI'])) {
+        $errors[] = "Branch must be 'KIMATHI', 'MOI', or left empty.";
+    }
+
+    if (!empty($errors)) {
+        $error = implode(" ", $errors);
     } else {
         // Check duplicate serial
         $stmt = $conn->prepare("SELECT COUNT(*) FROM smartboards WHERE serial_number = :sn");
@@ -460,13 +481,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label>Place <span class="required">*</span></label>
                         <select name="place" required>
-                            <option value="store">Store</option>
                             <option value="warehouse">Warehouse</option>
+                            <option value="store">Store</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Branch <span class="required">*</span></label>
-                        <select name="branch" required>
+                        <label>Branch <span class="optional">(leave empty for NULL)</span></label>
+                        <select name="branch">
+                            <option value="">-- No Branch --</option>
                             <option value="KIMATHI">KIMATHI</option>
                             <option value="MOI">MOI</option>
                         </select>

@@ -427,7 +427,7 @@ $total_instock = count($smartboards);
                             <td><strong><?= htmlspecialchars($s['model']) ?></strong></td>
                             <td><?= (int)$s['size_inches'] ?>″</td>
                             <td><span class="badge"><?= htmlspecialchars($s['place']) ?></span></td>
-                            <td><span class="<?= $s['branch']=='KIMATHI' ? 'branch-kimathi' : 'branch-moi' ?>"><?= htmlspecialchars($s['branch']) ?></span></td>
+                            <td><span class="<?= $s['branch']=='KIMATHI' ? 'branch-kimathi' : 'branch-moi' ?>"><?= !empty($s['branch']) ? htmlspecialchars($s['branch']) : '-' ?></span></td>
                             <td><?= $s['price'] !== null ? 'KES '.number_format($s['price'],2) : '-' ?></td>
                             <td><small><?= date('M j, Y', strtotime($s['date_added'])) ?></small></td>
                             <td>

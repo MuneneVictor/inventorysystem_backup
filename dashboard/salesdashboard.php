@@ -96,7 +96,7 @@ function getMySalesData($conn, $user_id) {
             accessory_name AS item_name,
             'Accessory' AS category,
             quantity,
-            selling_price AS price,
+            total_price AS price,
             date_sold AS sold_at,
             branch,
             sold_by
@@ -111,7 +111,7 @@ function getMySalesData($conn, $user_id) {
             charger_type AS item_name,
             'Charger' AS category,
             quantity,
-            selling_price AS price,
+            total_price AS price,
             date_sold AS sold_at,
             branch,
             sold_by

@@ -323,7 +323,6 @@ body {
                 ];
                 if ($role === 'super_admin') {
                     $items[] = ['Price list', '/inventory_system/smartboards/pricelist.php', 'fas fa-dollar-sign'];
-                    $items[] = ['Search Smartboard', '/inventory_system/smartboards/search.php', 'fas fa-search'];
                 }
                 $sections['SMARTBOARDS'] = ['icon' => 'fas fa-chalkboard','items' => $items];
             }
@@ -355,7 +354,10 @@ body {
             }
             if (in_array($role, ['super_admin','manager','inventory_admin'])){
                 $items = [
-                    ['Add Accessory', '/inventory_system/accessories/add_accessories.php', 'fas fa-plus']
+                    ['Add Accessory', '/inventory_system/accessories/add_accessory.php', 'fas fa-plus'],
+                    ['Bulk upload', '/inventory_system/accessories/bulkupload.php', 'fas fa-file-upload'],
+                    ['View stock', '/inventory_system/accessories/accessory_instock.php', 'fas fa-box'],
+                    ['Sold', '/inventory_system/accessories/sold_accessories.php', 'fas fa-money-bill-wave'],
                 ];
                 $sections['ACCESSORIES'] = ['icon' => 'fas fa-headphones', 'items' => $items];
             }

@@ -62,6 +62,8 @@ if($serial){
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Search Device | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         :root {
             --primary: #1a4b2a;
@@ -182,6 +184,7 @@ if($serial){
         .search-input-group {
             flex: 1;
             min-width: 250px;
+            position: relative; /* For scan button positioning */
         }
 
         .search-input-group label {
@@ -190,6 +193,7 @@ if($serial){
             font-weight: 500;
             color: var(--gray-600);
             margin-bottom: 0.5rem;
+            padding-right: 70px; /* Space for scan button on mobile */
         }
 
         .search-input-group input {
@@ -207,6 +211,53 @@ if($serial){
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(26, 75, 42, 0.1);
+        }
+
+        /* Scan Button – visible only on mobile/tablet */
+        .scan-btn-wrapper {
+            position: absolute;
+            top: -2px;
+            right: 0;
+            z-index: 5;
+        }
+        .scan-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: background 0.2s;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        .scan-btn:hover {
+            background: #1d4ed8;
+        }
+        .scan-btn i {
+            font-size: 0.9rem;
+        }
+
+        /* Hide scan button on screens wider than 1024px (desktops) */
+        @media (min-width: 1025px) {
+            .scan-btn-wrapper {
+                display: none !important;
+            }
+            .search-input-group label {
+                padding-right: 0; /* reset padding on desktop */
+            }
+        }
+
+        /* On mobile, adjust label padding to accommodate the button */
+        @media (max-width: 1024px) {
+            .search-input-group label {
+                padding-right: 70px;
+            }
         }
 
         /* Buttons */
@@ -372,6 +423,64 @@ if($serial){
             opacity: 0.5;
         }
 
+        /* Scanner Overlay */
+        .scanner-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .scanner-overlay.active {
+            display: flex;
+        }
+        .scanner-box {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            max-width: 500px;
+            width: 95%;
+            text-align: center;
+            position: relative;
+        }
+        .scanner-box .close-btn {
+            position: absolute;
+            top: 10px; right: 15px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--gray-500);
+        }
+        .scanner-box .close-btn:hover {
+            color: var(--gray-800);
+        }
+        .scanner-box #reader {
+            width: 100%;
+            min-height: 300px;
+            margin: 1rem 0;
+        }
+        .scanner-box p {
+            color: var(--gray-500);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        @media (max-width: 480px) {
+            .scanner-box {
+                max-width: 100%;
+                border-radius: 0;
+                height: 100vh;
+                padding-top: 3rem;
+            }
+            .scanner-box #reader {
+                height: 70vh;
+                min-height: 200px;
+            }
+        }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -431,6 +540,14 @@ if($serial){
             .info-grid {
                 grid-template-columns: 1fr;
             }
+
+            .scan-btn {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.6rem;
+            }
+            .search-input-group label {
+                padding-right: 60px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -476,7 +593,16 @@ if($serial){
         </div>
         <form method="GET" class="search-form">
             <div class="search-input-group">
-                <label>Serial Number</label>
+                <label>
+                    Serial Number
+                    <span style="font-weight:normal; font-size:0.75rem; color:var(--gray-400);">(Scan or type)</span>
+                </label>
+                <!-- Scan button wrapper – visible only on mobile/tablet -->
+                <div class="scan-btn-wrapper">
+                    <button type="button" class="scan-btn" onclick="openScanner()">
+                        <i class="fas fa-camera"></i> Scan
+                    </button>
+                </div>
                 <input type="text" 
                        name="serial" 
                        id="serial_number"
@@ -664,45 +790,198 @@ if($serial){
     </div>
 </div>
 
-<script>
-// Auto-submit when Enter key is pressed
-document.addEventListener('DOMContentLoaded', function() {
-    const serialInput = document.getElementById('serial_number');
-    if (serialInput) {
-        serialInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.form.submit();
-            }
-        });
-    }
-});
+<!-- Scanner Overlay Modal -->
+<div class="scanner-overlay" id="scannerOverlay">
+    <div class="scanner-box">
+        <button class="close-btn" onclick="closeScanner()">&times;</button>
+        <h3 style="margin-bottom:0.5rem;"><i class="fas fa-camera"></i> Scan Serial Number</h3>
+        <p>Position the barcode/QR code in front of the camera</p>
+        <div id="reader"></div>
+        <button class="btn btn-secondary" onclick="closeScanner()" style="margin-top:0.5rem;">Cancel</button>
+    </div>
+</div>
 
-// Mobile responsive adjustments
-document.addEventListener('DOMContentLoaded', function() {
-    function adjustMainContent() {
-        const mainContent = document.querySelector('.main-content');
-        const sidebar = document.querySelector('.sidebar');
-        
-        if (window.innerWidth <= 1200) {
-            if (mainContent) {
-                mainContent.style.marginLeft = '0';
-                mainContent.style.width = '100%';
-                mainContent.style.paddingTop = '5rem';
+<script>
+    let html5QrCode = null;
+    let scannerActive = false;
+
+    // --- SCANNER-STYLE DOUBLE BEEP ---
+    function playBeep() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
             }
-        } else {
-            if (mainContent && sidebar) {
-                mainContent.style.marginLeft = '260px';
-                mainContent.style.width = 'calc(100% - 260px)';
-                mainContent.style.paddingTop = '';
-            }
+
+            // First beep
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.frequency.value = 1200;
+            osc1.type = 'square';
+            gain1.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+            osc1.start(audioCtx.currentTime);
+            osc1.stop(audioCtx.currentTime + 0.08);
+
+            // Second beep after short pause
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.frequency.value = 1200;
+            osc2.type = 'square';
+            gain2.gain.setValueAtTime(0.25, audioCtx.currentTime + 0.12);
+            gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            osc2.start(audioCtx.currentTime + 0.12);
+            osc2.stop(audioCtx.currentTime + 0.2);
+        } catch (e) {
+            // Silently fail if audio not supported
+            console.log('Beep not supported');
         }
     }
-    
-    adjustMainContent();
-    window.addEventListener('resize', adjustMainContent);
-    window.addEventListener('orientationchange', adjustMainContent);
-});
+
+    function openScanner() {
+        const overlay = document.getElementById('scannerOverlay');
+        overlay.classList.add('active');
+        setTimeout(() => {
+            if (!scannerActive) {
+                startScanner();
+            }
+        }, 500);
+    }
+
+    function closeScanner() {
+        const overlay = document.getElementById('scannerOverlay');
+        overlay.classList.remove('active');
+        if (html5QrCode && scannerActive) {
+            html5QrCode.stop().then(() => {
+                html5QrCode.clear();
+                scannerActive = false;
+            }).catch(() => { scannerActive = false; });
+        }
+    }
+
+    function startScanner() {
+        const readerElement = document.getElementById('reader');
+        if (!readerElement) {
+            alert('Scanner error: reader element missing.');
+            closeScanner();
+            return;
+        }
+
+        if (typeof Html5Qrcode === 'undefined') {
+            alert('Scanner library not loaded. Please check your internet connection and refresh.');
+            closeScanner();
+            return;
+        }
+
+        readerElement.style.width = '100%';
+        readerElement.style.minHeight = '300px';
+
+        html5QrCode = new Html5Qrcode("reader");
+        const config = {
+            fps: 15,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        };
+
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            onScanSuccess,
+            onScanError
+        ).then(() => {
+            scannerActive = true;
+        }).catch(err => {
+            console.error('Scanner start error (environment):', err);
+            html5QrCode.start(
+                { facingMode: "user" },
+                config,
+                onScanSuccess,
+                onScanError
+            ).then(() => {
+                scannerActive = true;
+            }).catch(err2 => {
+                console.error('Scanner start error (user):', err2);
+                let msg = 'Unable to access camera. Please ensure camera permissions are granted.';
+                if (window.location.protocol === 'http:') {
+                    msg += ' Your site is using HTTP; camera access may be blocked. Try using HTTPS.';
+                }
+                alert(msg);
+                closeScanner();
+            });
+        });
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        // Play scanner beep
+        playBeep();
+
+        // Fill the serial number input
+        const serialInput = document.getElementById('serial_number');
+        if (serialInput) {
+            serialInput.value = decodedText.trim().toUpperCase();
+            serialInput.dispatchEvent(new Event('input'));
+            // Optionally auto-submit the form after a short delay
+            setTimeout(() => {
+                serialInput.form.submit();
+            }, 300);
+        }
+
+        closeScanner();
+    }
+
+    function onScanError(errorMessage) {
+        // ignore
+    }
+
+    // Clean up
+    window.addEventListener('beforeunload', function() {
+        if (html5QrCode && scannerActive) {
+            html5QrCode.stop().catch(() => {});
+        }
+    });
+
+    // Auto-submit when Enter key is pressed
+    document.addEventListener('DOMContentLoaded', function() {
+        const serialInput = document.getElementById('serial_number');
+        if (serialInput) {
+            serialInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.form.submit();
+                }
+            });
+        }
+    });
+
+    // Mobile responsive adjustments
+    document.addEventListener('DOMContentLoaded', function() {
+        function adjustMainContent() {
+            const mainContent = document.querySelector('.main-content');
+            const sidebar = document.querySelector('.sidebar');
+            
+            if (window.innerWidth <= 1200) {
+                if (mainContent) {
+                    mainContent.style.marginLeft = '0';
+                    mainContent.style.width = '100%';
+                    mainContent.style.paddingTop = '5rem';
+                }
+            } else {
+                if (mainContent && sidebar) {
+                    mainContent.style.marginLeft = '260px';
+                    mainContent.style.width = 'calc(100% - 260px)';
+                    mainContent.style.paddingTop = '';
+                }
+            }
+        }
+        
+        adjustMainContent();
+        window.addEventListener('resize', adjustMainContent);
+        window.addEventListener('orientationchange', adjustMainContent);
+    });
 </script>
 
 </body>

@@ -89,7 +89,7 @@ function getUnifiedSales($conn, $whereClause = '', $params = [], $orderBy = '') 
             'Accessory',
             sa.accessory_name,
             'Accessory',
-            sa.selling_price,
+            sa.total_price,
             sa.date_sold,
             sa.sold_by,
             sa.branch
@@ -101,7 +101,7 @@ function getUnifiedSales($conn, $whereClause = '', $params = [], $orderBy = '') 
             'Charger',
             sc.charger_type,
             'Charger',
-            sc.selling_price,
+            sc.total_price,
             sc.date_sold,
             sc.sold_by,
             sc.branch
@@ -137,7 +137,7 @@ function getUnifiedSales($conn, $whereClause = '', $params = [], $orderBy = '') 
             'RAM/SSD',
             CONCAT(COALESCE(type,''), ' ', COALESCE(storage,''), 'GB') AS item_name,
             category,
-            selling_price,
+            total_price AS price,
             date_sold AS sold_at,
             sold_by,
             branch
@@ -148,7 +148,7 @@ function getUnifiedSales($conn, $whereClause = '', $params = [], $orderBy = '') 
             'HDD',
             CONCAT(COALESCE(type,''), ' ', COALESCE(storage,'')) AS item_name,
             'HDD',
-            selling_price,
+            total_price AS price,
             date_sold AS sold_at,
             sold_by,
             branch
@@ -159,7 +159,7 @@ function getUnifiedSales($conn, $whereClause = '', $params = [], $orderBy = '') 
             'Graphics Card',
             CONCAT(COALESCE(type,''), ' ', COALESCE(storage_capacity,''), 'GB') AS item_name,
             'Graphics Card',
-            selling_price,
+            total_price AS price,
             date_sold AS sold_at,
             sold_by,
             branch
@@ -230,8 +230,8 @@ $stmt = secureQuery($conn, "
         SELECT selling_price AS price FROM monitors WHERE status = 'Sold' UNION ALL
         SELECT selling_price AS price FROM printers WHERE status = 'Sold' UNION ALL
         SELECT selling_price AS price FROM smartboards WHERE status = 'sold' UNION ALL
-        SELECT selling_price AS price FROM sold_accessories UNION ALL
-        SELECT selling_price AS price FROM sold_chargers UNION ALL
+        SELECT total_price AS price FROM sold_accessories UNION ALL
+        SELECT total_price AS price FROM sold_chargers UNION ALL
         SELECT selling_price AS price FROM phones WHERE status = 'sold' UNION ALL
         SELECT selling_price AS price FROM ups WHERE status = 'sold' UNION ALL
         SELECT (selling_price * quantity) AS price FROM sold_rams_ssds UNION ALL
@@ -249,8 +249,8 @@ $stmt = secureQuery($conn, "
         SELECT selling_price AS price, sold_at FROM monitors WHERE status = 'Sold' UNION ALL
         SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' UNION ALL
         SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' UNION ALL
-        SELECT selling_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
-        SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers UNION ALL
+        SELECT total_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
+        SELECT total_price AS price, date_sold AS sold_at FROM sold_chargers UNION ALL
         SELECT selling_price AS price, date_sold AS sold_at FROM phones WHERE status = 'sold' UNION ALL
         SELECT selling_price AS price, date_sold AS sold_at FROM ups WHERE status = 'sold' UNION ALL
         SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_rams_ssds UNION ALL
@@ -269,8 +269,8 @@ $stmt = secureQuery($conn, "
         SELECT selling_price AS price, sold_at FROM monitors WHERE status = 'Sold' UNION ALL
         SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' UNION ALL
         SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' UNION ALL
-        SELECT selling_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
-        SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers UNION ALL
+        SELECT total_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
+        SELECT total_price AS price, date_sold AS sold_at FROM sold_chargers UNION ALL
         SELECT selling_price AS price, date_sold AS sold_at FROM phones WHERE status = 'sold' UNION ALL
         SELECT selling_price AS price, date_sold AS sold_at FROM ups WHERE status = 'sold' UNION ALL
         SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_rams_ssds UNION ALL
@@ -476,7 +476,7 @@ FROM (
     SELECT 
         accessory_name COLLATE utf8mb4_general_ci AS item_name,
         'Accessory' AS category,
-        selling_price AS price
+        total_price AS price
     FROM sold_accessories
     WHERE MONTH(date_sold)=MONTH(CURDATE())
     AND YEAR(date_sold)=YEAR(CURDATE())
@@ -486,7 +486,7 @@ FROM (
     SELECT 
         charger_type COLLATE utf8mb4_general_ci AS item_name,
         'Charger' AS category,
-        selling_price AS price
+        total_price AS price
     FROM sold_chargers
     WHERE MONTH(date_sold)=MONTH(CURDATE())
     AND YEAR(date_sold)=YEAR(CURDATE())
@@ -568,9 +568,9 @@ $stmt = secureQuery($conn, "
         UNION ALL
         SELECT 'Smartboard' AS category_name, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
         UNION ALL
-        SELECT 'Accessory' AS category_name, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        SELECT 'Accessory' AS category_name, total_price AS selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
         UNION ALL
-        SELECT 'Charger' AS category_name, selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        SELECT 'Charger' AS category_name, total_price AS selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
         -- NEW
         UNION ALL
         SELECT 'Phone' AS category_name, selling_price FROM phones WHERE status='sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
@@ -605,9 +605,8 @@ for ($i = 6; $i >= 0; $i--) {
             SELECT selling_price AS price, sold_at FROM devices WHERE status = 'Sold' UNION ALL
             SELECT selling_price AS price, sold_at FROM monitors WHERE status = 'Sold' UNION ALL
             SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' UNION ALL
-            SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' UNION ALL
-            SELECT selling_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
-            SELECT selling_price AS price, date_sold AS sold_at FROM sold_chargers UNION ALL
+            SELECT total_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
+            SELECT total_price AS price, date_sold AS sold_at FROM sold_chargers UNION ALL
             SELECT selling_price AS price, date_sold AS sold_at FROM phones WHERE status='sold' UNION ALL
             SELECT selling_price AS price, date_sold AS sold_at FROM ups WHERE status='sold' UNION ALL
             SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_rams_ssds UNION ALL
@@ -711,14 +710,14 @@ FROM (
 
     UNION ALL
 
-    SELECT branch COLLATE utf8mb4_general_ci, selling_price AS price
+    SELECT branch COLLATE utf8mb4_general_ci, total_price AS price
     FROM sold_accessories
     WHERE MONTH(date_sold)=MONTH(CURDATE())
     AND YEAR(date_sold)=YEAR(CURDATE())
 
     UNION ALL
 
-    SELECT branch COLLATE utf8mb4_general_ci, selling_price AS price
+    SELECT branch COLLATE utf8mb4_general_ci, total_price AS price
     FROM sold_chargers
     WHERE MONTH(date_sold)=MONTH(CURDATE())
     AND YEAR(date_sold)=YEAR(CURDATE())
@@ -757,6 +756,7 @@ FROM (
     AND YEAR(date_sold)=YEAR(CURDATE())
 ) AS branch_sales
 GROUP BY branch
+ORDER BY total_revenue DESC
 ");
 if ($stmt) {
     $branchSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -779,9 +779,9 @@ $stmt = secureQuery($conn, "
         UNION ALL
         SELECT sold_by, selling_price FROM smartboards WHERE status = 'sold' AND MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
         UNION ALL
-        SELECT sold_by, selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        SELECT sold_by, total_price AS selling_price FROM sold_accessories WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
         UNION ALL
-        SELECT sold_by, selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
+        SELECT sold_by, total_price AS selling_price FROM sold_chargers WHERE MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())
         -- NEW
         UNION ALL
         SELECT sold_by, selling_price FROM phones WHERE status='sold' AND MONTH(date_sold) = MONTH(CURDATE()) AND YEAR(date_sold) = YEAR(CURDATE())

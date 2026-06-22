@@ -74,7 +74,7 @@ function fetchUnifiedSales($conn, $user_id, $start_date, $end_date, $search = ''
             accessory_name AS item_name,
             'Accessory' AS category,
             CAST(accessory_id AS CHAR) AS id,
-            selling_price AS price,
+            total_price AS price,
             date_sold AS sold_at,
             branch
         FROM sold_accessories
@@ -85,7 +85,7 @@ function fetchUnifiedSales($conn, $user_id, $start_date, $end_date, $search = ''
             charger_type AS item_name,
             'Charger' AS category,
             CAST(charger_id AS CHAR) AS id,
-            selling_price AS price,
+            total_price AS price,
             date_sold AS sold_at,
             branch
         FROM sold_chargers

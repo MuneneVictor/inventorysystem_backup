@@ -466,7 +466,7 @@ require_once "../includes/sidebar.php";
                     <p><strong>Serial Number:</strong> <?= htmlspecialchars($smartboard['serial_number']) ?></p>
                     <p><strong>Model:</strong> <?= htmlspecialchars($smartboard['model']) ?></p>
                     <p><strong>Size:</strong> <?= (int)$smartboard['size_inches'] ?> inches</p>
-                    <p><strong>Branch:</strong> <?= htmlspecialchars($smartboard['branch']) ?></p>
+                    <p><strong>Branch:</strong> <?= !empty($smartboard['branch']) ? htmlspecialchars($smartboard['branch']) : '-' ?></p>
                     <p><strong>Current Price:</strong> KES <?= number_format($smartboard['price'], 2) ?></p>
                 </div>
 

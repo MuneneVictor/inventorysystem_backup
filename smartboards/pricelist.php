@@ -195,7 +195,7 @@ $without_price = $total_count - count($with_price);
             <div class="filter-group">
                 <label>&nbsp;</label>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
-                <a href="smartboard_price_list.php" class="btn btn-primary" style="background:var(--gray-100);color:var(--gray-700);border:1px solid var(--gray-300);">Reset</a>
+                <a href="pricelist.php" class="btn btn-primary" style="background:var(--gray-100);color:var(--gray-700);border:1px solid var(--gray-300);">Reset</a>
             </div>
         </form>
     </div>
@@ -228,7 +228,7 @@ $without_price = $total_count - count($with_price);
                             <td><span class="serial-code"><?= htmlspecialchars($s['serial_number']) ?></span></td>
                             <td><strong><?= htmlspecialchars($s['model']) ?></strong></td>
                             <td><?= (int)$s['size_inches'] ?>″</td>
-                            <td><span class="<?= $s['branch']=='KIMATHI' ? 'branch-kimathi' : 'branch-moi' ?>"><?= htmlspecialchars($s['branch']) ?></span></td>
+                            <td><span class="<?= $s['branch']=='KIMATHI' ? 'branch-kimathi' : 'branch-moi' ?>"><?= !empty($s['branch']) ? htmlspecialchars($s['branch']) : '-' ?></span></td>
                             <td class="price">
                                 <?= $s['price'] !== null ? 'KES '.number_format($s['price'],2) : '-' ?>
                             </td>

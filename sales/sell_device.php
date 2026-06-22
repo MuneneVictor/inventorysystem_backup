@@ -182,6 +182,8 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <title>Sell Device | Mombasa Computers</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         :root {
             --primary: #1a4b2a;
@@ -214,6 +216,9 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         .form-group textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); background: white; font-family: inherit; }
         .price-input { width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); font-size: 0.9rem; background: white; }
         .btn { padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; width: 100%; justify-content: center; }
+        .btn-secondary { background: var(--gray-500); }
+        .scan-btn { background: #2563eb; color: white; border: none; padding: 0.5rem 1rem; border-radius: var(--radius-md); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; width: auto; }
+        .scan-btn:hover { background: #1d4ed8; }
         .alert { padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; }
         .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
         .alert-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
@@ -224,8 +229,64 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         .price-cell input { width: 140px; padding: 0.4rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); }
         .suggested { font-size: 0.65rem; color: var(--gray-500); display: block; }
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
-        @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
-        @media (max-width: 768px) { .card-body { padding: 1rem; } .price-cell input { width: 100%; } }
+
+        /* Scanner Modal */
+        .scanner-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .scanner-overlay.active { display: flex; }
+        .scanner-box {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            max-width: 500px;
+            width: 95%;
+            text-align: center;
+            position: relative;
+        }
+        .scanner-box .close-btn {
+            position: absolute;
+            top: 10px; right: 15px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--gray-500);
+        }
+        .scanner-box .close-btn:hover { color: var(--gray-800); }
+        .scanner-box #reader {
+            width: 100%;
+            min-height: 300px;
+            margin: 1rem 0;
+        }
+        .scanner-box p { color: var(--gray-500); font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .scan-btn-wrapper { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+
+        /* Hide scan button on desktop */
+        @media (min-width: 1025px) {
+            .scan-btn-wrapper .scan-btn { display: none; }
+        }
+
+        /* Mobile/tablet responsiveness */
+        @media (max-width: 1200px) {
+            .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
+        }
+        @media (max-width: 768px) {
+            .card-body { padding: 1rem; }
+            .price-cell input { width: 100%; }
+            .scanner-box { padding: 1rem; }
+        }
+        @media (max-width: 480px) {
+            .scanner-box { max-width: 100%; border-radius: 0; height: 100vh; padding-top: 3rem; }
+            .scanner-box #reader { height: 70vh; min-height: 200px; }
+        }
     </style>
 </head>
 <body>
@@ -252,7 +313,13 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
             <form method="POST">
                 <div class="form-group">
                     <label>Serial Numbers (one per line or comma separated)</label>
-                    <textarea name="serial_number" rows="4" placeholder="Type or scan serial numbers..." required autofocus><?= isset($_POST['serial_number']) ? htmlspecialchars($_POST['serial_number']) : '' ?></textarea>
+                    <div class="scan-btn-wrapper">
+                        <button type="button" class="scan-btn" onclick="openScanner()">
+                            <i class="fas fa-camera"></i> Scan Serial Number
+                        </button>
+                        <span style="font-size:0.8rem; color:var(--gray-500);">(click to use camera on your device)</span>
+                    </div>
+                    <textarea name="serial_number" id="serialInput" rows="4" placeholder="Type or scan serial numbers..." required autofocus><?= isset($_POST['serial_number']) ? htmlspecialchars($_POST['serial_number']) : '' ?></textarea>
                 </div>
                 <button type="submit" name="search_serial" class="btn"><i class="fas fa-search"></i> Search Device(s)</button>
             </form>
@@ -342,10 +409,162 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <div class="footer"><i class="fas fa-copyright"></i> <?= date('Y'); ?> Mombasa Computers</div>
 </div>
 
+<!-- Scanner Overlay Modal -->
+<div class="scanner-overlay" id="scannerOverlay">
+    <div class="scanner-box">
+        <button class="close-btn" onclick="closeScanner()">&times;</button>
+        <h3 style="margin-bottom:0.5rem;"><i class="fas fa-camera"></i> Scan Serial Number</h3>
+        <p>Position the barcode/QR code in front of the camera</p>
+        <div id="reader"></div>
+        <button class="btn btn-secondary" onclick="closeScanner()" style="margin-top:0.5rem;">Cancel</button>
+    </div>
+</div>
+
 <script>
+let html5QrCode = null;
+let scannerActive = false;
+
+// --- SCANNER-STYLE DOUBLE BEEP ---
+function playBeep() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
+        // First beep
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.frequency.value = 1200;
+        osc1.type = 'square';
+        gain1.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        osc1.start(audioCtx.currentTime);
+        osc1.stop(audioCtx.currentTime + 0.08);
+
+        // Second beep after short pause
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.frequency.value = 1200;
+        osc2.type = 'square';
+        gain2.gain.setValueAtTime(0.25, audioCtx.currentTime + 0.12);
+        gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+        osc2.start(audioCtx.currentTime + 0.12);
+        osc2.stop(audioCtx.currentTime + 0.2);
+    } catch (e) {
+        // Silently fail if audio not supported
+        console.log('Beep not supported');
+    }
+}
+
+function openScanner() {
+    const overlay = document.getElementById('scannerOverlay');
+    overlay.classList.add('active');
+    setTimeout(() => {
+        if (!scannerActive) {
+            startScanner();
+        }
+    }, 500);
+}
+
+function closeScanner() {
+    const overlay = document.getElementById('scannerOverlay');
+    overlay.classList.remove('active');
+    if (html5QrCode && scannerActive) {
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            scannerActive = false;
+        }).catch(() => { scannerActive = false; });
+    }
+}
+
+function startScanner() {
+    const readerElement = document.getElementById('reader');
+    if (!readerElement) {
+        alert('Scanner error: reader element missing.');
+        closeScanner();
+        return;
+    }
+
+    if (typeof Html5Qrcode === 'undefined') {
+        alert('Scanner library not loaded. Please check your internet connection and refresh.');
+        closeScanner();
+        return;
+    }
+
+    readerElement.style.width = '100%';
+    readerElement.style.minHeight = '300px';
+
+    html5QrCode = new Html5Qrcode("reader");
+    const config = {
+        fps: 15,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
+    };
+
+    html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess,
+        onScanError
+    ).then(() => {
+        scannerActive = true;
+    }).catch(err => {
+        console.error('Scanner start error (environment):', err);
+        html5QrCode.start(
+            { facingMode: "user" },
+            config,
+            onScanSuccess,
+            onScanError
+        ).then(() => {
+            scannerActive = true;
+        }).catch(err2 => {
+            console.error('Scanner start error (user):', err2);
+            let msg = 'Unable to access camera. Please ensure camera permissions are granted.';
+            if (window.location.protocol === 'http:') {
+                msg += ' Your site is using HTTP; camera access may be blocked. Try using HTTPS.';
+            }
+            alert(msg);
+            closeScanner();
+        });
+    });
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    // Play scanner beep
+    playBeep();
+
+    const textarea = document.getElementById('serialInput');
+    if (textarea) {
+        if (textarea.value.trim() !== '') {
+            textarea.value += '\n' + decodedText;
+        } else {
+            textarea.value = decodedText;
+        }
+        textarea.dispatchEvent(new Event('input'));
+    }
+    closeScanner();
+}
+
+function onScanError(errorMessage) {
+    // ignore
+}
+
+// Clean up
+window.addEventListener('beforeunload', function() {
+    if (html5QrCode && scannerActive) {
+        html5QrCode.stop().catch(() => {});
+    }
+});
+
 function selectAllCheckboxes(source) {
     document.querySelectorAll('input[name="selected_serials[]"]').forEach(cb => cb.checked = source.checked);
 }
+
 function adjustMainContent() {
     const main = document.querySelector('.main-content');
     if (window.innerWidth <= 1200) main.style.marginLeft = '0';

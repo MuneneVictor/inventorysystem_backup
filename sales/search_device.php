@@ -16,72 +16,141 @@ $search_sn = trim($_GET['sn'] ?? '');
 $search_model = trim($_GET['model'] ?? '');
 $searched = ($search_sn || $search_model);
 
-$deviceResults = [];
-$monitorResults = [];
-$printerResults = [];
+$allResults = [];
 
 if ($searched) {
-    // Devices
-    $sql = "SELECT d.*, c.category_name, u.full_name AS added_by_name, d.branch
-            FROM devices d
-            JOIN categories c ON d.category_id = c.id
-            LEFT JOIN users u ON d.added_by = u.id
-            WHERE d.status = 'In Stock'";
-    $params = [];
-    if ($search_sn) {
-        $sql .= " AND d.serial_number LIKE :sn";
-        $params['sn'] = "%$search_sn%";
+    function addResults(&$allResults, $rows, $type, $idField, $nameField, $branchField, $qtyField, $priceField, $viewLink) {
+        foreach ($rows as $row) {
+            $allResults[] = [
+                'type' => $type,
+                'id' => $row[$idField] ?? '-',
+                'name' => $row[$nameField] ?? '-',
+                'branch' => $row[$branchField] ?? '-',
+                'quantity' => (int)($row[$qtyField] ?? 0),
+                'price' => $row[$priceField] ?? null,
+                'view' => $viewLink . urlencode($row[$idField] ?? ''),
+            ];
+        }
     }
-    if ($search_model) {
-        $sql .= " AND d.model_name LIKE :model";
-        $params['model'] = "%$search_model%";
-    }
-    $stmt = $conn->prepare($sql);
-    $stmt->execute($params);
-    $deviceResults = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Monitors
-    $sql = "SELECT m.*, u.full_name AS added_by_name
-            FROM monitors m
-            LEFT JOIN users u ON m.added_by = u.id
-            WHERE m.status = 'In Stock'";
+    // 1. Devices
+    $sql = "SELECT d.serial_number, d.model_name, d.branch, 1 AS quantity, d.price, d.selling_price
+            FROM devices d WHERE d.status = 'In Stock'";
     $params = [];
-    if ($search_sn) {
-        $sql .= " AND m.serial_number LIKE :sn";
-        $params['sn'] = "%$search_sn%";
-    }
-    if ($search_model) {
-        $sql .= " AND m.model_name LIKE :model";
-        $params['model'] = "%$search_model%";
-    }
+    if ($search_sn) { $sql .= " AND d.serial_number LIKE ?"; $params[] = "%$search_sn%"; }
+    if ($search_model) { $sql .= " AND d.model_name LIKE ?"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    $monitorResults = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Device', 'serial_number', 'model_name', 'branch', 'quantity', 'price', '../devices/view_device.php?sn=');
 
-    // Printers
-    $sql = "SELECT p.*, u.full_name AS added_by_name
-            FROM printers p
-            LEFT JOIN users u ON p.added_by = u.id
-            WHERE p.status = 'In Stock'";
+    // 2. Monitors
+    $sql = "SELECT m.serial_number, m.model_name, m.branch, 1 AS quantity, m.price, m.selling_price
+            FROM monitors m WHERE m.status = 'In Stock'";
     $params = [];
-    if ($search_sn) {
-        $sql .= " AND p.serial_number LIKE :sn";
-        $params['sn'] = "%$search_sn%";
-    }
-    if ($search_model) {
-        $sql .= " AND p.model_name LIKE :model";
-        $params['model'] = "%$search_model%";
-    }
+    if ($search_sn) { $sql .= " AND m.serial_number LIKE ?"; $params[] = "%$search_sn%"; }
+    if ($search_model) { $sql .= " AND m.model_name LIKE ?"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    $printerResults = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Monitor', 'serial_number', 'model_name', 'branch', 'quantity', 'price', '../monitors/view_monitor.php?sn=');
+
+    // 3. Printers
+    $sql = "SELECT p.serial_number, p.model_name, p.branch, 1 AS quantity, p.price, p.selling_price
+            FROM printers p WHERE p.status = 'In Stock'";
+    $params = [];
+    if ($search_sn) { $sql .= " AND p.serial_number LIKE ?"; $params[] = "%$search_sn%"; }
+    if ($search_model) { $sql .= " AND p.model_name LIKE ?"; $params[] = "%$search_model%"; }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Printer', 'serial_number', 'model_name', 'branch', 'quantity', 'price', '../printers/view_printer.php?sn=');
+
+    // 4. Smartboards
+    $sql = "SELECT s.serial_number, s.model, s.branch, 1 AS quantity, s.price, s.selling_price
+            FROM smartboards s WHERE s.status = 'instock'";
+    $params = [];
+    if ($search_sn) { $sql .= " AND s.serial_number LIKE ?"; $params[] = "%$search_sn%"; }
+    if ($search_model) { $sql .= " AND s.model LIKE ?"; $params[] = "%$search_model%"; }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Smartboard', 'serial_number', 'model', 'branch', 'quantity', 'price', '../smartboards/view_smartboard.php?sn=');
+
+    // 5. UPS
+    $sql = "SELECT u.serial_number, u.model, u.branch, 1 AS quantity, u.price, u.selling_price
+            FROM ups u WHERE u.status = 'instock'";
+    $params = [];
+    if ($search_sn) { $sql .= " AND u.serial_number LIKE ?"; $params[] = "%$search_sn%"; }
+    if ($search_model) { $sql .= " AND u.model LIKE ?"; $params[] = "%$search_model%"; }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'UPS', 'serial_number', 'model', 'branch', 'quantity', 'price', '../ups/view_ups.php?sn=');
+
+    // 6. Phones
+    $sql = "SELECT p.serial_number, CONCAT(p.brand, ' ', p.model) AS model, p.branch, 1 AS quantity, p.price, p.selling_price
+            FROM phones p WHERE p.status = 'instock'";
+    $params = [];
+    if ($search_sn) { $sql .= " AND p.serial_number LIKE ?"; $params[] = "%$search_sn%"; }
+    if ($search_model) { $sql .= " AND (p.brand LIKE ? OR p.model LIKE ?)"; $params[] = "%$search_model%"; $params[] = "%$search_model%"; }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Phone', 'serial_number', 'model', 'branch', 'quantity', 'price', '../phones/view_phone.php?sn=');
+
+    // 7. Accessories
+    $sql = "SELECT a.id, a.name, a.branch, a.quantity, a.price
+            FROM accessories a WHERE a.status = 'instock'";
+    $params = [];
+    if ($search_sn) { $sql .= " AND a.id LIKE ?"; $params[] = "%$search_sn%"; }
+    if ($search_model) { $sql .= " AND a.name LIKE ?"; $params[] = "%$search_model%"; }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Accessory', 'id', 'name', 'branch', 'quantity', 'price', '../accessories/view_accessory.php?id=');
+
+    // 8. Graphics Cards
+    $sql = "SELECT g.id, g.type AS name, g.branch, g.quantity, g.price
+            FROM graphic_cards g WHERE g.status = 'instock'";
+    $params = [];
+    if ($search_sn) { $sql .= " AND g.id LIKE ?"; $params[] = "%$search_sn%"; }
+    if ($search_model) { $sql .= " AND g.type LIKE ?"; $params[] = "%$search_model%"; }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Graphics Card', 'id', 'name', 'branch', 'quantity', 'price', '../graphics_cards/view_graphics_card.php?id=');
+
+    // 9. HDDs (quantity > 0)
+    $sql = "SELECT h.id, CONCAT(h.type, ' ', h.storage) AS name, h.branch, h.quantity, h.price
+            FROM hdds h WHERE h.quantity > 0";
+    $params = [];
+    if ($search_sn) { $sql .= " AND h.id LIKE ?"; $params[] = "%$search_sn%"; }
+    if ($search_model) { $sql .= " AND (h.type LIKE ? OR h.storage LIKE ?)"; $params[] = "%$search_model%"; $params[] = "%$search_model%"; }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'HDD', 'id', 'name', 'branch', 'quantity', 'price', '../hdds/view_hdd.php?id=');
+
+    // 10. RAM/SSD (quantity > 0)
+    $sql = "SELECT r.id, CONCAT(r.category, ' ', r.type, ' ', r.storage, 'GB') AS name, r.branch, r.quantity, NULL AS price
+            FROM rams_ssds r WHERE r.quantity > 0";
+    $params = [];
+    if ($search_sn) { $sql .= " AND r.id LIKE ?"; $params[] = "%$search_sn%"; }
+    if ($search_model) { $sql .= " AND (r.category LIKE ? OR r.type LIKE ?)"; $params[] = "%$search_model%"; $params[] = "%$search_model%"; }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'RAM/SSD', 'id', 'name', 'branch', 'quantity', 'price', '../rams_ssds/view_ram_ssd.php?id=');
+
+    // 11. Chargers (quantity > 0)
+    $sql = "SELECT c.id, CONCAT(c.charger_type, ' ', c.watts, 'W') AS name, c.branch, c.quantity, NULL AS price
+            FROM chargers c WHERE c.quantity > 0";
+    $params = [];
+    if ($search_sn) { $sql .= " AND c.id LIKE ?"; $params[] = "%$search_sn%"; }
+    if ($search_model) { $sql .= " AND c.charger_type LIKE ?"; $params[] = "%$search_model%"; }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Charger', 'id', 'name', 'branch', 'quantity', 'price', '../chargers/view_charger.php?id=');
+
+    // Sort results: group by type, then by name
+    usort($allResults, function($a, $b) {
+        if ($a['type'] == $b['type']) return strcasecmp($a['name'], $b['name']);
+        return strcasecmp($a['type'], $b['type']);
+    });
 }
 
 date_default_timezone_set('Africa/Nairobi');
-$hour = date('G');
-if ($hour < 12) $greeting = 'Good morning';
-elseif ($hour < 17) $greeting = 'Good afternoon';
-else $greeting = 'Good evening';
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 ?>
 
@@ -94,7 +163,6 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Same base styles */
         :root {
             --primary: #1a4b2a;
             --gray-50: #f9fafb;
@@ -115,26 +183,50 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         .main-content { padding: 2rem 2rem 1rem; margin-left: 260px; width: calc(100% - 260px); min-height: 100vh; background: var(--gray-100); transition: all 0.3s ease; }
         .page-header { background: white; padding: 1.5rem 2rem; border-radius: var(--radius-xl); margin-bottom: 1.5rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); }
         .page-header h1 { font-size: 1.75rem; color: var(--gray-800); font-weight: 600; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem; }
-        .page-header h1 i { color: var(--primary); font-size: 1.75rem; }
+        .page-header h1 i { color: var(--primary); }
         .breadcrumb { color: var(--gray-500); font-size: 0.9rem; }
         .breadcrumb a { color: var(--primary); text-decoration: none; }
         .search-section { background: white; padding: 1.5rem; border-radius: var(--radius-xl); margin-bottom: 1.5rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); }
         .search-form { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
         .search-group { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 0.5rem; }
         .search-group label { font-size: 0.85rem; font-weight: 500; color: var(--gray-600); }
-        .search-group input { padding: 0.75rem 1rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); font-size: 0.9rem; background: white; }
+        .search-group input { padding: 0.75rem 1rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); font-size: 0.9rem; background: white; width: 100%; }
         .btn { padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; }
-        .section-title { background: var(--gray-50); padding: 0.75rem 1rem; border-radius: var(--radius-lg); margin-top: 1.5rem; margin-bottom: 1rem; border-left: 4px solid var(--primary); font-weight: 600; }
+        .section-title { background: var(--gray-50); padding: 0.75rem 1rem; border-radius: var(--radius-lg); margin-top: 1.5rem; margin-bottom: 1rem; border-left: 4px solid var(--primary); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
         .table-wrapper { background: white; border-radius: var(--radius-xl); border: 1px solid var(--gray-200); overflow-x: auto; margin-bottom: 1.5rem; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 800px; }
         th { background: var(--gray-50); padding: 0.75rem; text-align: left; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); }
         td { padding: 0.75rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
         .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 500; background: var(--gray-100); }
         .view-btn { padding: 0.3rem 0.7rem; background: var(--primary); color: white; border-radius: 4px; text-decoration: none; font-size: 0.75rem; }
+        .view-btn:hover { background: #2a6b3a; }
         .empty-state { text-align: center; padding: 2rem; color: var(--gray-500); }
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
-        @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
-        @media (max-width: 768px) { .search-form { flex-direction: column; } .btn { width: 100%; justify-content: center; } }
+
+        @media (max-width: 1200px) {
+            .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
+        }
+        @media (max-width: 768px) {
+            .main-content { padding: 1rem 0.75rem 0.75rem !important; padding-top: 4.5rem !important; }
+            .page-header h1 { font-size: 1.25rem; }
+            .page-header { padding: 1rem 1.25rem; }
+            .search-section { padding: 1rem; }
+            .search-form { flex-direction: column; gap: 0.75rem; }
+            .search-group { min-width: unset; width: 100%; }
+            .search-group input { font-size: 1rem; padding: 0.75rem; }
+            .btn { width: 100%; justify-content: center; }
+            .section-title { font-size: 0.9rem; }
+            table { font-size: 0.75rem; min-width: 600px; }
+            th, td { padding: 0.5rem; }
+            .view-btn { font-size: 0.65rem; padding: 0.2rem 0.5rem; }
+        }
+        @media (max-width: 480px) {
+            .main-content { padding: 0.75rem 0.5rem 0.5rem !important; padding-top: 4rem !important; }
+            .page-header h1 { font-size: 1rem; }
+            .search-group input { font-size: 0.9rem; padding: 0.6rem; }
+            table { font-size: 0.65rem; min-width: 480px; }
+            th, td { padding: 0.3rem; }
+        }
     </style>
 </head>
 <body>
@@ -157,14 +249,14 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <div class="search-section">
         <form method="GET" class="search-form">
             <div class="search-group">
-                <label><i class="fas fa-tag"></i> Model</label>
-                <input type="text" name="model" placeholder="Search by model..." value="<?= htmlspecialchars($search_model) ?>">
+                <label><i class="fas fa-tag"></i> Model / Name / Type</label>
+                <input type="text" name="model" placeholder="Search by model, name, or type..." value="<?= htmlspecialchars($search_model) ?>">
             </div>
             <div class="search-group">
-                <label><i class="fas fa-qrcode"></i> Serial Number</label>
-                <input type="text" name="sn" placeholder="Scan or type serial..." value="<?= htmlspecialchars($search_sn) ?>" autofocus>
+                <label><i class="fas fa-qrcode"></i> Serial / ID</label>
+                <input type="text" name="sn" placeholder="Scan or type serial/ID..." value="<?= htmlspecialchars($search_sn) ?>" autofocus>
             </div>
-            <div class="search-group">
+            <div class="search-group" style="flex: 0 0 auto; min-width: auto;">
                 <button type="submit" class="btn"><i class="fas fa-search"></i> Search</button>
             </div>
         </form>
@@ -172,85 +264,60 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 
     <?php if ($searched): ?>
         <?php
-        $total = count($deviceResults) + count($monitorResults) + count($printerResults);
+        $total = count($allResults);
         echo '<div style="margin-bottom:1rem;"><strong>Found ' . $total . ' item(s)</strong>';
-        if ($search_sn) echo ' • Serial: "' . htmlspecialchars($search_sn) . '"';
-        if ($search_model) echo ' • Model: "' . htmlspecialchars($search_model) . '"';
+        if ($search_sn) echo ' • Serial/ID: "' . htmlspecialchars($search_sn) . '"';
+        if ($search_model) echo ' • Name/Model: "' . htmlspecialchars($search_model) . '"';
         echo '</div>';
         ?>
 
-        <?php if (!empty($deviceResults)): ?>
-            <div class="section-title"><i class="fas fa-laptop"></i> Devices (<?= count($deviceResults) ?>)</div>
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr><th>#</th><th>Serial</th><th>Category</th><th>Model</th><th>Processor</th><th>RAM</th><th>Storage</th><th>Graphics</th><th>Touch?</th><th>Price</th><th>Branch</th><th>Action</th></tr></thead>
-                    <tbody>
-                        <?php $i=1; foreach ($deviceResults as $d): ?>
-                        <tr>
-                            <td><?= $i++ ?></td>
-                            <td><code><?= htmlspecialchars($d['serial_number']) ?></code></td>
-                            <td><span class="badge"><?= htmlspecialchars($d['category_name']) ?></span></td>
-                            <td><?= htmlspecialchars($d['model_name']) ?></td>
-                            <td><?= htmlspecialchars($d['processor']) ?></td>
-                            <td><?= $d['ram'] ?> GB</span></td>
-                            <td><?= htmlspecialchars($d['storage_type'] . ' ' . $d['storage_capacity'] . 'GB') ?></td>
-                            <td><?= htmlspecialchars($d['graphics'] ?? 'N/A') ?></span></td>
-                            <td><?= strtolower($d['category_name']) == 'desktop' ? 'N/A' : htmlspecialchars($d['touch'] ?? 'N/A') ?></td>
-                            <td><?= $d['price'] ? 'KES ' . number_format($d['price'], 0) : '-' ?></td>
-                            <td><span class="badge"><?= htmlspecialchars($d['branch']) ?></span></td>
-                            <td><a href="../devices/view_device.php?sn=<?= urlencode($d['serial_number']) ?>" class="view-btn">View</a></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-
-        <?php if (!empty($monitorResults)): ?>
-            <div class="section-title"><i class="fas fa-desktop"></i> Monitors (<?= count($monitorResults) ?>)</div>
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr><th>#</th><th>Serial</th><th>Model</th><th>Size (")</th><th>Branch</th><th>Price</th><th>Action</th></tr></thead>
-                    <tbody>
-                        <?php $i=1; foreach ($monitorResults as $m): ?>
-                        <tr>
-                            <td><?= $i++ ?></td>
-                            <td><code><?= htmlspecialchars($m['serial_number']) ?></code></td>
-                            <td><?= htmlspecialchars($m['model_name']) ?></td>
-                            <td><?= $m['size_inches'] ?>″</span></td>
-                            <td><span class="badge"><?= htmlspecialchars($m['branch']) ?></span></td>
-                            <td><?= $m['price'] ? 'KES ' . number_format($m['price'], 0) : '-' ?></td>
-                            <td><a href="../monitors/view_monitor.php?sn=<?= urlencode($m['serial_number']) ?>" class="view-btn">View</a></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-
-        <?php if (!empty($printerResults)): ?>
-            <div class="section-title"><i class="fas fa-print"></i> Printers (<?= count($printerResults) ?>)</div>
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr><th>#</th><th>Serial</th><th>Model</th><th>Branch</th><th>Price</th><th>Action</th></tr></thead>
-                    <tbody>
-                        <?php $i=1; foreach ($printerResults as $p): ?>
-                        <tr>
-                            <td><?= $i++ ?></td>
-                            <td><code><?= htmlspecialchars($p['serial_number']) ?></code></td>
-                            <td><?= htmlspecialchars($p['model_name']) ?></td>
-                            <td><span class="badge"><?= htmlspecialchars($p['branch']) ?></span></td>
-                            <td><?= $p['price'] ? 'KES ' . number_format($p['price'], 0) : '-' ?></td>
-                            <td><a href="../printers/view_printer.php?sn=<?= urlencode($p['serial_number']) ?>" class="view-btn">View</a></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-
         <?php if ($total === 0): ?>
             <div class="empty-state"><i class="fas fa-box-open"></i><p>No matching in‑stock items found.</p></div>
+        <?php else: ?>
+            <?php
+            $grouped = [];
+            foreach ($allResults as $item) {
+                $grouped[$item['type']][] = $item;
+            }
+            foreach ($grouped as $type => $items): ?>
+                <div class="section-title">
+                    <span><i class="fas fa-<?= strtolower($type) == 'device' ? 'laptop' : (strtolower($type) == 'monitor' ? 'desktop' : (strtolower($type) == 'printer' ? 'print' : (strtolower($type) == 'smartboard' ? 'chalkboard' : (strtolower($type) == 'ups' ? 'bolt' : (strtolower($type) == 'phone' ? 'mobile-alt' : 'box'))))) ?>"></i> <?= $type ?> (<?= count($items) ?>)</span>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>ID / Serial</th>
+                                <th>Name / Model</th>
+                                <th>Branch</th>
+                                <th>Qty</th>
+                                <th>Price</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php $i=1; foreach ($items as $item): ?>
+                            <tr>
+                                <td><?= $i++ ?></td>
+                                <td><code><?= htmlspecialchars($item['id']) ?></code></td>
+                                <td><?= htmlspecialchars($item['name']) ?></td>
+                                <td><span class="badge"><?= htmlspecialchars($item['branch']) ?></span></td>
+                                <td><?= $item['quantity'] ?></td>
+                                <td><?= $item['price'] !== null ? 'KES ' . number_format($item['price'], 0) : '-' ?></td>
+                                <td>
+                                    <?php if (!empty($item['view'])): ?>
+                                        <a href="<?= $item['view'] ?>" class="view-btn">View</a>
+                                    <?php else: ?>
+                                        <span class="badge">No view</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endforeach; ?>
         <?php endif; ?>
     <?php endif; ?>
     <div class="footer"><i class="fas fa-copyright"></i> <?= date('Y'); ?> Mombasa Computers</div>

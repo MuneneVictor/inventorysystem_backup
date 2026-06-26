@@ -118,6 +118,11 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         .badge { display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; background: var(--gray-100); }
         .empty-state { text-align: center; padding: 3rem; color: var(--gray-500); }
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
+        .activity-details a {
+                    color: #1a4b2a;
+                    text-decoration: underline;
+                    font-weight: 500;
+                }
         @media (max-width: 1200px) {
             .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
         }
@@ -200,7 +205,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                     <tr>
                         <td><?= $i++ ?></td>
                         <td><span class="badge"><?= htmlspecialchars($log['action']) ?></span></td>
-                        <td><?= nl2br(htmlspecialchars($log['details'] ?? '—')) ?></td>
+                        <td><?= nl2br(strip_tags($log['details'], '<a>')) ?></td>
                         <td><?= htmlspecialchars($log['full_name'] ?? 'Unknown User') ?></td>
                         <td><?= date('M j, Y H:i:s', strtotime($log['created_at'])) ?></td>
                     </tr>

@@ -2,6 +2,7 @@
 date_default_timezone_set('Africa/Nairobi');
 session_start();
 require_once "config/db.php";
+require_once "includes/header.php";
 
 require_once 'PHPMailer-master/src/PHPMailer.php';
 require_once 'PHPMailer-master/src/SMTP.php';

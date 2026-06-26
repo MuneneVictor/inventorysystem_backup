@@ -2,6 +2,7 @@
 session_start();
 date_default_timezone_set('Africa/Nairobi');
 require_once "../config/db.php";
+require_once "../includes/header.php";
 
 $error = "";
 

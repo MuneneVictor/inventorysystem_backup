@@ -3,16 +3,17 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 
 $role = $_SESSION['role'];
 $user_id = $_SESSION['user_id'];
 
-// Allow super_admin, inventory_admin, manager, and sales
-if (!in_array($role, ['super_admin', 'inventory_admin', 'manager', 'sales'])) {
+// Allow roles that can view sales
+if (!in_array($role, ['super_admin', 'inventory_admin', 'manager', 'sales', 'cashier'])) {
     die("Access denied!");
 }
 
-// For managers, restrict to their branch if they have one
+// For managers, restrict to their branch
 $user_branch = '';
 if ($role === 'manager') {
     $user_stmt = $conn->prepare("SELECT branch FROM users WHERE id = ?");
@@ -22,15 +23,17 @@ if ($role === 'manager') {
 }
 
 // Handle search inputs
-$search_name = trim($_GET['name'] ?? '');
+$search_category = trim($_GET['category'] ?? '');
+$search_type = trim($_GET['type'] ?? '');
+$search_storage = trim($_GET['storage'] ?? '');
 $search_branch = trim($_GET['branch'] ?? '');
 $date_from = trim($_GET['date_from'] ?? '');
 $date_to = trim($_GET['date_to'] ?? '');
-$filter_salesperson = trim($_GET['salesperson'] ?? ''); // NEW
+$filter_salesperson = trim($_GET['salesperson'] ?? '');
 
-// Build query – join with users to get sold_by name
+// Build query – join with users for sold_by name
 $sql = "SELECT s.*, u.full_name AS sold_by_name
-        FROM sold_accessories s
+        FROM sold_rams_ssds s
         LEFT JOIN users u ON s.sold_by = u.id
         WHERE 1=1";
 $params = [];
@@ -41,28 +44,32 @@ if ($role === 'manager' && !empty($user_branch)) {
     $params['user_branch'] = $user_branch;
 }
 
-// Search filters
-if ($search_name) {
-    $sql .= " AND s.accessory_name LIKE :name";
-    $params['name'] = "%$search_name%";
+// Filters
+if ($search_category) {
+    $sql .= " AND s.category = :category";
+    $params['category'] = $search_category;
 }
-
+if ($search_type) {
+    $sql .= " AND s.type LIKE :type";
+    $params['type'] = "%$search_type%";
+}
+if ($search_storage) {
+    $sql .= " AND s.storage = :storage";
+    $params['storage'] = $search_storage;
+}
 if ($search_branch && $role !== 'manager') {
     $sql .= " AND s.branch = :branch";
     $params['branch'] = $search_branch;
 }
-
 if ($date_from) {
     $sql .= " AND DATE(s.date_sold) >= :date_from";
     $params['date_from'] = $date_from;
 }
-
 if ($date_to) {
     $sql .= " AND DATE(s.date_sold) <= :date_to";
     $params['date_to'] = $date_to;
 }
-
-// Salesperson filter (only for super_admin and inventory_admin)
+// Salesperson filter (for super_admin and inventory_admin)
 if (in_array($role, ['super_admin', 'inventory_admin']) && !empty($filter_salesperson)) {
     $sql .= " AND s.sold_by = :salesperson";
     $params['salesperson'] = $filter_salesperson;
@@ -80,13 +87,12 @@ $total_quantity = array_sum(array_column($sales, 'quantity'));
 $total_revenue = array_sum(array_column($sales, 'total_price'));
 $branches = array_unique(array_column($sales, 'branch'));
 
-// Get list of sales users for filter (super_admin & inventory_admin only)
+// Get sales users for filter (super_admin and inventory_admin only)
 $sales_users = [];
 if (in_array($role, ['super_admin', 'inventory_admin'])) {
-    $stmt = $conn->query("SELECT id, full_name FROM users WHERE role = 'sales' ORDER BY full_name");
+    $stmt = $conn->query("SELECT id, full_name FROM users WHERE role IN ('sales', 'cashier') ORDER BY full_name");
     $sales_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>
@@ -94,10 +100,10 @@ require_once "../includes/sidebar.php";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Sold Accessories | Mombasa Computers</title>
+    <title>Sold RAM/SSD | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* ===== SAME CSS AS accessory_instock.php – unchanged ===== */
+        /* Same CSS as sold_hdds.php – unchanged */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -315,22 +321,6 @@ require_once "../includes/sidebar.php";
             color: #059669;
         }
 
-        .action-links {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .action-link {
-            color: var(--primary);
-            text-decoration: none;
-            font-size: 0.85rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        .action-link:hover { text-decoration: underline; }
-
         .empty-state {
             text-align: center;
             padding: 3rem;
@@ -350,7 +340,6 @@ require_once "../includes/sidebar.php";
         @media (max-width: 1200px) {
             .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
         }
-
         @media (max-width: 768px) {
             .main-content { padding: 1rem 0.75rem 0.75rem !important; padding-top: 4.5rem !important; }
             .page-header h1 { font-size: 1.25rem; }
@@ -361,10 +350,8 @@ require_once "../includes/sidebar.php";
             .search-section { padding: 1rem; }
             .search-grid { grid-template-columns: 1fr; }
             .btn { width: 100%; justify-content: center; }
-            .action-links { flex-direction: column; }
             .table { min-width: 600px; }
         }
-
         @media (max-width: 480px) {
             .main-content { padding: 0.75rem 0.5rem 0.5rem !important; padding-top: 4rem !important; }
             .stats-row { grid-template-columns: 1fr; }
@@ -377,7 +364,7 @@ require_once "../includes/sidebar.php";
 
 <div class="main-content">
     <div class="page-header">
-        <h1><i class="fas fa-shopping-cart"></i> Sold Accessories</h1>
+        <h1><i class="fas fa-memory"></i> Sold RAM / SSD</h1>
         <div class="breadcrumb">
             <?php if ($_SESSION['role'] === 'super_admin'): ?>
                 <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
@@ -387,9 +374,11 @@ require_once "../includes/sidebar.php";
                 <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'sales'): ?>
                 <a href="/inventory_system/dashboard/salesdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+            <?php elseif ($_SESSION['role'] === 'cashier'): ?>
+                <a href="/inventory_system/dashboard/cashierdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
-            <span>Sold Accessories</span>
+            <span>Sold RAM/SSD</span>
         </div>
     </div>
 
@@ -422,10 +411,21 @@ require_once "../includes/sidebar.php";
         <div class="search-title"><i class="fas fa-filter"></i> Filter Sales</div>
         <form method="GET" class="search-grid">
             <div class="search-group">
-                <label>Accessory Name</label>
-                <input type="text" name="name" placeholder="Search by name..." value="<?= htmlspecialchars($search_name) ?>">
+                <label>Category</label>
+                <select name="category">
+                    <option value="">-- All --</option>
+                    <option value="RAM" <?= $search_category == 'RAM' ? 'selected' : '' ?>>RAM</option>
+                    <option value="SSD" <?= $search_category == 'SSD' ? 'selected' : '' ?>>SSD</option>
+                </select>
             </div>
-
+            <div class="search-group">
+                <label>Type</label>
+                <input type="text" name="type" placeholder="e.g., SATA, DDR4" value="<?= htmlspecialchars($search_type) ?>">
+            </div>
+            <div class="search-group">
+                <label>Storage (GB)</label>
+                <input type="number" name="storage" placeholder="e.g., 256" value="<?= htmlspecialchars($search_storage) ?>">
+            </div>
             <?php if ($role !== 'manager'): ?>
             <div class="search-group">
                 <label>Branch</label>
@@ -436,34 +436,30 @@ require_once "../includes/sidebar.php";
                 </select>
             </div>
             <?php endif; ?>
-
             <div class="search-group">
                 <label>Date From</label>
                 <input type="date" name="date_from" value="<?= htmlspecialchars($date_from) ?>">
             </div>
-
             <div class="search-group">
                 <label>Date To</label>
                 <input type="date" name="date_to" value="<?= htmlspecialchars($date_to) ?>">
             </div>
-
             <?php if (in_array($role, ['super_admin', 'inventory_admin'])): ?>
             <div class="search-group">
-                <label>Salesperson</label>
+                <label>Sold By</label>
                 <select name="salesperson">
-                    <option value="">-- All Salespersons --</option>
+                    <option value="">-- All --</option>
                     <?php foreach ($sales_users as $u): ?>
                         <option value="<?= $u['id'] ?>" <?= $filter_salesperson == $u['id'] ? 'selected' : '' ?>><?= htmlspecialchars($u['full_name']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
             <?php endif; ?>
-
             <div class="search-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
-                <a href="sold_accessories.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
+                <a href="sold_rams_ssds.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
                 <?php if (!empty($sales)): ?>
-                    <a href="export_sold_accessories_excel.php?<?= http_build_query(array_merge($_GET, ['export' => '1'])) ?>" class="btn btn-excel"><i class="fas fa-file-excel"></i> Export to Excel</a>
+                    <a href="export_sold_rams_ssds_excel.php?<?= http_build_query(array_merge($_GET, ['export' => '1'])) ?>" class="btn btn-excel"><i class="fas fa-file-excel"></i> Export to Excel</a>
                 <?php endif; ?>
             </div>
         </form>
@@ -475,8 +471,8 @@ require_once "../includes/sidebar.php";
             <?php if (empty($sales)): ?>
                 <div class="empty-state">
                     <i class="fas fa-box-open"></i>
-                    <p>No sold accessories found matching your criteria.</p>
-                    <a href="sold_accessories.php" class="btn btn-primary" style="margin-top: 1rem;">
+                    <p>No sold RAM/SSD found matching your criteria.</p>
+                    <a href="sold_rams_ssds.php" class="btn btn-primary" style="margin-top: 1rem;">
                         <i class="fas fa-undo"></i> Clear Filters
                     </a>
                 </div>
@@ -485,7 +481,9 @@ require_once "../includes/sidebar.php";
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Accessory</th>
+                            <th>Category</th>
+                            <th>Type</th>
+                            <th>Storage (GB)</th>
                             <th>Qty</th>
                             <th>Selling Price (KES)</th>
                             <th>Total (KES)</th>
@@ -498,7 +496,9 @@ require_once "../includes/sidebar.php";
                         <?php $i = 1; foreach ($sales as $s): ?>
                             <tr>
                                 <td><?= $i++ ?></td>
-                                <td><strong><?= htmlspecialchars($s['accessory_name']) ?></strong></td>
+                                <td><span class="badge"><?= htmlspecialchars($s['category']) ?></span></td>
+                                <td><strong><?= htmlspecialchars($s['type']) ?></strong></td>
+                                <td><?= htmlspecialchars($s['storage']) ?></td>
                                 <td><span class="badge"><?= (int)$s['quantity'] ?></span></td>
                                 <td class="price"><?= $s['selling_price'] ? 'KES '.number_format($s['selling_price'], 2) : '-' ?></td>
                                 <td class="price"><?= $s['total_price'] ? 'KES '.number_format($s['total_price'], 2) : '-' ?></td>

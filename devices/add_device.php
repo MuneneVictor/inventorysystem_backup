@@ -5,8 +5,6 @@ require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
 require_once "../includes/sidebar.php";
 
-// ... (rest of the PHP code remains unchanged) ...
-
 // Only inventory_admin and super_admin can access
 if(!in_array($_SESSION['role'], ['super_admin', 'inventory_admin','manager'])){
     die("Access denied!");
@@ -19,9 +17,79 @@ $success = "";
 $categoriesStmt = $conn->query("SELECT * FROM categories");
 $categories = $categoriesStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Handle form submission (unchanged)
-// ... (your existing PHP logic) ...
+// Handle form submission
+if($_SERVER['REQUEST_METHOD'] === 'POST'){
+    $serial_number = trim($_POST['serial_number']);
+    $category_id = $_POST['category_id'];
+    $model_name = trim($_POST['model_name']);
+    $processor = trim($_POST['processor']);
+    $graphics = trim($_POST['graphics']) ?: 'None';
+    $ram = $_POST['ram'];
+    $storage_type = $_POST['storage_type'];
+    $storage_capacity = $_POST['storage_capacity'];
+    $status = "In Stock"; // Automatically set to In Stock when adding a new device
+    $branch = $_POST['branch'] ?: null;
+    
+    // Get the selected category name to check if it's Laptop or AIO
+    $category_name = "";
+    foreach($categories as $cat) {
+        if($cat['id'] == $category_id) {
+            $category_name = $cat['category_name'];
+            break;
+        }
+    }
+    
+    // Set touch value: if category is Laptop or AIO, use the selected value, otherwise use "N/A"
+    if($category_name === 'Laptop' || $category_name === 'AIO') {
+        $touch = $_POST['touch'] ?? null;
+    } else {
+        $touch = 'N/A';
+    }
+    
+    // NEW: Get cargo number and condition
+    $cargo_number = trim($_POST['cargo_number']) ?: null;
+    $device_condition = trim($_POST['device_condition']) ?: null;
+    
+    // Get logged-in user ID for added_by
+    $added_by = $_SESSION['user_id'];
 
+    // Check for duplicate serial number
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM devices WHERE serial_number = :sn");
+    $stmt->execute(['sn' => $serial_number]);
+    if($stmt->fetchColumn() > 0){
+        $error = "A device with this serial number already exists!";
+    } else {
+        // Insert device including added_by, cargo_number, and device_condition
+        $insert = $conn->prepare("
+            INSERT INTO devices
+            (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, added_by, cargo_number, device_condition, branch)
+            VALUES
+            (:serial_number, :category_id, :model_name, :processor, :graphics, :ram, :storage_type, :storage_capacity, :touch, :status, :added_by, :cargo_number, :device_condition, :branch)
+        ");
+        $insert->execute([
+            'serial_number' => $serial_number,
+            'category_id' => $category_id,
+            'model_name' => $model_name,
+            'processor' => $processor,
+            'graphics' => $graphics,
+            'ram' => $ram,
+            'storage_type' => $storage_type,
+            'storage_capacity' => $storage_capacity,
+            'touch' => $touch,
+            'status' => $status,
+            'added_by' => $added_by,
+            'cargo_number' => $cargo_number,
+            'device_condition' => $device_condition,
+            'branch' => $branch
+        ]);
+
+        // Log activity
+        $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (:uid, 'Added device', :details)");
+        $log->execute(['uid'=>$_SESSION['user_id'], 'details'=>"Added device SN: $serial_number" . ($cargo_number ? ", Cargo: $cargo_number" : "")]);
+
+        $success = "Device added successfully!";
+    }
+}
 ?>
 
 <!DOCTYPE html>

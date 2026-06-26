@@ -3,6 +3,7 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 
 $role = $_SESSION['role'];
 $user_id = $_SESSION['user_id'];
@@ -22,71 +23,51 @@ if ($role === 'manager') {
 }
 
 // Handle search inputs
-$search_name = trim($_GET['name'] ?? '');
+$search_type = trim($_GET['type'] ?? '');
+$search_storage = trim($_GET['storage'] ?? '');
 $search_branch = trim($_GET['branch'] ?? '');
-$date_from = trim($_GET['date_from'] ?? '');
-$date_to = trim($_GET['date_to'] ?? '');
-$filter_salesperson = trim($_GET['salesperson'] ?? ''); // NEW
 
-// Build query – join with users to get sold_by name
-$sql = "SELECT s.*, u.full_name AS sold_by_name
-        FROM sold_accessories s
-        LEFT JOIN users u ON s.sold_by = u.id
+// Build query – all HDDs are considered in stock (no status column)
+$sql = "SELECT h.*, 
+               u1.full_name AS added_by_name,
+               u2.full_name AS updated_by_name
+        FROM hdds h
+        LEFT JOIN users u1 ON h.added_by = u1.id
+        LEFT JOIN users u2 ON h.updated_by = u2.id
         WHERE 1=1";
 $params = [];
 
 // Manager restriction
 if ($role === 'manager' && !empty($user_branch)) {
-    $sql .= " AND s.branch = :user_branch";
+    $sql .= " AND h.branch = :user_branch";
     $params['user_branch'] = $user_branch;
 }
 
 // Search filters
-if ($search_name) {
-    $sql .= " AND s.accessory_name LIKE :name";
-    $params['name'] = "%$search_name%";
+if ($search_type) {
+    $sql .= " AND h.type LIKE :type";
+    $params['type'] = "%$search_type%";
 }
-
+if ($search_storage) {
+    $sql .= " AND h.storage LIKE :storage";
+    $params['storage'] = "%$search_storage%";
+}
 if ($search_branch && $role !== 'manager') {
-    $sql .= " AND s.branch = :branch";
+    $sql .= " AND h.branch = :branch";
     $params['branch'] = $search_branch;
 }
 
-if ($date_from) {
-    $sql .= " AND DATE(s.date_sold) >= :date_from";
-    $params['date_from'] = $date_from;
-}
-
-if ($date_to) {
-    $sql .= " AND DATE(s.date_sold) <= :date_to";
-    $params['date_to'] = $date_to;
-}
-
-// Salesperson filter (only for super_admin and inventory_admin)
-if (in_array($role, ['super_admin', 'inventory_admin']) && !empty($filter_salesperson)) {
-    $sql .= " AND s.sold_by = :salesperson";
-    $params['salesperson'] = $filter_salesperson;
-}
-
-$sql .= " ORDER BY s.date_sold DESC";
+$sql .= " ORDER BY h.date_added DESC";
 
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
-$sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$hdds = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Stats
-$total_items = count($sales);
-$total_quantity = array_sum(array_column($sales, 'quantity'));
-$total_revenue = array_sum(array_column($sales, 'total_price'));
-$branches = array_unique(array_column($sales, 'branch'));
-
-// Get list of sales users for filter (super_admin & inventory_admin only)
-$sales_users = [];
-if (in_array($role, ['super_admin', 'inventory_admin'])) {
-    $stmt = $conn->query("SELECT id, full_name FROM users WHERE role = 'sales' ORDER BY full_name");
-    $sales_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-require_once "../includes/sidebar.php";
+$total_items = count($hdds);
+$total_quantity = array_sum(array_column($hdds, 'quantity'));
+$total_value = array_sum(array_column($hdds, 'total_price'));
+$branches = array_unique(array_column($hdds, 'branch'));
 ?>
 
 <!DOCTYPE html>
@@ -94,10 +75,10 @@ require_once "../includes/sidebar.php";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Sold Accessories | Mombasa Computers</title>
+    <title>In‑Stock HDDs | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* ===== SAME CSS AS accessory_instock.php – unchanged ===== */
+        /* Same CSS as accessory_instock.php (unchanged) */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -350,7 +331,6 @@ require_once "../includes/sidebar.php";
         @media (max-width: 1200px) {
             .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
         }
-
         @media (max-width: 768px) {
             .main-content { padding: 1rem 0.75rem 0.75rem !important; padding-top: 4.5rem !important; }
             .page-header h1 { font-size: 1.25rem; }
@@ -364,7 +344,6 @@ require_once "../includes/sidebar.php";
             .action-links { flex-direction: column; }
             .table { min-width: 600px; }
         }
-
         @media (max-width: 480px) {
             .main-content { padding: 0.75rem 0.5rem 0.5rem !important; padding-top: 4rem !important; }
             .stats-row { grid-template-columns: 1fr; }
@@ -377,7 +356,7 @@ require_once "../includes/sidebar.php";
 
 <div class="main-content">
     <div class="page-header">
-        <h1><i class="fas fa-shopping-cart"></i> Sold Accessories</h1>
+        <h1><i class="fas fa-hdd"></i> In‑Stock HDDs</h1>
         <div class="breadcrumb">
             <?php if ($_SESSION['role'] === 'super_admin'): ?>
                 <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
@@ -389,43 +368,46 @@ require_once "../includes/sidebar.php";
                 <a href="/inventory_system/dashboard/salesdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
-            <span>Sold Accessories</span>
+            <span>In‑Stock HDDs</span>
         </div>
     </div>
 
     <!-- Stats Cards -->
     <div class="stats-row">
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+            <div class="stat-icon"><i class="fas fa-boxes"></i></div>
             <div class="stat-value"><?= number_format($total_items) ?></div>
-            <div class="stat-label">Total Sales</div>
+            <div class="stat-label">Total Items</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-cubes"></i></div>
             <div class="stat-value"><?= number_format($total_quantity) ?></div>
-            <div class="stat-label">Total Units Sold</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
-            <div class="stat-value">KES <?= number_format($total_revenue, 0) ?></div>
-            <div class="stat-label">Total Revenue</div>
+            <div class="stat-label">Total Units</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-store"></i></div>
             <div class="stat-value"><?= number_format(count($branches)) ?></div>
             <div class="stat-label">Branches</div>
         </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-coins"></i></div>
+            <div class="stat-value">KES <?= number_format($total_value, 0) ?></div>
+            <div class="stat-label">Total Value</div>
+        </div>
     </div>
 
     <!-- Search Section -->
     <div class="search-section">
-        <div class="search-title"><i class="fas fa-filter"></i> Filter Sales</div>
+        <div class="search-title"><i class="fas fa-filter"></i> Filter HDDs</div>
         <form method="GET" class="search-grid">
             <div class="search-group">
-                <label>Accessory Name</label>
-                <input type="text" name="name" placeholder="Search by name..." value="<?= htmlspecialchars($search_name) ?>">
+                <label>Type</label>
+                <input type="text" name="type" placeholder="e.g., SATA" value="<?= htmlspecialchars($search_type) ?>">
             </div>
-
+            <div class="search-group">
+                <label>Storage</label>
+                <input type="text" name="storage" placeholder="e.g., 1TB" value="<?= htmlspecialchars($search_storage) ?>">
+            </div>
             <?php if ($role !== 'manager'): ?>
             <div class="search-group">
                 <label>Branch</label>
@@ -436,47 +418,24 @@ require_once "../includes/sidebar.php";
                 </select>
             </div>
             <?php endif; ?>
-
-            <div class="search-group">
-                <label>Date From</label>
-                <input type="date" name="date_from" value="<?= htmlspecialchars($date_from) ?>">
-            </div>
-
-            <div class="search-group">
-                <label>Date To</label>
-                <input type="date" name="date_to" value="<?= htmlspecialchars($date_to) ?>">
-            </div>
-
-            <?php if (in_array($role, ['super_admin', 'inventory_admin'])): ?>
-            <div class="search-group">
-                <label>Salesperson</label>
-                <select name="salesperson">
-                    <option value="">-- All Salespersons --</option>
-                    <?php foreach ($sales_users as $u): ?>
-                        <option value="<?= $u['id'] ?>" <?= $filter_salesperson == $u['id'] ? 'selected' : '' ?>><?= htmlspecialchars($u['full_name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <?php endif; ?>
-
             <div class="search-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
-                <a href="sold_accessories.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
-                <?php if (!empty($sales)): ?>
-                    <a href="export_sold_accessories_excel.php?<?= http_build_query(array_merge($_GET, ['export' => '1'])) ?>" class="btn btn-excel"><i class="fas fa-file-excel"></i> Export to Excel</a>
+                <a href="hdd_instock.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
+                <?php if (!empty($hdds)): ?>
+                    <a href="export_hdds_excel.php?<?= http_build_query(array_merge($_GET, ['export' => '1'])) ?>" class="btn btn-excel"><i class="fas fa-file-excel"></i> Export to Excel</a>
                 <?php endif; ?>
             </div>
         </form>
     </div>
 
-    <!-- Sales Table -->
+    <!-- HDD Table -->
     <div class="table-wrapper">
         <div class="table-responsive">
-            <?php if (empty($sales)): ?>
+            <?php if (empty($hdds)): ?>
                 <div class="empty-state">
-                    <i class="fas fa-box-open"></i>
-                    <p>No sold accessories found matching your criteria.</p>
-                    <a href="sold_accessories.php" class="btn btn-primary" style="margin-top: 1rem;">
+                    <i class="fas fa-hdd"></i>
+                    <p>No HDDs found matching your criteria.</p>
+                    <a href="hdd_instock.php" class="btn btn-primary" style="margin-top: 1rem;">
                         <i class="fas fa-undo"></i> Clear Filters
                     </a>
                 </div>
@@ -485,30 +444,44 @@ require_once "../includes/sidebar.php";
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Accessory</th>
-                            <th>Qty</th>
-                            <th>Selling Price (KES)</th>
-                            <th>Total (KES)</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Storage</th>
                             <th>Branch</th>
-                            <th>Sold By</th>
-                            <th>Date Sold</th>
+                            <th>Price (KES)</th>
+                            <th>Total Value (KES)</th>
+                            <th>Added By</th>
+                            <th>Updated By</th>
+                            <th>Date Added</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php $i = 1; foreach ($sales as $s): ?>
+                        <?php $i = 1; foreach ($hdds as $h): ?>
                             <tr>
                                 <td><?= $i++ ?></td>
-                                <td><strong><?= htmlspecialchars($s['accessory_name']) ?></strong></td>
-                                <td><span class="badge"><?= (int)$s['quantity'] ?></span></td>
-                                <td class="price"><?= $s['selling_price'] ? 'KES '.number_format($s['selling_price'], 2) : '-' ?></td>
-                                <td class="price"><?= $s['total_price'] ? 'KES '.number_format($s['total_price'], 2) : '-' ?></td>
+                                <td><strong><?= htmlspecialchars($h['type']) ?></strong></td>
+                                <td><span class="badge"><?= (int)$h['quantity'] ?></span></td>
+                                <td><?= htmlspecialchars($h['storage']) ?></td>
                                 <td>
-                                    <span class="<?= $s['branch'] == 'KIMATHI' ? 'branch-kimathi' : 'branch-moi' ?>">
-                                        <?= htmlspecialchars($s['branch']) ?>
+                                    <span class="<?= $h['branch'] == 'KIMATHI' ? 'branch-kimathi' : 'branch-moi' ?>">
+                                        <?= htmlspecialchars($h['branch']) ?>
                                     </span>
                                 </td>
-                                <td><?= htmlspecialchars($s['sold_by_name'] ?? 'N/A') ?></td>
-                                <td><small><?= date('M j, Y g:i A', strtotime($s['date_sold'])) ?></small></td>
+                                <td class="price"><?= $h['price'] !== null ? 'KES '.number_format($h['price'], 2) : '-' ?></td>
+                                <td class="price"><?= $h['total_price'] !== null ? 'KES '.number_format($h['total_price'], 2) : '-' ?></td>
+                                <td><?= htmlspecialchars($h['added_by_name'] ?? 'N/A') ?></td>
+                                <td><?= htmlspecialchars($h['updated_by_name'] ?? 'Not updated yet') ?></td>
+                                <td><small><?= date('M j, Y g:i A', strtotime($h['date_added'])) ?></small></td>
+                                <td>
+                                    <div class="action-links">
+                                        <?php if (in_array($role, ['super_admin', 'inventory_admin', 'manager'])): ?>
+                                            <a href="edit_hdd.php?id=<?= urlencode($h['id']) ?>" class="action-link">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

@@ -4,7 +4,6 @@ date_default_timezone_set('Africa/Nairobi');
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
 // Include PHPMailer
 require_once '../PHPMailer-master/src/PHPMailer.php';
@@ -128,6 +127,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
 }
 
 $roles = ['manager','inventory_admin','technician','maintenance','sales'];
+require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>

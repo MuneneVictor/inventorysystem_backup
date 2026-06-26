@@ -51,7 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_id']) && 
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
 $role = $_SESSION['role'] ?? '';
 $user_id = $_SESSION['user_id'] ?? 0;
@@ -115,6 +114,7 @@ $inactive_users = $total_users - $active_users;
 $success_msg = $_SESSION['success'] ?? '';
 $error_msg = $_SESSION['error'] ?? '';
 unset($_SESSION['success'], $_SESSION['error']);
+require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>

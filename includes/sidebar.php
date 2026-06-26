@@ -369,8 +369,9 @@ body {
                     'items' => [
                         ['Add RAM/SSD', '/inventory_system/ram_ssd/add_ram.php', 'fas fa-plus'],
                         ['View Stock', '/inventory_system/ram_ssd/rams_instocks.php', 'fas fa-box'],
-                        ['Give RAM/SSD', '/inventory_system/ram_ssd/give_ram.php', 'fas fa-gift'],
-                        ['RAM/SSD Logs', '/inventory_system/ram_ssd/rams_ssds_logs.php', 'fas fa-clipboard-list'],
+                        ['Give Out RAM/SSD', '/inventory_system/ram_ssd/give_ram.php', 'fas fa-gift'],
+                        ['RAM/SSD Logs', '/inventory_system/ram_ssd/ram_ssd_logs.php', 'fas fa-clipboard-list'],
+                        ['Sold RAMs/SSDs', '/inventory_system/ram_ssd/sold_rams_ssds.php', 'fas fa-shopping-cart'],
                     ]
                 ];
             }
@@ -381,9 +382,10 @@ body {
                     'icon' => 'fas fa-database',
                     'items' => [
                         ['Add HDD', '/inventory_system/hdds/add_hdd.php', 'fas fa-plus'],
-                        ['View Stock', '/inventory_system/hdds/hdds_stock.php', 'fas fa-box'],
-                        ['Give Out HDD', '/inventory_system/hdds/givehdd.php', 'fas fa-gift'],
-                        ['HDDs Logs', '/inventory_system/hdds/hdds_logs.php', 'fas fa-clipboard-list'],
+                        ['View Stock', '/inventory_system/hdds/hdds_instock.php', 'fas fa-box'],
+                        ['Give Out HDD', '/inventory_system/hdds/give_hdd.php', 'fas fa-gift'],
+                        ['HDDs Logs', '/inventory_system/hdds/hdd_logs.php', 'fas fa-clipboard-list'],
+                        ['Sold HDDs', '/inventory_system/hdds/sold_hdds.php', 'fas fa-shopping-cart'],
                     ]
                 ];
             }
@@ -438,11 +440,29 @@ body {
                 $sections['SALES'] = [
                     'icon' => 'fas fa-chart-line',
                     'items' => [
-                        ['Sell Device', '/inventory_system/sales/sell_device.php', 'fas fa-money-bill-wave'],
-                        ['Sell monitor', '/inventory_system/sales/sell_monitor.php', 'fas fa-desktop'],
-                        ['Sell Printer', '/inventory_system/sales/sell_printer.php', 'fas fa-print'],
+                        ['Make a Sale', '/inventory_system/sales/make_sale.php', 'fas fa-cash-register'],
                         ['My Sales', '/inventory_system/sales/my_sales.php', 'fas fa-chart-bar'],
                         ['Search Device', '/inventory_system/sales/search_device.php', 'fas fa-search'],
+                    ]
+                ];
+            }
+
+            if ($role === 'sales') {
+                $sections['QUOTATIONS'] = [
+                    'icon' => 'fas fa-file-invoice',
+                    'items' => [
+                        ['Make a Quotation', '/inventory_system/sales/make_quotation.php', 'fas fa-file-invoice'],
+                        ['My Quotations', '/inventory_system/sales/my_quotations.php', 'fas fa-chart-bar'],
+                    ]
+                ];
+            }
+
+              if ($role === 'sales') {
+                $sections['INVOICES'] = [
+                    'icon' => 'fas fa-file-invoice-dollar',
+                    'items' => [
+                        ['Make an Invoice', '/inventory_system/sales/make_invoice.php', 'fas fa-file-invoice-dollar'],
+                        ['My Invoices', '/inventory_system/sales/my_invoices.php', 'fas fa-chart-bar'],
                     ]
                 ];
             }

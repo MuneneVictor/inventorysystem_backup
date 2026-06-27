@@ -605,6 +605,7 @@ for ($i = 6; $i >= 0; $i--) {
             SELECT selling_price AS price, sold_at FROM devices WHERE status = 'Sold' UNION ALL
             SELECT selling_price AS price, sold_at FROM monitors WHERE status = 'Sold' UNION ALL
             SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' UNION ALL
+            SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' UNION ALL
             SELECT total_price AS price, date_sold AS sold_at FROM sold_accessories UNION ALL
             SELECT total_price AS price, date_sold AS sold_at FROM sold_chargers UNION ALL
             SELECT selling_price AS price, date_sold AS sold_at FROM phones WHERE status='sold' UNION ALL

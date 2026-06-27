@@ -3,7 +3,7 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 
 $role = $_SESSION['role'];
 $user_id = (int) $_SESSION['user_id'];
@@ -228,6 +228,7 @@ $total_revenue = array_sum(array_column($sales, 'price'));
 
 date_default_timezone_set('Africa/Nairobi');
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
+require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>

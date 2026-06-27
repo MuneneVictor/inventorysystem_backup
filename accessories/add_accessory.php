@@ -586,8 +586,20 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: 'name=' + encodeURIComponent(name) + '&branch=' + encodeURIComponent(branch) + '&place=' + encodeURIComponent(place)
         })
-        .then(response => response.json())
+        .then(response => {
+            // Check if the response is OK (status 200-299)
+            if (!response.ok) {
+                // If the server returns an error status, throw an error with the status code
+                throw new Error('Server returned ' + response.status + ': ' + response.statusText);
+            }
+            return response.json();
+        })
         .then(data => {
+            // Check if the server returned a success flag (if using our updated check_accessory.php)
+            if (data.success === false) {
+                throw new Error(data.error || 'Unknown error from server');
+            }
+            // Now handle the data
             if (data.exists) {
                 // Accessory exists
                 feedbackDiv.className = 'check-feedback success';
@@ -606,7 +618,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             feedbackDiv.className = 'check-feedback warning';
-            feedbackDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Could not check availability. Please try again.';
+            feedbackDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Could not check availability: ' + error.message;
             console.error('Error checking accessory:', error);
         });
     }

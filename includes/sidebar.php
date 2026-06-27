@@ -479,7 +479,7 @@ body {
             }
 
             // Logs
-            if (in_array($role, ['super_admin','manager','inventory_admin'])) {
+            if (in_array($role, ['super_admin','manager'])) {
                 $log_items = [];
                 if (in_array($role, ['super_admin','inventory_admin','manager'])) {
                     $log_items[] = ['Sales Logs', '/inventory_system/sales/sales_logs.php', 'fas fa-chart-line'];

@@ -314,7 +314,7 @@ if (!$smartboard) {
                 </div>
                 <div class="info-item">
                     <div class="info-label">Branch</div>
-                    <div class="info-value"><?= htmlspecialchars($smartboard['branch']) ?></div>
+                    <div class="info-value"><?=!empty($smartboard['branch']) ? htmlspecialchars($smartboard['branch']) : '-' ?></div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Price (Purchase)</div>

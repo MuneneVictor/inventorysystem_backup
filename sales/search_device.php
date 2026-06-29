@@ -3,12 +3,12 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 
 $user_role = $_SESSION['role'];
 $user_id = (int) $_SESSION['user_id'];
 
-if (!in_array($user_role, ['sales', 'super_admin', 'inventory_admin', 'manager'])) {
+if (!in_array($user_role, ['sales', 'super_admin', 'inventory_admin', 'manager', 'cashier'])) {
     die("ACCESS DENIED.");
 }
 
@@ -152,6 +152,7 @@ if ($searched) {
 
 date_default_timezone_set('Africa/Nairobi');
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
+require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>
@@ -238,8 +239,10 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                 <a href="/inventory_system/dashboard/salesdashboard.php">Dashboard</a>
             <?php elseif ($user_role === 'super_admin'): ?>
                 <a href="/inventory_system/dashboard/superadmindashboard.php">Dashboard</a>
-            <?php else: ?>
+            <?php elseif ($user_role === 'inventory_admin'): ?>
                 <a href="/inventory_system/dashboard/inventorydashboard.php">Dashboard</a>
+            <?php elseif ($user_role === 'cashier'): ?>
+                <a href="/inventory_system/dashboard/cashierdashboard.php">Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <span>Search Inventory</span>

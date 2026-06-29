@@ -279,7 +279,10 @@ body {
                     case 'manager': $dashboard_url = '/inventory_system/dashboard/managerdashboard.php'; break;
                     case 'inventory_admin': $dashboard_url = '/inventory_system/dashboard/inventorydashboard.php'; break;
                     case 'sales': $dashboard_url = '/inventory_system/dashboard/salesdashboard.php'; break;
-                    default: $dashboard_url = '/inventory_system/dashboard/index.php';
+                    case 'cashier': $dashboard_url = '/inventory_system/dashboard/cashierdashboard.php'; break;
+                    case 'software': $dashboard_url = '/inventory_system/dashboard/softwaredashboard.php'; break;
+                    case 'technician': $dashboard_url = '/inventory_system/dashboard/techniciandashboard.php'; break;
+
                 }
                 echo $dashboard_url;
             ?>" class="logo-link">
@@ -446,6 +449,18 @@ body {
                     ]
                 ];
             }
+            // cashier
+            if ($role === 'cashier') {
+                $sections['SALES'] = [
+                    'icon' => 'fas fa-chart-line',
+                    'items' => [
+                        ['Process New Sale', '/inventory_system/sales/make_sale.php', 'fas fa-cash-register'],
+                        ['Sales Logs', '/inventory_system/sales/sales_logs.php', 'fas fa-chart-bar'],
+                        ['Search Device', '/inventory_system/sales/search_device.php', 'fas fa-search'],
+                    ]
+                ];
+            }
+
 
             if ($role === 'sales') {
                 $sections['QUOTATIONS'] = [

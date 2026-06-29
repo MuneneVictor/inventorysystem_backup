@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jun 26, 2026 at 03:59 PM
+-- Generation Time: Jun 29, 2026 at 04:10 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.30
 
@@ -49,11 +49,12 @@ CREATE TABLE `accessories` (
 INSERT INTO `accessories` (`id`, `name`, `quantity`, `added_by`, `place`, `branch`, `price`, `date_added`, `status`, `updated_by`, `updated_at`) VALUES
 (1, 'DELL optical mouse', 21, 1, 'display', 'MOI', NULL, '2026-06-17 15:07:59', 'instock', 1, '2026-06-22 13:34:24'),
 (2, 'JBL essential 2 speaker', 4, 1, 'display', 'MOI', NULL, '2026-06-22 08:38:12', 'instock', NULL, NULL),
-(3, 'power cable', 5, 1, 'display', 'MOI', 500.00, '2026-06-22 09:51:07', 'instock', NULL, NULL),
-(4, 'power cable', 50, 1, 'store', 'MOI', NULL, '2026-06-22 10:29:47', 'instock', NULL, NULL),
+(3, 'power cable', 5, 1, 'display', 'MOI', 500.00, '2026-03-17 09:51:07', 'instock', NULL, NULL),
+(4, 'power cable', 50, 1, 'store', 'MOI', NULL, '2026-03-15 10:29:47', 'instock', NULL, NULL),
 (5, 'HP Keyboard', 5, 1, 'store', 'MOI', NULL, '2026-06-22 10:34:24', 'instock', 1, '2026-06-22 13:34:24'),
 (6, 'USB-C Adapter', 3, 1, 'warehouse', 'MOI', NULL, '2026-06-22 10:34:24', 'instock', 1, '2026-06-22 13:34:24'),
-(7, 'power cable', 6, 1, 'store', 'KIMATHI', NULL, '2026-06-26 08:15:54', 'instock', 1, '2026-06-26 11:16:06');
+(7, 'power cable', 6, 1, 'store', 'KIMATHI', NULL, '2026-03-19 08:15:54', 'instock', 1, '2026-06-26 11:16:06'),
+(8, 'power cable', 1, 8, 'display', 'MOI', NULL, '2026-03-17 09:22:16', 'instock', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -398,7 +399,28 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `created_at`)
 (322, 7, 'Sold RAM/SSD', 'Sold SSD (SATA, 512GB) - Quantity: 2 for KES 10,000.00', '2026-06-26 15:36:39'),
 (323, 7, 'Sold RAM/SSD', 'Sold RAM (DDR3, 16GB) - Quantity: 2 for KES 10,000.00', '2026-06-26 15:39:17'),
 (324, 7, 'Sold RAM/SSD', 'Sold SSD (SATA, 512GB) - Quantity: 2 for KES 10,000.00', '2026-06-26 15:43:00'),
-(325, 7, 'Sold RAM/SSD', 'Sold SSD (SATA, 512GB) - Quantity: 2 for KES 10,000.00', '2026-06-26 15:51:59');
+(325, 7, 'Sold RAM/SSD', 'Sold SSD (SATA, 512GB) - Quantity: 2 for KES 10,000.00', '2026-06-26 15:51:59'),
+(326, 8, 'Added accessory', 'Added new accessory: power cable (Qty: 1) to MOI branch (place: display)', '2026-06-27 09:22:16'),
+(327, 8, 'Give out HDD', 'Gave 2 HDD(s) (SATA, 2TB) to Peninah Kalundi in KIMATHI branch', '2026-06-27 10:44:20'),
+(328, 8, 'Give out RAM/SSD', 'Gave 1 SSD (SATA, 512GB) to Peninah Kalundi in KIMATHI branch', '2026-06-27 10:44:52'),
+(329, 8, 'Returned RAM/SSD (full)', 'Returned 1 SSD(s) (SATA, 512GB) from log ID 9. Status set to returned. <a href=\'../uploads/ram_ssd_returns/ram_ssd_return_9_1782561394.png\' target=\'_blank\'>View Photo</a>', '2026-06-27 11:56:34'),
+(330, 8, 'Add RAM/SSD', 'Added/updated SSD (SATA, 256GB) quantity 10 in KIMATHI branch', '2026-06-27 15:01:31'),
+(331, 4, 'Sold device', 'Sold device SN: 5CG1234XYZ for KES 30,000.00 in sale #3', '2026-06-29 11:13:46'),
+(332, 4, 'Sold device', 'Sold device SN: 5CG09OZXE36 for KES 40,000.00 in sale #3', '2026-06-29 11:33:25'),
+(333, 4, 'Sold device', 'Sold device SN: 5CG09OZXE36 for KES 40,000.00 in sale #3', '2026-06-29 12:15:10'),
+(334, 4, 'Sold device', 'Sold device SN: 5CG1234XYZ for KES 30,000.00 in sale #2', '2026-06-29 12:18:09'),
+(335, 4, 'Sold device', 'Sold device SN: 5CG1234XYZ for KES 30,000.00 in sale #1', '2026-06-29 12:22:51'),
+(336, 7, 'Sold device', 'Sold device SN: 5CG7TYTUGJ9 for KES 35,000.00 in sale #1', '2026-06-29 12:39:56'),
+(337, 4, 'Sold HDD', 'Sold HDD (SATA, 2TB) - Quantity: 2 for KES 15,000.00 in sale #1', '2026-06-29 12:50:16'),
+(338, 7, 'Sold RAM/SSD', 'Sold SSD (SATA, 512GB) - Quantity: 1 for KES 10,000.00 in sale #1', '2026-06-29 12:59:30'),
+(339, 1, 'Give out HDD', 'Gave 2 HDD(s) (SATA, 2TB) to Peninah Kalundi in KIMATHI branch', '2026-06-29 13:08:49'),
+(340, 7, 'Sold HDD', 'Sold HDD (SATA, 2TB) - Quantity: 2 for KES 15,000.00 in sale #5', '2026-06-29 13:09:27'),
+(341, 1, 'Give out HDD', 'Gave 1 HDD(s) (SATA, 2TB) to Peninah Kalundi in KIMATHI branch', '2026-06-29 13:20:23'),
+(342, 7, 'Sold HDD', 'Sold HDD (SATA, 2TB) - Quantity: 1 for KES 15,000.00 in sale #5', '2026-06-29 13:20:46'),
+(343, 7, 'Sold RAM/SSD', 'Sold RAM (DDR3, 16GB) - Quantity: 1 for KES 1,000.00 in sale #5', '2026-06-29 13:21:41'),
+(344, 4, 'Sold monitor', 'Sold monitor SN: M9JIOHG56DCGF for KES 12,000.00 in sale #9', '2026-06-29 15:36:46'),
+(345, 4, 'Sold UPS', 'Sold UPS SN: UPKNM9JHFH for KES 20,000.00 in sale #11', '2026-06-29 16:03:59'),
+(346, 4, 'Sold device', 'Sold device SN: 5CG1234XYZ for KES 35,000.00 in sale #11', '2026-06-29 16:06:34');
 
 -- --------------------------------------------------------
 
@@ -483,6 +505,32 @@ INSERT INTO `charger_logs` (`id`, `charger_id`, `charger_type`, `watts`, `charge
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `clients`
+--
+
+CREATE TABLE `clients` (
+  `id` int NOT NULL,
+  `client_name` varchar(100) DEFAULT NULL,
+  `client_phone` varchar(50) DEFAULT NULL,
+  `client_box` varchar(100) DEFAULT NULL,
+  `client_email` varchar(100) DEFAULT NULL,
+  `sales_person` int DEFAULT NULL,
+  `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `branch` enum('MOI','KIMATHI') DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `clients`
+--
+
+INSERT INTO `clients` (`id`, `client_name`, `client_phone`, `client_box`, `client_email`, `sales_person`, `date_added`, `branch`) VALUES
+(1, 'Munene', '0711529618', 'P.O. BOX 25-90500', 'victormunene207@gmail.com', 7, '2026-06-29 09:41:42', 'KIMATHI'),
+(2, 'Munene victor', '0703646909', NULL, 'vdebmunene207@gmail.com', 7, '2026-06-29 10:33:17', 'KIMATHI'),
+(7, 'Munene victor', '0711529618', 'P.O. BOX 12-95400', 'victormunene207@gmail.com', 8, '2026-06-29 14:55:01', NULL);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `devices`
 --
 
@@ -519,14 +567,14 @@ INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`
 ('5CG09OZXE33', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
 ('5CG09OZXE34', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
 ('5CG09OZXE35', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', 40000.00, NULL, 40000.00, '2026-06-22 15:57:47', 8),
-('5CG09OZXE36', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 40000.00, NULL, 45000.00, '2026-06-20 18:14:25', 7),
+('5CG09OZXE36', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 40000.00, NULL, 40000.00, '2026-06-29 15:15:10', 7),
 ('5CG09OZXE37', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 35000.00, NULL, NULL, NULL, NULL),
-('5CG09OZXE38', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL),
+('5CG09OZXE38', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, 65000.00, '2026-06-27 17:14:07', 7),
 ('5CG09OZXE39', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL),
 ('5CG09OZXE40', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 60000.00, '2026-04-24 11:26:11', 60000.00, '2026-06-17 19:07:54', 7),
 ('5CG09OZXE41', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 60000.00, '2026-04-24 11:26:11', NULL, NULL, NULL),
 ('5CG09OZXE42', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', 60000.00, '2026-04-24 11:26:11', NULL, NULL, NULL),
-('5CG1234XYZ', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL),
+('5CG1234XYZ', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'Sold', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC16', NULL, NULL, 35000.00, '2026-06-29 19:06:34', 8),
 ('5CG7TYTUGJ10', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGJ11', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGJ12', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
@@ -682,7 +730,7 @@ CREATE TABLE `hdds` (
 --
 
 INSERT INTO `hdds` (`id`, `type`, `quantity`, `storage`, `branch`, `added_by`, `date_added`, `updated_by`, `date_updated`, `price`) VALUES
-(1, 'SATA', 4, '2TB', 'KIMATHI', 1, '2026-06-20 10:22:45', 1, '2026-06-26 17:54:04', 15000.00),
+(1, 'SATA', 4, '2TB', 'KIMATHI', 1, '2026-06-20 10:22:45', 1, '2026-06-29 16:20:23', 15000.00),
 (2, 'SATA', 7, '500GB', 'MOI', 1, '2026-06-26 10:39:13', 1, '2026-06-26 17:56:19', NULL);
 
 -- --------------------------------------------------------
@@ -716,7 +764,10 @@ INSERT INTO `hdd_logs` (`id`, `hdd_id`, `type`, `quantity_given`, `given_to`, `g
 (5, 1, 'SATA', 1, 7, 1, 'KIMATHI', '2026-06-26 14:18:50', '2TB', 'returned'),
 (6, 1, 'SATA', 1, 7, 1, 'KIMATHI', '2026-06-26 14:48:29', '2TB', 'returned'),
 (7, 1, 'SATA', 1, 7, 1, 'KIMATHI', '2026-06-26 14:53:39', '2TB', 'returned'),
-(8, 2, 'SATA', 3, 8, 1, 'MOI', '2026-06-26 14:56:19', '500GB', 'sold');
+(8, 2, 'SATA', 3, 8, 1, 'MOI', '2026-06-26 14:56:19', '500GB', 'sold'),
+(9, 1, 'SATA', 2, 7, 8, 'KIMATHI', '2026-06-27 10:44:20', '2TB', 'sold'),
+(10, 1, 'SATA', 2, 7, 1, 'KIMATHI', '2026-06-29 13:08:49', '2TB', 'sold'),
+(11, 1, 'SATA', 1, 7, 1, 'KIMATHI', '2026-06-29 13:20:23', '2TB', 'sold');
 
 -- --------------------------------------------------------
 
@@ -776,7 +827,7 @@ CREATE TABLE `monitors` (
 --
 
 INSERT INTO `monitors` (`serial_number`, `model_name`, `size_inches`, `status`, `branch`, `added_by`, `date_added`, `sold_by`, `sold_at`, `price`, `selling_price`, `monitor_condition`) VALUES
-('M9JIOHG56DCGF', 'HP FRAMALESS 24 inch', 24, 'In Stock', 'KIMATHI', 1, '2026-06-18 11:46:40', NULL, NULL, NULL, NULL, NULL),
+('M9JIOHG56DCGF', 'HP FRAMALESS 24 inch', 24, 'Sold', 'KIMATHI', 1, '2026-06-18 11:46:40', 8, '2026-06-29 15:39:25', NULL, 12000.00, 'brand new'),
 ('M9OHG56DCGF', 'HP FRMALESS 24 inch', 24, 'Sold', 'MOI', 1, '2026-06-16 09:18:51', 7, '2026-06-18 11:48:46', 10000.00, 10000.00, NULL);
 
 -- --------------------------------------------------------
@@ -825,20 +876,21 @@ CREATE TABLE `printers` (
   `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `date_sold` timestamp NULL DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
-  `selling_price` decimal(10,2) DEFAULT NULL
+  `selling_price` decimal(10,2) DEFAULT NULL,
+  `printer_condition` enum('brand new','ex-uk') COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `printers`
 --
 
-INSERT INTO `printers` (`serial_number`, `model_name`, `branch`, `status`, `added_by`, `sold_by`, `date_added`, `date_sold`, `price`, `selling_price`) VALUES
-('PH78IIOG', 'EPSON', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-14 14:05:41', NULL, NULL, NULL),
-('PTNJGGDHH10', 'EPSON PRINTER', 'KIMATHI', 'Sold', 1, 7, '2025-12-14 18:46:38', '2026-06-18 05:38:17', 26000.00, 26000.00),
-('PTNJGGDHH11', 'EPSON PRINTER', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-14 18:46:38', NULL, NULL, NULL),
-('PTNJGGDHH8', 'EPSON PRINTER', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-14 18:46:38', NULL, NULL, NULL),
-('PTNJGGDHH9', 'EPSON PRINTER', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-14 18:46:38', NULL, NULL, NULL),
-('TH5JJ897D', 'MECER PRINTER', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-16 13:39:53', NULL, NULL, NULL);
+INSERT INTO `printers` (`serial_number`, `model_name`, `branch`, `status`, `added_by`, `sold_by`, `date_added`, `date_sold`, `price`, `selling_price`, `printer_condition`) VALUES
+('PH78IIOG', 'EPSON', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-14 14:05:41', NULL, NULL, NULL, NULL),
+('PTNJGGDHH10', 'EPSON PRINTER', 'KIMATHI', 'Sold', 1, 7, '2025-12-14 18:46:38', '2026-06-18 05:38:17', 26000.00, 26000.00, NULL),
+('PTNJGGDHH11', 'EPSON PRINTER', 'KIMATHI', 'Sold', 1, 8, '2025-12-14 18:46:38', '2026-06-29 15:53:32', NULL, 26000.00, NULL),
+('PTNJGGDHH8', 'EPSON PRINTER', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-14 18:46:38', NULL, NULL, NULL, NULL),
+('PTNJGGDHH9', 'EPSON PRINTER', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-14 18:46:38', NULL, NULL, NULL, NULL),
+('TH5JJ897D', 'MECER PRINTER', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-16 13:39:53', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -866,14 +918,15 @@ CREATE TABLE `rams_ssds` (
 --
 
 INSERT INTO `rams_ssds` (`id`, `category`, `type`, `quantity`, `branch`, `updated_by`, `date_updated`, `storage`, `added_by`, `date_added`, `price`) VALUES
-(6, 'SSD', 'SATA', 10, 'KIMATHI', 1, '2026-06-26 18:36:02', 512, NULL, '2026-06-26 09:39:37', 10000.00),
-(7, 'RAM', 'DDR3', 0, 'KIMATHI', 1, '2026-01-22 14:32:46', 16, NULL, '2026-06-26 09:39:37', NULL),
+(6, 'SSD', 'SATA', 11, 'KIMATHI', 8, '2026-06-27 14:56:34', 512, 8, '2026-06-26 09:39:37', 10000.00),
+(7, 'RAM', 'DDR3', 1, 'KIMATHI', 1, '2026-01-22 14:32:46', 16, 8, '2026-06-26 09:39:37', NULL),
 (8, 'SSD', 'SATA', 14, 'MOI', 1, '2025-12-29 23:46:01', 512, NULL, '2026-06-26 09:39:37', NULL),
 (9, 'RAM', 'PC4', 8, 'KIMATHI', 1, '2025-12-29 23:46:01', 16, NULL, '2026-06-26 09:39:37', NULL),
 (10, 'RAM', 'PC4', 4, 'KIMATHI', 1, '2026-03-28 09:34:30', 8, NULL, '2026-06-26 09:39:37', NULL),
 (11, 'RAM', 'DDR3', 16, 'MOI', 1, '2026-06-10 18:54:33', 16, NULL, '2026-06-26 09:39:37', NULL),
 (12, 'RAM', 'PC4', 6, 'MOI', 1, '2025-12-29 23:46:01', 16, NULL, '2026-06-26 09:39:37', NULL),
-(13, 'RAM', 'PC4', 1, 'MOI', 1, '2026-03-28 09:34:30', 8, NULL, '2026-06-26 09:39:37', NULL);
+(13, 'RAM', 'PC4', 1, 'MOI', 1, '2026-03-28 09:34:30', 8, NULL, '2026-06-26 09:39:37', NULL),
+(14, 'SSD', 'SATA', 10, 'KIMATHI', 8, NULL, 256, NULL, '2026-06-27 15:01:31', NULL);
 
 -- --------------------------------------------------------
 
@@ -901,13 +954,14 @@ CREATE TABLE `rams_ssds_logs` (
 
 INSERT INTO `rams_ssds_logs` (`id`, `ram_ssd_id`, `category`, `type`, `quantity_given`, `given_to`, `given_by`, `branch`, `date_given`, `storage`, `status`) VALUES
 (1, 6, 'SSD', 'SATA', 5, 7, 8, 'KIMATHI', '2025-12-06 22:00:25', 512, 'returned'),
-(2, 6, 'SSD', 'SATA', 1, 7, 1, 'KIMATHI', '2025-12-07 15:54:41', 512, 'pending_sale'),
+(2, 6, 'SSD', 'SATA', 1, 7, 1, 'KIMATHI', '2025-12-07 15:54:41', 512, 'sold'),
 (3, 6, 'SSD', 'SATA', 2, 7, 1, 'KIMATHI', '2025-12-09 05:28:43', 512, 'sold'),
-(4, 7, 'RAM', 'DDR3', 1, 7, 1, 'KIMATHI', '2025-12-15 18:41:23', 16, 'pending_sale'),
+(4, 7, 'RAM', 'DDR3', 1, 7, 1, 'KIMATHI', '2025-12-15 18:41:23', 16, 'sold'),
 (5, 6, 'SSD', 'SATA', 2, 7, 8, 'KIMATHI', '2025-12-28 14:17:01', 512, 'sold'),
 (6, 11, 'RAM', 'DDR3', 2, 7, 1, 'MOI', '2026-06-10 15:54:33', 16, 'sold'),
 (7, 6, 'SSD', 'SATA', 2, 8, 1, 'KIMATHI', '2026-06-26 10:46:33', 512, 'returned'),
-(8, 6, 'SSD', 'SATA', 2, 7, 1, 'KIMATHI', '2026-06-26 15:20:09', 512, 'sold');
+(8, 6, 'SSD', 'SATA', 2, 7, 1, 'KIMATHI', '2026-06-26 15:20:09', 512, 'sold'),
+(9, 6, 'SSD', 'SATA', 1, 7, 8, 'KIMATHI', '2026-06-27 10:44:52', 512, 'returned');
 
 -- --------------------------------------------------------
 
@@ -969,6 +1023,72 @@ INSERT INTO `repairs` (`id`, `serial_number`, `problem_description`, `added_by`,
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `sales`
+--
+
+CREATE TABLE `sales` (
+  `id` int NOT NULL,
+  `client_name` varchar(100) DEFAULT NULL,
+  `client_phone` varchar(20) DEFAULT NULL,
+  `total_amount` decimal(10,2) DEFAULT NULL,
+  `sale_status` enum('active','completed','cancelled') DEFAULT 'active',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` datetime DEFAULT NULL,
+  `sold_by` int DEFAULT NULL,
+  `payment_method` enum('cash','mpesa-till','mpesa-pochi','bank-transfer') DEFAULT NULL,
+  `payment_status` enum('paid','unpaid') DEFAULT NULL,
+  `completion_status` enum('pending','Completed') DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `sales`
+--
+
+INSERT INTO `sales` (`id`, `client_name`, `client_phone`, `total_amount`, `sale_status`, `created_at`, `completed_at`, `sold_by`, `payment_method`, `payment_status`, `completion_status`) VALUES
+(1, 'victor', '0711529618', 105000.00, 'cancelled', '2026-06-29 08:07:44', '2026-06-29 16:07:42', 7, NULL, NULL, 'pending'),
+(2, 'Munene', '0711529618', 0.00, 'cancelled', '2026-06-29 10:26:24', '2026-06-29 15:19:11', 7, NULL, NULL, 'pending'),
+(3, 'Munene victor', '0703646909', 0.00, 'completed', '2026-06-29 10:33:53', '2026-06-29 15:16:18', 7, 'mpesa-till', 'paid', 'Completed'),
+(4, NULL, NULL, NULL, 'cancelled', '2026-06-29 10:44:43', '2026-06-29 15:21:50', 7, NULL, NULL, NULL),
+(5, 'Munene victor', '0703646909', 30000.00, 'cancelled', '2026-06-29 13:09:01', '2026-06-29 16:31:40', 7, NULL, NULL, 'pending'),
+(6, 'Munene victor', '0703646909', NULL, 'completed', '2026-06-29 13:50:15', '2026-06-29 16:51:55', 8, 'mpesa-till', 'paid', 'Completed'),
+(7, NULL, NULL, NULL, 'cancelled', '2026-06-29 13:55:45', '2026-06-29 17:05:36', 8, NULL, NULL, NULL),
+(8, NULL, NULL, NULL, 'cancelled', '2026-06-29 14:20:14', '2026-06-29 18:02:08', 8, NULL, NULL, NULL),
+(9, 'Munene victor', '0711529618', 0.00, 'cancelled', '2026-06-29 15:22:10', '2026-06-29 18:37:29', 8, NULL, NULL, 'pending'),
+(10, NULL, NULL, NULL, 'active', '2026-06-29 15:37:39', NULL, 7, NULL, NULL, NULL),
+(11, 'Munene victor', '0711529618', 223000.00, 'active', '2026-06-29 15:38:53', NULL, 8, NULL, NULL, 'pending');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sale_items`
+--
+
+CREATE TABLE `sale_items` (
+  `id` int NOT NULL,
+  `sale_id` int DEFAULT NULL,
+  `item_type` enum('device','monitors','printers','smartboards','phones','ups','ram','ssd','charger','accessory','hdd','graphic') DEFAULT NULL,
+  `item_id` varchar(50) DEFAULT NULL,
+  `description` varchar(200) DEFAULT NULL,
+  `quantity` int DEFAULT NULL,
+  `unit_price` decimal(10,2) DEFAULT NULL,
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `unit_price`)) STORED,
+  `sales_person` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `sale_items`
+--
+
+INSERT INTO `sale_items` (`id`, `sale_id`, `item_type`, `item_id`, `description`, `quantity`, `unit_price`, `sales_person`) VALUES
+(3, 3, 'device', '5CG09OZXE36', 'HP ELITEBOOK 840 G6 | INTEL CORE I5-8TH GEN | 16GB RAM | SSD 512GB | None | Non-touch', 1, 40000.00, 7),
+(15, 11, 'monitors', 'M9JIOHG56DCGF', 'HP FRAMALESS 24 inch | 24 inch | brand new', 1, 12000.00, 8),
+(16, 11, 'printers', 'PTNJGGDHH11', 'EPSON PRINTER', 1, 26000.00, 8),
+(17, 11, 'smartboards', 'SB001', 'SMART 75-inch | 75 inch', 1, 150000.00, 8),
+(19, 11, 'device', '5CG1234XYZ', 'HP EliteBook 840 G6 | Intel Core i5-8250U | 8GB RAM | SSD 256GB | Intel UHD Graphics | Non-touch', 1, 35000.00, 8);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `smartboards`
 --
 
@@ -992,11 +1112,11 @@ CREATE TABLE `smartboards` (
 --
 
 INSERT INTO `smartboards` (`serial_number`, `model`, `size_inches`, `date_added`, `status`, `added_by`, `branch`, `place`, `price`, `sold_at`, `selling_price`, `sold_by`) VALUES
-('SB001', 'SMART 75-inch', 75, '2026-06-20 08:07:14', 'instock', 1, 'KIMATHI', 'store', NULL, NULL, NULL, NULL),
+('SB001', 'SMART 75-inch', 75, '2026-05-30 08:07:14', 'sold', 1, 'KIMATHI', 'store', NULL, '2026-06-29 19:02:33', 150000.00, 8),
 ('SB002', 'ViewSonic 65-inch', 65, '2026-06-20 08:07:14', 'instock', 1, 'MOI', 'warehouse', NULL, NULL, NULL, NULL),
-('SB0025TY', 'Onescreen 5', 65, '2026-06-20 08:11:59', 'instock', 1, 'MOI', 'warehouse', NULL, NULL, NULL, NULL),
-('SB002S4R', 'SMART 75-inch', 75, '2026-06-20 08:11:59', 'instock', 1, 'KIMATHI', 'store', NULL, NULL, NULL, NULL),
-('SM5CG09OZXE60', 'Onescreen 5', 65, '2026-06-19 18:44:40', 'instock', 1, 'KIMATHI', 'store', NULL, NULL, NULL, NULL),
+('SB0025TY', 'Onescreen 5', 65, '2026-03-16 08:11:59', 'instock', 1, 'MOI', 'warehouse', NULL, NULL, NULL, NULL),
+('SB002S4R', 'SMART 75-inch', 75, '2026-06-20 08:11:59', 'sold', 1, 'KIMATHI', 'store', 170000.00, '2026-06-29 09:33:43', 170000.00, 7),
+('SM5CG09OZXE60', 'Onescreen 5', 65, '2026-03-24 18:44:40', 'sold', 1, 'KIMATHI', 'store', 80000.00, '2026-06-27 17:11:18', 80000.00, 7),
 ('SM7UYYG3VV', 'SMART', 75, '2026-06-17 13:05:45', 'sold', 1, 'KIMATHI', NULL, 200000.00, '2026-06-18 12:34:13', 2050000.00, 7),
 ('SMI0OUJ', 'SMART 6065', 65, '2026-06-20 08:23:16', 'instock', 1, NULL, 'warehouse', 150000.00, NULL, NULL, NULL);
 
@@ -1015,17 +1135,17 @@ CREATE TABLE `sold_accessories` (
   `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
   `sold_by` int NOT NULL,
-  `date_sold` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `date_sold` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `sale_item_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sold_accessories`
 --
 
-INSERT INTO `sold_accessories` (`id`, `accessory_id`, `accessory_name`, `quantity`, `selling_price`, `branch`, `sold_by`, `date_sold`) VALUES
-(1, 1, 'DELL optical mouse', 1, 1500.00, 'KIMATHI', 7, '2026-06-18 11:43:29'),
-(2, 1, 'Dell optical mouce', 3, 1500.00, 'MOI', 7, '2026-06-18 13:11:01'),
-(3, 4, 'power cable', 10, 5000.00, 'KIMATHI', 7, '2026-06-22 11:14:41');
+INSERT INTO `sold_accessories` (`id`, `accessory_id`, `accessory_name`, `quantity`, `selling_price`, `branch`, `sold_by`, `date_sold`, `sale_item_id`) VALUES
+(1, 1, 'DELL optical mouse', 1, 1500.00, 'KIMATHI', 7, '2026-06-18 11:43:29', NULL),
+(2, 1, 'Dell optical mouce', 3, 1500.00, 'MOI', 7, '2026-06-18 13:11:01', NULL);
 
 -- --------------------------------------------------------
 
@@ -1043,16 +1163,17 @@ CREATE TABLE `sold_chargers` (
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
   `sold_by` int DEFAULT NULL,
   `date_sold` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED,
+  `sale_item_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sold_chargers`
 --
 
-INSERT INTO `sold_chargers` (`id`, `charger_id`, `charger_type`, `charger_condition`, `quantity`, `selling_price`, `branch`, `sold_by`, `date_sold`) VALUES
-(1, 9, 'Hp Blue Pin', 'New', 2, 3000.00, 'KIMATHI', 7, '2026-06-18 11:02:17'),
-(2, 10, 'Hp bluepin 65W', 'New', 20, 3500.00, 'KIMATHI', 7, '2026-06-22 05:51:19');
+INSERT INTO `sold_chargers` (`id`, `charger_id`, `charger_type`, `charger_condition`, `quantity`, `selling_price`, `branch`, `sold_by`, `date_sold`, `sale_item_id`) VALUES
+(1, 9, 'Hp Blue Pin', 'New', 2, 3000.00, 'KIMATHI', 7, '2026-06-18 11:02:17', NULL),
+(2, 10, 'Hp bluepin 65W', 'New', 20, 3500.00, 'KIMATHI', 7, '2026-06-22 05:51:19', NULL);
 
 -- --------------------------------------------------------
 
@@ -1070,15 +1191,16 @@ CREATE TABLE `sold_graphics_cards` (
   `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED,
   `date_sold` datetime DEFAULT NULL,
   `sold_by` int DEFAULT NULL,
-  `branch` enum('MOI','KIMATHI') DEFAULT NULL
+  `branch` enum('MOI','KIMATHI') DEFAULT NULL,
+  `sale_item_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sold_graphics_cards`
 --
 
-INSERT INTO `sold_graphics_cards` (`id`, `graphic_card_id`, `type`, `storage_capacity`, `quantity`, `selling_price`, `date_sold`, `sold_by`, `branch`) VALUES
-(1, 1, 'NVIDIA QUADRO P2000', 5, 3, 15000.00, '2026-06-20 14:38:43', 7, 'KIMATHI');
+INSERT INTO `sold_graphics_cards` (`id`, `graphic_card_id`, `type`, `storage_capacity`, `quantity`, `selling_price`, `date_sold`, `sold_by`, `branch`, `sale_item_id`) VALUES
+(1, 1, 'NVIDIA QUADRO P2000', 5, 3, 15000.00, '2026-06-20 14:38:43', 7, 'KIMATHI', NULL);
 
 -- --------------------------------------------------------
 
@@ -1096,17 +1218,18 @@ CREATE TABLE `sold_hdds` (
   `selling_price` decimal(10,2) DEFAULT NULL,
   `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED,
   `date_sold` datetime DEFAULT NULL,
-  `sold_by` int DEFAULT NULL
+  `sold_by` int DEFAULT NULL,
+  `sale_item_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sold_hdds`
 --
 
-INSERT INTO `sold_hdds` (`id`, `hdd_id`, `type`, `storage`, `branch`, `quantity`, `selling_price`, `date_sold`, `sold_by`) VALUES
-(1, 1, 'SATA', '2TB', 'KIMATHI', 2, 15000.00, '2026-06-20 13:39:49', 7),
-(2, 1, 'SATA', '2TB', 'KIMATHI', 1, 15000.00, '2026-06-26 15:53:56', 7),
-(3, 2, 'SATA', '500GB', 'MOI', 3, 4000.00, '2026-06-26 17:58:13', 8);
+INSERT INTO `sold_hdds` (`id`, `hdd_id`, `type`, `storage`, `branch`, `quantity`, `selling_price`, `date_sold`, `sold_by`, `sale_item_id`) VALUES
+(1, 1, 'SATA', '2TB', 'KIMATHI', 2, 15000.00, '2026-06-20 13:39:49', 7, NULL),
+(2, 1, 'SATA', '2TB', 'KIMATHI', 1, 15000.00, '2026-06-26 15:53:56', 7, NULL),
+(3, 2, 'SATA', '500GB', 'MOI', 3, 4000.00, '2026-06-29 17:58:13', 8, NULL);
 
 -- --------------------------------------------------------
 
@@ -1125,19 +1248,20 @@ CREATE TABLE `sold_rams_ssds` (
   `selling_price` decimal(10,2) DEFAULT NULL,
   `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED,
   `date_sold` datetime DEFAULT NULL,
-  `sold_by` int DEFAULT NULL
+  `sold_by` int DEFAULT NULL,
+  `sale_item_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sold_rams_ssds`
 --
 
-INSERT INTO `sold_rams_ssds` (`id`, `ram_ssd_id`, `category`, `type`, `storage`, `branch`, `quantity`, `selling_price`, `date_sold`, `sold_by`) VALUES
-(1, 6, 'SSD', 'SATA', 512, 'KIMATHI', 2, 10000.00, '2026-06-20 18:34:12', 7),
-(2, 6, 'SSD', 'SATA', 512, 'KIMATHI', 2, 10000.00, '2026-06-26 18:36:39', 7),
-(3, 11, 'RAM', 'DDR3', 16, 'MOI', 2, 10000.00, '2026-06-26 18:39:17', 7),
-(4, 6, 'SSD', 'SATA', 512, 'KIMATHI', 2, 10000.00, '2026-06-26 18:43:00', 7),
-(5, 6, 'SSD', 'SATA', 512, 'KIMATHI', 2, 10000.00, '2026-06-26 18:51:59', 7);
+INSERT INTO `sold_rams_ssds` (`id`, `ram_ssd_id`, `category`, `type`, `storage`, `branch`, `quantity`, `selling_price`, `date_sold`, `sold_by`, `sale_item_id`) VALUES
+(1, 6, 'SSD', 'SATA', 512, 'KIMATHI', 2, 10000.00, '2026-06-20 18:34:12', 7, NULL),
+(2, 6, 'SSD', 'SATA', 512, 'KIMATHI', 2, 10000.00, '2026-06-26 18:36:39', 7, NULL),
+(3, 11, 'RAM', 'DDR3', 16, 'MOI', 2, 10000.00, '2026-06-26 18:39:17', 7, NULL),
+(4, 6, 'SSD', 'SATA', 512, 'KIMATHI', 2, 10000.00, '2026-06-26 18:43:00', 7, NULL),
+(5, 6, 'SSD', 'SATA', 512, 'KIMATHI', 2, 10000.00, '2026-06-26 18:51:59', 7, NULL);
 
 -- --------------------------------------------------------
 
@@ -1164,7 +1288,7 @@ CREATE TABLE `ups` (
 --
 
 INSERT INTO `ups` (`serial_number`, `model`, `capacity`, `status`, `added_by`, `date_added`, `price`, `sold_by`, `selling_price`, `date_sold`, `branch`) VALUES
-('UPKNM9JHFH', 'MECCER UPS', 2600, 'sold', 1, '2026-06-19 19:16:18', NULL, 8, 20000.00, '2026-06-22 16:31:48', 'MOI');
+('UPKNM9JHFH', 'MECCER UPS', 2600, 'instock', 1, '2026-06-27 10:02:37', NULL, NULL, NULL, NULL, 'KIMATHI');
 
 -- --------------------------------------------------------
 
@@ -1192,10 +1316,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `username`, `password`, `role`, `is_active`, `full_name`, `created_at`, `last_login`, `branch`, `failed_attempts`, `account_locked_until`) VALUES
-(1, 'victormunene207@gmail.com', 'vic', '$2a$12$q5sPMKAfYhS0AMXRm6BpI.W7flz8n0wmcUbBJ45BAnOa8BsxgYKSK', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-06-26 15:35:40', 'KIMATHI', 0, NULL),
-(4, 'munene@gmail.com', 'Vdeb', '$2y$10$m9PnQbD9v1ZY50s14T45MOV2n4bdaty74/2Y8rBlOuRY56.4OdlGi', 'cashier', 1, 'Munene vicky', '2025-12-03 12:39:40', '2026-06-20 13:59:48', 'KIMATHI', 0, NULL),
-(7, 'peninahkalundi@gmail.com', 'pesh', '$2y$10$cS2ZivexM3srJGrkihxPnumRp0RNDgdHDTX8bkGuUXphAbd9ZJSc.', 'sales', 1, 'Peninah Kalundi', '2025-12-04 18:01:17', '2026-06-26 15:27:10', 'KIMATHI', 0, NULL),
-(8, 'munene23.v@student.cuk.ac.ke', 'syovata', '$2a$12$/VBwYZBkXo6VuCCFIPFWDeLBJ5Ewbo.Z.lALJgWmckCUeT5PFmJ5.', 'sales', 1, 'Victor Syovata', '2025-12-05 22:19:21', '2026-06-26 14:57:33', 'MOI', 0, NULL);
+(1, 'victormunene207@gmail.com', 'vic', '$2a$12$q5sPMKAfYhS0AMXRm6BpI.W7flz8n0wmcUbBJ45BAnOa8BsxgYKSK', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-06-29 08:36:48', 'KIMATHI', 0, NULL),
+(4, 'munene@gmail.com', 'Vdeb', '$2y$10$m9PnQbD9v1ZY50s14T45MOV2n4bdaty74/2Y8rBlOuRY56.4OdlGi', 'cashier', 1, 'Munene vicky', '2025-12-03 12:39:40', '2026-06-29 09:25:26', 'KIMATHI', 0, NULL),
+(7, 'peninahkalundi@gmail.com', 'pesh', '$2y$10$cS2ZivexM3srJGrkihxPnumRp0RNDgdHDTX8bkGuUXphAbd9ZJSc.', 'sales', 1, 'Peninah Kalundi', '2025-12-04 18:01:17', '2026-06-29 12:23:11', 'KIMATHI', 0, NULL),
+(8, 'munene23.v@student.cuk.ac.ke', 'syovata', '$2a$12$/VBwYZBkXo6VuCCFIPFWDeLBJ5Ewbo.Z.lALJgWmckCUeT5PFmJ5.', 'sales', 1, 'Victor Syovata', '2025-12-05 22:19:21', '2026-06-29 15:51:02', 'KIMATHI', 0, NULL);
 
 --
 -- Indexes for dumped tables
@@ -1237,6 +1361,13 @@ ALTER TABLE `charger_logs`
   ADD PRIMARY KEY (`id`),
   ADD KEY `given_by` (`given_by`),
   ADD KEY `given_to` (`given_to`);
+
+--
+-- Indexes for table `clients`
+--
+ALTER TABLE `clients`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_sales_person_clients` (`sales_person`);
 
 --
 -- Indexes for table `devices`
@@ -1348,6 +1479,21 @@ ALTER TABLE `repairs`
   ADD KEY `given_by` (`given_by`);
 
 --
+-- Indexes for table `sales`
+--
+ALTER TABLE `sales`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_solb_by_sales` (`sold_by`);
+
+--
+-- Indexes for table `sale_items`
+--
+ALTER TABLE `sale_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_sales_saleitems` (`sale_id`),
+  ADD KEY `saleitems_saleperson` (`sales_person`);
+
+--
 -- Indexes for table `smartboards`
 --
 ALTER TABLE `smartboards`
@@ -1361,7 +1507,8 @@ ALTER TABLE `smartboards`
 ALTER TABLE `sold_accessories`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_accessories_sold` (`accessory_id`),
-  ADD KEY `fk_sold_accessories_users` (`sold_by`);
+  ADD KEY `fk_sold_accessories_users` (`sold_by`),
+  ADD KEY `fk_sold_accessories_sale_items` (`sale_item_id`);
 
 --
 -- Indexes for table `sold_chargers`
@@ -1369,7 +1516,8 @@ ALTER TABLE `sold_accessories`
 ALTER TABLE `sold_chargers`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_sold_chargers` (`charger_id`),
-  ADD KEY `fk_user_sold_chargers` (`sold_by`);
+  ADD KEY `fk_user_sold_chargers` (`sold_by`),
+  ADD KEY `fk_sold_chargers_sale_items` (`sale_item_id`);
 
 --
 -- Indexes for table `sold_graphics_cards`
@@ -1377,7 +1525,8 @@ ALTER TABLE `sold_chargers`
 ALTER TABLE `sold_graphics_cards`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_graphics_card` (`graphic_card_id`),
-  ADD KEY `fk_graphics_sold` (`sold_by`);
+  ADD KEY `fk_graphics_sold` (`sold_by`),
+  ADD KEY `fk_sold_graphics_sale_items` (`sale_item_id`);
 
 --
 -- Indexes for table `sold_hdds`
@@ -1385,7 +1534,8 @@ ALTER TABLE `sold_graphics_cards`
 ALTER TABLE `sold_hdds`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_hdd` (`hdd_id`),
-  ADD KEY `fk_sold_hdds` (`sold_by`);
+  ADD KEY `fk_sold_hdds` (`sold_by`),
+  ADD KEY `fk_sold_hdds_sale_items` (`sale_item_id`);
 
 --
 -- Indexes for table `sold_rams_ssds`
@@ -1393,7 +1543,8 @@ ALTER TABLE `sold_hdds`
 ALTER TABLE `sold_rams_ssds`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_sold_rams_ssds` (`ram_ssd_id`),
-  ADD KEY `fk_rams_ssds_users` (`sold_by`);
+  ADD KEY `fk_rams_ssds_users` (`sold_by`),
+  ADD KEY `fk_sold_rams_ssds_sale_items` (`sale_item_id`);
 
 --
 -- Indexes for table `ups`
@@ -1418,13 +1569,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `accessories`
 --
 ALTER TABLE `accessories`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=326;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=347;
 
 --
 -- AUTO_INCREMENT for table `categories`
@@ -1443,6 +1594,12 @@ ALTER TABLE `chargers`
 --
 ALTER TABLE `charger_logs`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `clients`
+--
+ALTER TABLE `clients`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `device_updates`
@@ -1466,7 +1623,7 @@ ALTER TABLE `hdds`
 -- AUTO_INCREMENT for table `hdd_logs`
 --
 ALTER TABLE `hdd_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `maintenance`
@@ -1478,13 +1635,13 @@ ALTER TABLE `maintenance`
 -- AUTO_INCREMENT for table `rams_ssds`
 --
 ALTER TABLE `rams_ssds`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `rams_ssds_logs`
 --
 ALTER TABLE `rams_ssds_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `registration_codes`
@@ -1497,6 +1654,18 @@ ALTER TABLE `registration_codes`
 --
 ALTER TABLE `repairs`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `sales`
+--
+ALTER TABLE `sales`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT for table `sale_items`
+--
+ALTER TABLE `sale_items`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `sold_accessories`
@@ -1520,13 +1689,13 @@ ALTER TABLE `sold_graphics_cards`
 -- AUTO_INCREMENT for table `sold_hdds`
 --
 ALTER TABLE `sold_hdds`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `sold_rams_ssds`
 --
 ALTER TABLE `sold_rams_ssds`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -1563,6 +1732,12 @@ ALTER TABLE `chargers`
 ALTER TABLE `charger_logs`
   ADD CONSTRAINT `charger_logs_ibfk_1` FOREIGN KEY (`given_by`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `charger_logs_ibfk_2` FOREIGN KEY (`given_to`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `clients`
+--
+ALTER TABLE `clients`
+  ADD CONSTRAINT `fk_sales_person_clients` FOREIGN KEY (`sales_person`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `devices`
@@ -1627,6 +1802,19 @@ ALTER TABLE `rams_ssds_logs`
   ADD CONSTRAINT `fk_ram_ssd_id` FOREIGN KEY (`ram_ssd_id`) REFERENCES `rams_ssds` (`id`) ON UPDATE CASCADE;
 
 --
+-- Constraints for table `sales`
+--
+ALTER TABLE `sales`
+  ADD CONSTRAINT `fk_solb_by_sales` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `sale_items`
+--
+ALTER TABLE `sale_items`
+  ADD CONSTRAINT `fk_sales_saleitems` FOREIGN KEY (`sale_id`) REFERENCES `sales` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `saleitems_saleperson` FOREIGN KEY (`sales_person`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
+
+--
 -- Constraints for table `smartboards`
 --
 ALTER TABLE `smartboards`
@@ -1638,6 +1826,7 @@ ALTER TABLE `smartboards`
 --
 ALTER TABLE `sold_accessories`
   ADD CONSTRAINT `fk_accessories_sold` FOREIGN KEY (`accessory_id`) REFERENCES `accessories` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_sold_accessories_sale_items` FOREIGN KEY (`sale_item_id`) REFERENCES `sale_items` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_sold_accessories_users` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
 
 --
@@ -1645,6 +1834,7 @@ ALTER TABLE `sold_accessories`
 --
 ALTER TABLE `sold_chargers`
   ADD CONSTRAINT `fk_sold_chargers` FOREIGN KEY (`charger_id`) REFERENCES `chargers` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_sold_chargers_sale_items` FOREIGN KEY (`sale_item_id`) REFERENCES `sale_items` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_user_sold_chargers` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
 
 --
@@ -1652,21 +1842,24 @@ ALTER TABLE `sold_chargers`
 --
 ALTER TABLE `sold_graphics_cards`
   ADD CONSTRAINT `fk_graphics_card` FOREIGN KEY (`graphic_card_id`) REFERENCES `graphic_cards` (`id`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_graphics_sold` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_graphics_sold` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_sold_graphics_sale_items` FOREIGN KEY (`sale_item_id`) REFERENCES `sale_items` (`id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `sold_hdds`
 --
 ALTER TABLE `sold_hdds`
   ADD CONSTRAINT `fk_hdd` FOREIGN KEY (`hdd_id`) REFERENCES `hdds` (`id`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_sold_hdds` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_sold_hdds` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_sold_hdds_sale_items` FOREIGN KEY (`sale_item_id`) REFERENCES `sale_items` (`id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `sold_rams_ssds`
 --
 ALTER TABLE `sold_rams_ssds`
   ADD CONSTRAINT `fk_rams_ssds_users` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_sold_rams_ssds` FOREIGN KEY (`ram_ssd_id`) REFERENCES `rams_ssds` (`id`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_sold_rams_ssds` FOREIGN KEY (`ram_ssd_id`) REFERENCES `rams_ssds` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_sold_rams_ssds_sale_items` FOREIGN KEY (`sale_item_id`) REFERENCES `sale_items` (`id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `ups`

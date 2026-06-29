@@ -1037,7 +1037,7 @@ else $greeting = 'Good evening';
 
     <!-- Inventory Summary (includes new tables) -->
     <div class="section">
-        <h4><i class="fas fa-warehouse"></i> Inventory Summary</h4>
+        <h4><i class="fas fa-warehouse"></i> Inventory Summary (Instock)</h4>
         <div class="stats-grid">
             <div class="stat-item devices"><div class="stat-number"><?= number_format($inventoryDevices) ?></div><div class="stat-label"><i class="fas fa-laptop"></i> Devices</div></div>
             <div class="stat-item monitors"><div class="stat-number"><?= number_format($inventoryMonitors) ?></div><div class="stat-label"><i class="fas fa-desktop"></i> Monitors</div></div>

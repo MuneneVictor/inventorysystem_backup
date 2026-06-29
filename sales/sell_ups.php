@@ -42,25 +42,15 @@ if (!$user_branch) die("Your account has no branch assigned.");
 
 $error = "";
 $success = "";
-$foundDevices = [];
+$foundUps = [];
 $notFoundSerials = [];
-$singleDevice = null;
+$singleUps = null;
 
 // --- Helper: build specs string (like sales_logs) ---
-function buildDeviceSpecs($device) {
+function buildUpsSpecs($ups) {
     $specs = "";
-    if (!empty($device['model_name'])) $specs .= $device['model_name'];
-    if (!empty($device['processor'])) $specs .= " | " . $device['processor'];
-    if (!empty($device['ram'])) $specs .= " | " . $device['ram'] . "GB RAM";
-    if (!empty($device['storage_type']) && !empty($device['storage_capacity'])) {
-        $specs .= " | " . $device['storage_type'] . " " . $device['storage_capacity'] . "GB";
-    }
-    if (isset($device['graphics']) && $device['graphics'] !== '') {
-        $specs .= " | " . $device['graphics'];
-    }
-    if (isset($device['touch']) && $device['touch'] !== 'N/A' && $device['touch'] !== '') {
-        $specs .= " | " . $device['touch'];
-    }
+    if (!empty($ups['model'])) $specs .= $ups['model'];
+    if (!empty($ups['capacity'])) $specs .= " | " . $ups['capacity'] . ' VA';
     return trim($specs, " |");
 }
 
@@ -85,32 +75,30 @@ if (isset($_POST['search_serial'])) {
             $error = "No valid serial numbers found.";
         } else {
             $placeholders = implode(',', array_fill(0, count($serials), '?'));
-            $sql = "SELECT d.*, c.category_name 
-                    FROM devices d
-                    JOIN categories c ON d.category_id = c.id
-                    WHERE d.serial_number IN ($placeholders)
-                      AND d.status = 'In Stock'
-                      AND d.branch = ?";
+            $sql = "SELECT * FROM ups 
+                    WHERE serial_number IN ($placeholders)
+                      AND status = 'instock'
+                      AND branch = ?";
             $params = array_merge($serials, [$user_branch]);
             $stmt = $conn->prepare($sql);
             $stmt->execute($params);
-            $foundDevices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $foundUps = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $foundSerials = array_column($foundDevices, 'serial_number');
+            $foundSerials = array_column($foundUps, 'serial_number');
             $notFoundSerials = array_diff($serials, $foundSerials);
 
-            if (empty($foundDevices)) {
-                $error = "Devices not found, not in stock, or not in your branch.";
-            } elseif (count($serials) === 1 && !empty($foundDevices)) {
-                $singleDevice = $foundDevices[0];
-                $foundDevices = [];
+            if (empty($foundUps)) {
+                $error = "UPS devices not found, not in stock, or not in your branch.";
+            } elseif (count($serials) === 1 && !empty($foundUps)) {
+                $singleUps = $foundUps[0];
+                $foundUps = [];
             }
         }
     }
 }
 
 // --- SINGLE SALE ---
-if (isset($_POST['sell_device'])) {
+if (isset($_POST['sell_ups'])) {
     $serial = trim($_POST['serial_number']);
     $selling_price = trim($_POST['selling_price']);
 
@@ -119,33 +107,33 @@ if (isset($_POST['sell_device'])) {
     } else {
         $conn->beginTransaction();
         try {
-            // Get device details
-            $stmt = $conn->prepare("SELECT * FROM devices WHERE serial_number = ? AND status = 'In Stock' AND branch = ?");
+            // Get UPS details
+            $stmt = $conn->prepare("SELECT * FROM ups WHERE serial_number = ? AND status = 'instock' AND branch = ?");
             $stmt->execute([$serial, $user_branch]);
-            $device = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$device) {
-                throw new Exception("Device not found in your branch or already sold.");
+            $ups = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$ups) {
+                throw new Exception("UPS not found in your branch or already sold.");
             }
 
-            // Update device status
+            // Update UPS status
             $update = $conn->prepare("
-                UPDATE devices 
-                SET status = 'Sold', 
+                UPDATE ups 
+                SET status = 'sold', 
                     selling_price = ?, 
-                    sold_at = NOW(), 
+                    date_sold = NOW(), 
                     sold_by = ? 
                 WHERE serial_number = ?
             ");
             $update->execute([$selling_price, $sales_person, $serial]);
 
             // Build specs for description
-            $specs = buildDeviceSpecs($device);
+            $specs = buildUpsSpecs($ups);
 
             // Insert into sale_items
             $insert = $conn->prepare("
                 INSERT INTO sale_items 
                 (sale_id, item_type, item_id, description, quantity, unit_price, sales_person)
-                VALUES (?, 'device', ?, ?, 1, ?, ?)
+                VALUES (?, 'ups', ?, ?, 1, ?, ?)
             ");
             $insert->execute([$sale_id, $serial, $specs, $selling_price, $sales_person]);
 
@@ -157,11 +145,11 @@ if (isset($_POST['sell_device'])) {
             updateSaleTotal($conn, $sale_id);
 
             // Log activity
-            $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Sold device', ?)");
-            $log->execute([$user_id, "Sold device SN: $serial for KES " . number_format($selling_price, 2) . " in sale #$sale_id"]);
+            $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Sold UPS', ?)");
+            $log->execute([$user_id, "Sold UPS SN: $serial for KES " . number_format($selling_price, 2) . " in sale #$sale_id"]);
 
             $conn->commit();
-            header("Location: checkout.php?sale_id=$sale_id&success=device_sold");
+            header("Location: checkout.php?sale_id=$sale_id&success=ups_sold");
             exit;
         } catch (Exception $e) {
             $conn->rollBack();
@@ -171,17 +159,17 @@ if (isset($_POST['sell_device'])) {
 }
 
 // --- BULK SALE ---
-if (isset($_POST['sell_bulk_devices'])) {
+if (isset($_POST['sell_bulk_ups'])) {
     $selectedSerials = $_POST['selected_serials'] ?? [];
     if (empty($selectedSerials)) {
-        $error = "No devices selected.";
+        $error = "No UPS devices selected.";
     } else {
         $prices = [];
         foreach ($selectedSerials as $serial) {
             $priceField = 'selling_price_' . $serial;
             $price = trim($_POST[$priceField] ?? '');
             if ($price === '' || !is_numeric($price) || $price <= 0) {
-                $error = "Please enter a valid selling price for all selected devices.";
+                $error = "Please enter a valid selling price for all selected UPS devices.";
                 break;
             }
             $prices[$serial] = $price;
@@ -193,34 +181,34 @@ if (isset($_POST['sell_bulk_devices'])) {
             $conn->beginTransaction();
             try {
                 foreach ($prices as $serial => $price) {
-                    // Get device details
-                    $stmt = $conn->prepare("SELECT * FROM devices WHERE serial_number = ? AND status = 'In Stock' AND branch = ?");
+                    // Get UPS details
+                    $stmt = $conn->prepare("SELECT * FROM ups WHERE serial_number = ? AND status = 'instock' AND branch = ?");
                     $stmt->execute([$serial, $user_branch]);
-                    $device = $stmt->fetch(PDO::FETCH_ASSOC);
-                    if (!$device) {
+                    $ups = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if (!$ups) {
                         $failedSerials[] = $serial;
                         continue;
                     }
 
-                    // Update device
+                    // Update UPS
                     $update = $conn->prepare("
-                        UPDATE devices 
-                        SET status = 'Sold', 
+                        UPDATE ups 
+                        SET status = 'sold', 
                             selling_price = ?, 
-                            sold_at = NOW(), 
+                            date_sold = NOW(), 
                             sold_by = ? 
                         WHERE serial_number = ?
                     ");
                     $update->execute([$price, $sales_person, $serial]);
 
                     // Build specs
-                    $specs = buildDeviceSpecs($device);
+                    $specs = buildUpsSpecs($ups);
 
                     // Insert into sale_items
                     $insert = $conn->prepare("
                         INSERT INTO sale_items 
                         (sale_id, item_type, item_id, description, quantity, unit_price, sales_person)
-                        VALUES (?, 'device', ?, ?, 1, ?, ?)
+                        VALUES (?, 'ups', ?, ?, 1, ?, ?)
                     ");
                     $insert->execute([$sale_id, $serial, $specs, $price, $sales_person]);
 
@@ -239,10 +227,10 @@ if (isset($_POST['sell_bulk_devices'])) {
                 $conn->commit();
 
                 if ($soldCount > 0) {
-                    header("Location: checkout.php?sale_id=$sale_id&success=bulk_sold");
+                    header("Location: checkout.php?sale_id=$sale_id&success=bulk_ups_sold");
                     exit;
                 } else {
-                    $error = "No devices could be sold.";
+                    $error = "No UPS devices could be sold.";
                 }
             } catch (Exception $e) {
                 $conn->rollBack();
@@ -270,13 +258,13 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Sell Device | Mombasa Computers</title>
+    <title>Sell UPS | Mombasa Computers</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- QR Code Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
-        /* ===== ORIGINAL STYLES + FIXES ===== */
+        /* ===== ORIGINAL STYLES + FIXES (copied from sell_device.php) ===== */
         :root {
             --primary: #1a4b2a;
             --gray-50: #f9fafb;
@@ -379,6 +367,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 
         @media (min-width: 1025px) {
             .scan-btn-wrapper .scan-btn { display: none; }
+            .scan-btn-wrapper span { display: none; }
         }
         @media (max-width: 1200px) {
             .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
@@ -404,11 +393,11 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 <body>
 <div class="main-content">
     <div class="page-header">
-        <h1><i class="fas fa-money-bill-wave"></i> Sell Device</h1>
+        <h1><i class="fas fa-bolt"></i> Sell UPS</h1>
         <div class="breadcrumb">
             <a href="/inventory_system/dashboard/salesdashboard.php">Dashboard</a>
             <span> / </span>
-            <span>Sell Device</span>
+            <span>Sell UPS</span>
         </div>
         <?php if ($sale_id): ?>
             <div style="margin-top:0.5rem; display:flex; flex-wrap:wrap; align-items:center; gap:1rem;">
@@ -438,7 +427,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <?php endif; ?>
 
     <div class="card">
-        <div class="card-header"><i class="fas fa-search"></i> Search Devices</div>
+        <div class="card-header"><i class="fas fa-search"></i> Search UPS Devices</div>
         <div class="card-body">
             <form method="POST">
                 <input type="hidden" name="sale_id" value="<?= $sale_id ?>">
@@ -452,7 +441,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                     </div>
                     <textarea name="serial_number" id="serialInput" rows="4" placeholder="Type or scan serial numbers..." required autofocus><?= isset($_POST['serial_number']) ? htmlspecialchars($_POST['serial_number']) : '' ?></textarea>
                 </div>
-                <button type="submit" name="search_serial" class="btn"><i class="fas fa-search"></i> Search Device(s)</button>
+                <button type="submit" name="search_serial" class="btn"><i class="fas fa-search"></i> Search UPS Device(s)</button>
             </form>
             <?php if (!empty($notFoundSerials)): ?>
                 <div class="alert alert-error" style="margin-top:1rem;"><strong>Not Found:</strong> <?= implode(', ', $notFoundSerials) ?></div>
@@ -460,27 +449,23 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         </div>
     </div>
 
-    <?php if ($singleDevice): ?>
+    <?php if ($singleUps): ?>
         <div class="card">
-            <div class="card-header"><i class="fas fa-laptop"></i> Device Details</div>
+            <div class="card-header"><i class="fas fa-info-circle"></i> UPS Details</div>
             <div class="card-body">
                 <table>
-                    <tr><th>Serial</th><td><?= htmlspecialchars($singleDevice['serial_number']) ?></td></tr>
-                    <tr><th>Model</th><td><?= htmlspecialchars($singleDevice['model_name']) ?></td></tr>
-                    <tr><th>Category</th><td><?= htmlspecialchars($singleDevice['category_name']) ?></td></tr>
-                    <tr><th>Processor</th><td><?= htmlspecialchars($singleDevice['processor']) ?></td></tr>
-                    <tr><th>RAM</th><td><?= $singleDevice['ram'] ?> GB</td></tr>
-                    <tr><th>Storage</th><td><?= htmlspecialchars($singleDevice['storage_type'] . ' ' . $singleDevice['storage_capacity'] . 'GB') ?></td></tr>
-                    <tr><th>Graphics</th><td><?= htmlspecialchars($singleDevice['graphics'] ?? 'None') ?></td></tr>
-                    <tr><th>Touch</th><td><?= htmlspecialchars($singleDevice['touch'] ?? 'N/A') ?></td></tr>
+                    <tr><th>Serial</th><td><?= htmlspecialchars($singleUps['serial_number']) ?></td></tr>
+                    <tr><th>Model</th><td><?= htmlspecialchars($singleUps['model']) ?></td></tr>
+                    <tr><th>Capacity</th><td><?= $singleUps['capacity'] ?> VA</td></tr>
+                    <tr><th>Branch</th><td><?= htmlspecialchars($singleUps['branch']) ?></td></tr>
                     <tr>
                         <th>Selling Price (KES)</th>
                         <td>
                             <input type="number" name="selling_price" form="singleSaleForm" step="0.01" min="0.01"
-                                   value="<?= $singleDevice['price'] ?? '' ?>"
+                                   value="<?= $singleUps['price'] ?? '' ?>"
                                    placeholder="Enter selling price" required style="width:200px; padding:0.5rem; border:1px solid var(--gray-300); border-radius:var(--radius-md);">
-                            <?php if ($singleDevice['price']): ?>
-                                <span style="font-size:0.8rem; color:var(--gray-500);"> (suggested: <?= number_format($singleDevice['price'], 2) ?>)</span>
+                            <?php if ($singleUps['price']): ?>
+                                <span style="font-size:0.8rem; color:var(--gray-500);"> (suggested: <?= number_format($singleUps['price'], 2) ?>)</span>
                             <?php else: ?>
                                 <span style="font-size:0.8rem; color:var(--gray-500);"> (no suggested price)</span>
                             <?php endif; ?>
@@ -488,17 +473,17 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                     </tr>
                 </table>
                 <form method="POST" id="singleSaleForm">
-                    <input type="hidden" name="serial_number" value="<?= htmlspecialchars($singleDevice['serial_number']) ?>">
+                    <input type="hidden" name="serial_number" value="<?= htmlspecialchars($singleUps['serial_number']) ?>">
                     <input type="hidden" name="sale_id" value="<?= $sale_id ?>">
-                    <button type="submit" name="sell_device" class="btn">Confirm Sale</button>
+                    <button type="submit" name="sell_ups" class="btn">Confirm Sale</button>
                 </form>
             </div>
         </div>
     <?php endif; ?>
 
-    <?php if (!empty($foundDevices)): ?>
+    <?php if (!empty($foundUps)): ?>
         <div class="card">
-            <div class="card-header"><i class="fas fa-list"></i> Found Devices (<?= count($foundDevices) ?>)</div>
+            <div class="card-header"><i class="fas fa-list"></i> Found UPS Devices (<?= count($foundUps) ?>)</div>
             <div class="card-body">
                 <form method="POST">
                     <input type="hidden" name="sale_id" value="<?= $sale_id ?>">
@@ -515,22 +500,22 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php $counter = 1; foreach ($foundDevices as $d): ?>
+                                <?php $counter = 1; foreach ($foundUps as $u): ?>
                                 <tr>
-                                    <td class="checkbox-cell"><input type="checkbox" name="selected_serials[]" value="<?= htmlspecialchars($d['serial_number']) ?>" checked></td>
+                                    <td class="checkbox-cell"><input type="checkbox" name="selected_serials[]" value="<?= htmlspecialchars($u['serial_number']) ?>" checked></td>
                                     <td><?= $counter++ ?></td>
-                                    <td><code><?= htmlspecialchars($d['serial_number']) ?></code></td>
+                                    <td><code><?= htmlspecialchars($u['serial_number']) ?></code></td>
                                     <td>
-                                        <span class="specs-text" title="<?= htmlspecialchars(buildDeviceSpecs($d)) ?>">
-                                            <?= htmlspecialchars(buildDeviceSpecs($d)) ?>
+                                        <span class="specs-text" title="<?= htmlspecialchars(buildUpsSpecs($u)) ?>">
+                                            <?= htmlspecialchars(buildUpsSpecs($u)) ?>
                                         </span>
                                     </td>
                                     <td class="price-cell">
-                                        <input type="number" name="selling_price_<?= htmlspecialchars($d['serial_number']) ?>" step="0.01" min="0.01"
-                                               value="<?= $d['price'] ?? '' ?>"
+                                        <input type="number" name="selling_price_<?= htmlspecialchars($u['serial_number']) ?>" step="0.01" min="0.01"
+                                               value="<?= $u['price'] ?? '' ?>"
                                                placeholder="Enter price" required>
-                                        <?php if ($d['price']): ?>
-                                            <span class="suggested">suggested: <?= number_format($d['price'], 2) ?></span>
+                                        <?php if ($u['price']): ?>
+                                            <span class="suggested">suggested: <?= number_format($u['price'], 2) ?></span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -538,7 +523,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                             </tbody>
                         </table>
                     </div>
-                    <button type="submit" name="sell_bulk_devices" class="btn" style="margin-top:1rem;">Sell Selected</button>
+                    <button type="submit" name="sell_bulk_ups" class="btn" style="margin-top:1rem;">Sell Selected</button>
                 </form>
             </div>
         </div>

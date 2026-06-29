@@ -89,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['name'] = $user['full_name'];
                 $_SESSION['email'] = $user['email'];
+                $_SESSION['branch'] = $user['branch'];
 
                 $update = $conn->prepare("UPDATE users SET failed_attempts = 0, account_locked_until = NULL, last_login = NOW() WHERE id = :id");
                 $update->execute(['id' => $user['id']]);

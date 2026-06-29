@@ -3,7 +3,10 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
+
+// Enable debug mode to see SQL errors (set to false in production)
+$debug = true;
 
 // STRICT ROLE CHECK
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'cashier') {
@@ -14,7 +17,6 @@ $user_id = (int)($_SESSION['user_id'] ?? 0);
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 $user_branch = $_SESSION['branch'] ?? null;
 
-// If branch not in session, get it from database
 if (!$user_branch) {
     try {
         $stmt = $conn->prepare("SELECT branch FROM users WHERE id = :id LIMIT 1");
@@ -31,399 +33,395 @@ if (!$user_branch) {
     die("Branch not assigned to your account. Please contact admin.");
 }
 
-function safeQuery($conn, $sql, $params = []) {
+// ============================================================
+// SECURE QUERY FUNCTION with positional placeholders
+// ============================================================
+function secureQuery($conn, $sql, $params = [], $debug = false) {
     try {
         $stmt = $conn->prepare($sql);
         $stmt->execute($params);
         return $stmt;
     } catch (PDOException $e) {
-        error_log("Database Error in " . $_SERVER['SCRIPT_NAME'] . ": " . $e->getMessage());
+        if ($debug) {
+            echo "<pre style='color:red;'>SQL Error: " . $e->getMessage() . "\nSQL: $sql\nParams: " . print_r($params, true) . "</pre>";
+        }
+        error_log("Database Error: " . $e->getMessage() . " SQL: $sql");
         return false;
     }
 }
 
 // ============================================================
-// UNIFIED BRANCH SALES DATA WITH PROPER COLLATION
+// TODAY'S SALES COUNT (positional placeholders)
 // ============================================================
-function getBranchSales($conn, $branch, $dateFilter = '') {
-    $sql = "
-        SELECT 
-            item_name,
-            category,
-            quantity,
-            price,
-            sold_at,
-            sold_by
-        FROM (
-            SELECT 
-                model_name COLLATE utf8mb4_general_ci AS item_name,
-                'Device' AS category,
-                1 AS quantity,
-                selling_price AS price,
-                sold_at,
-                sold_by
-            FROM devices
-            WHERE status = 'Sold' AND branch = :branch
-
-            UNION ALL
-
-            SELECT 
-                model_name COLLATE utf8mb4_general_ci,
-                'Monitor',
-                1,
-                selling_price,
-                sold_at,
-                sold_by
-            FROM monitors
-            WHERE status = 'Sold' AND branch = :branch
-
-            UNION ALL
-
-            SELECT 
-                model_name COLLATE utf8mb4_general_ci,
-                'Printer',
-                1,
-                selling_price,
-                date_sold AS sold_at,
-                sold_by
-            FROM printers
-            WHERE status = 'Sold' AND branch = :branch
-
-            UNION ALL
-
-            SELECT 
-                model COLLATE utf8mb4_general_ci,
-                'Smartboard',
-                1,
-                selling_price,
-                sold_at,
-                sold_by
-            FROM smartboards
-            WHERE status = 'sold' AND branch = :branch
-
-            UNION ALL
-
-            SELECT 
-                accessory_name COLLATE utf8mb4_general_ci,
-                'Accessory',
-                quantity,
-                selling_price,
-                date_sold AS sold_at,
-                sold_by
-            FROM sold_accessories
-            WHERE branch = :branch
-
-            UNION ALL
-
-            SELECT 
-                charger_type COLLATE utf8mb4_general_ci,
-                'Charger',
-                quantity,
-                selling_price,
-                date_sold AS sold_at,
-                sold_by
-            FROM sold_chargers
-            WHERE branch = :branch
-
-            UNION ALL
-
-            SELECT 
-                CONCAT(COALESCE(brand,''), ' ', COALESCE(model,'')) COLLATE utf8mb4_general_ci AS item_name,
-                'Phone',
-                1,
-                selling_price,
-                date_sold AS sold_at,
-                sold_by
-            FROM phones
-            WHERE status = 'sold' AND branch = :branch
-
-            UNION ALL
-
-            SELECT 
-                model COLLATE utf8mb4_general_ci,
-                'UPS',
-                1,
-                selling_price,
-                date_sold AS sold_at,
-                sold_by
-            FROM ups
-            WHERE status = 'sold' AND branch = :branch
-
-            UNION ALL
-
-            SELECT 
-                CONCAT(COALESCE(type,''), ' ', COALESCE(storage,''), 'GB') COLLATE utf8mb4_general_ci AS item_name,
-                'RAM/SSD',
-                quantity,
-                total_price AS price,
-                date_sold AS sold_at,
-                sold_by
-            FROM sold_rams_ssds
-            WHERE branch = :branch
-
-            UNION ALL
-
-            SELECT 
-                CONCAT(COALESCE(type,''), ' ', COALESCE(storage,'')) COLLATE utf8mb4_general_ci AS item_name,
-                'HDD',
-                quantity,
-                total_price AS price,
-                date_sold AS sold_at,
-                sold_by
-            FROM sold_hdds
-            WHERE branch = :branch
-
-            UNION ALL
-
-            SELECT 
-                CONCAT(COALESCE(type,''), ' ', COALESCE(storage_capacity,''), 'GB') COLLATE utf8mb4_general_ci AS item_name,
-                'Graphics Card',
-                quantity,
-                total_price AS price,
-                date_sold AS sold_at,
-                sold_by
-            FROM sold_graphics_cards
-            WHERE branch = :branch
-        ) AS all_sales
-        WHERE 1 " . $dateFilter . "
-    ";
-    $stmt = safeQuery($conn, $sql, ['branch' => $branch]);
-    return $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-}
+$todaysCount = 0;
+$stmt = secureQuery($conn, "
+    SELECT COUNT(*) FROM (
+        SELECT 1 FROM devices WHERE status = 'Sold' AND DATE(sold_at) = CURDATE() AND branch = ? UNION ALL
+        SELECT 1 FROM monitors WHERE status = 'Sold' AND DATE(sold_at) = CURDATE() AND branch = ? UNION ALL
+        SELECT 1 FROM printers WHERE status = 'Sold' AND DATE(date_sold) = CURDATE() AND branch = ? UNION ALL
+        SELECT 1 FROM smartboards WHERE status = 'sold' AND DATE(sold_at) = CURDATE() AND branch = ? UNION ALL
+        SELECT 1 FROM sold_accessories WHERE DATE(date_sold) = CURDATE() AND branch = ? UNION ALL
+        SELECT 1 FROM sold_chargers WHERE DATE(date_sold) = CURDATE() AND branch = ? UNION ALL
+        SELECT 1 FROM phones WHERE status = 'sold' AND DATE(date_sold) = CURDATE() AND branch = ? UNION ALL
+        SELECT 1 FROM ups WHERE status = 'sold' AND DATE(date_sold) = CURDATE() AND branch = ? UNION ALL
+        SELECT 1 FROM sold_rams_ssds WHERE DATE(date_sold) = CURDATE() AND branch = ? UNION ALL
+        SELECT 1 FROM sold_hdds WHERE DATE(date_sold) = CURDATE() AND branch = ? UNION ALL
+        SELECT 1 FROM sold_graphics_cards WHERE DATE(date_sold) = CURDATE() AND branch = ?
+    ) AS todays_sales
+", array_fill(0, 11, $user_branch), $debug);
+if ($stmt) $todaysCount = (int)$stmt->fetchColumn();
 
 // ============================================================
-// FETCH TODAY, WEEK, MONTH STATS
+// TODAY'S REVENUE
 // ============================================================
-$today = date('Y-m-d');
+$todaysRevenue = 0;
+$stmt = secureQuery($conn, "
+    SELECT COALESCE(SUM(price), 0) FROM (
+        SELECT selling_price AS price, sold_at FROM devices WHERE status = 'Sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, sold_at FROM monitors WHERE status = 'Sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' AND branch = ? UNION ALL
+        SELECT total_price AS price, date_sold AS sold_at FROM sold_accessories WHERE branch = ? UNION ALL
+        SELECT total_price AS price, date_sold AS sold_at FROM sold_chargers WHERE branch = ? UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM phones WHERE status = 'sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM ups WHERE status = 'sold' AND branch = ? UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_rams_ssds WHERE branch = ? UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_hdds WHERE branch = ? UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_graphics_cards WHERE branch = ?
+    ) AS today_prices
+    WHERE DATE(sold_at) = CURDATE()
+", array_fill(0, 11, $user_branch), $debug);
+if ($stmt) $todaysRevenue = (float)$stmt->fetchColumn();
+
+// ============================================================
+// THIS WEEK REVENUE
+// ============================================================
 $weekStart = date('Y-m-d', strtotime('monday this week'));
 $weekEnd   = date('Y-m-d', strtotime('sunday this week'));
-$monthStart = date('Y-m-01');
-$monthEnd   = date('Y-m-t');
-
-// Today
-$todaySales = getBranchSales($conn, $user_branch, "AND DATE(sold_at) = '$today'");
-$todaysCount = 0;
-$todaysRevenue = 0;
-foreach ($todaySales as $s) {
-    $todaysCount += (int)$s['quantity'];
-    $todaysRevenue += (float)$s['price'];
-}
-$todaysAvg = $todaysCount > 0 ? $todaysRevenue / $todaysCount : 0;
-
-// This week
-$weekSales = getBranchSales($conn, $user_branch, "AND DATE(sold_at) BETWEEN '$weekStart' AND '$weekEnd'");
-$weeklyCount = 0;
 $weeklyRevenue = 0;
-foreach ($weekSales as $s) {
-    $weeklyCount += (int)$s['quantity'];
-    $weeklyRevenue += (float)$s['price'];
-}
-
-// This month
-$monthSales = getBranchSales($conn, $user_branch, "AND DATE(sold_at) BETWEEN '$monthStart' AND '$monthEnd'");
-$monthlyCount = 0;
-$monthlyRevenue = 0;
-foreach ($monthSales as $s) {
-    $monthlyCount += (int)$s['quantity'];
-    $monthlyRevenue += (float)$s['price'];
-}
+$stmt = secureQuery($conn, "
+    SELECT COALESCE(SUM(price), 0) FROM (
+        SELECT selling_price AS price, sold_at FROM devices WHERE status = 'Sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, sold_at FROM monitors WHERE status = 'Sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' AND branch = ? UNION ALL
+        SELECT total_price AS price, date_sold AS sold_at FROM sold_accessories WHERE branch = ? UNION ALL
+        SELECT total_price AS price, date_sold AS sold_at FROM sold_chargers WHERE branch = ? UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM phones WHERE status = 'sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM ups WHERE status = 'sold' AND branch = ? UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_rams_ssds WHERE branch = ? UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_hdds WHERE branch = ? UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_graphics_cards WHERE branch = ?
+    ) AS week_prices
+    WHERE DATE(sold_at) BETWEEN ? AND ?
+", array_merge(array_fill(0, 11, $user_branch), [$weekStart, $weekEnd]), $debug);
+if ($stmt) $weeklyRevenue = (float)$stmt->fetchColumn();
 
 // ============================================================
-// TOP SELLING PRODUCTS TODAY (by revenue)
+// MONTHLY REVENUE
+// ============================================================
+$monthlyRevenue = 0;
+$stmt = secureQuery($conn, "
+    SELECT COALESCE(SUM(price), 0) FROM (
+        SELECT selling_price AS price, sold_at FROM devices WHERE status = 'Sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, sold_at FROM monitors WHERE status = 'Sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM printers WHERE status = 'Sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, sold_at FROM smartboards WHERE status = 'sold' AND branch = ? UNION ALL
+        SELECT total_price AS price, date_sold AS sold_at FROM sold_accessories WHERE branch = ? UNION ALL
+        SELECT total_price AS price, date_sold AS sold_at FROM sold_chargers WHERE branch = ? UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM phones WHERE status = 'sold' AND branch = ? UNION ALL
+        SELECT selling_price AS price, date_sold AS sold_at FROM ups WHERE status = 'sold' AND branch = ? UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_rams_ssds WHERE branch = ? UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_hdds WHERE branch = ? UNION ALL
+        SELECT (selling_price * quantity) AS price, date_sold AS sold_at FROM sold_graphics_cards WHERE branch = ?
+    ) AS month_prices
+    WHERE MONTH(sold_at) = MONTH(CURDATE()) AND YEAR(sold_at) = YEAR(CURDATE())
+", array_fill(0, 11, $user_branch), $debug);
+if ($stmt) $monthlyRevenue = (float)$stmt->fetchColumn();
+
+// ============================================================
+// TOP SELLING ITEMS TODAY
 // ============================================================
 $topProductsToday = [];
-if (!empty($todaySales)) {
-    $productSales = [];
-    foreach ($todaySales as $s) {
-        $key = $s['item_name'] . '|' . $s['category'];
-        if (!isset($productSales[$key])) {
-            $productSales[$key] = [
-                'item_name' => $s['item_name'],
-                'category' => $s['category'],
-                'quantity' => 0,
-                'revenue' => 0
-            ];
-        }
-        $productSales[$key]['quantity'] += (int)$s['quantity'];
-        $productSales[$key]['revenue'] += (float)$s['price'];
-    }
-    usort($productSales, function($a, $b) {
-        return $b['revenue'] - $a['revenue'];
-    });
-    $topProductsToday = array_slice($productSales, 0, 5);
-}
-
-// ============================================================
-// RECENT SALES (last 10 from all tables with proper collation)
-// ============================================================
-$recentSales = [];
-$sql = "
+$stmt = secureQuery($conn, "
     SELECT 
         item_name,
         category,
-        quantity,
-        price,
-        sold_at,
-        sold_by
+        COUNT(*) AS quantity_sold,
+        COALESCE(SUM(price),0) AS revenue
     FROM (
         SELECT 
             model_name COLLATE utf8mb4_general_ci AS item_name,
             'Device' AS category,
-            1 AS quantity,
-            selling_price AS price,
-            sold_at,
-            sold_by
+            selling_price AS price
         FROM devices
-        WHERE status = 'Sold' AND branch = :branch
+        WHERE status='Sold'
+        AND DATE(sold_at) = CURDATE()
+        AND branch = ?
 
         UNION ALL
 
         SELECT 
-            model_name COLLATE utf8mb4_general_ci,
-            'Monitor',
-            1,
-            selling_price,
-            sold_at,
-            sold_by
+            model_name COLLATE utf8mb4_general_ci AS item_name,
+            'Monitor' AS category,
+            selling_price AS price
         FROM monitors
-        WHERE status = 'Sold' AND branch = :branch
+        WHERE status='Sold'
+        AND DATE(sold_at) = CURDATE()
+        AND branch = ?
 
         UNION ALL
 
         SELECT 
-            model_name COLLATE utf8mb4_general_ci,
-            'Printer',
-            1,
-            selling_price,
-            date_sold AS sold_at,
-            sold_by
+            model_name COLLATE utf8mb4_general_ci AS item_name,
+            'Printer' AS category,
+            selling_price AS price
         FROM printers
-        WHERE status = 'Sold' AND branch = :branch
+        WHERE status='Sold'
+        AND DATE(date_sold) = CURDATE()
+        AND branch = ?
 
         UNION ALL
 
         SELECT 
-            model COLLATE utf8mb4_general_ci,
-            'Smartboard',
-            1,
-            selling_price,
-            sold_at,
-            sold_by
+            model COLLATE utf8mb4_general_ci AS item_name,
+            'Smartboard' AS category,
+            selling_price AS price
         FROM smartboards
-        WHERE status = 'sold' AND branch = :branch
+        WHERE status='sold'
+        AND DATE(sold_at) = CURDATE()
+        AND branch = ?
 
         UNION ALL
 
         SELECT 
-            accessory_name COLLATE utf8mb4_general_ci,
-            'Accessory',
-            quantity,
-            selling_price,
-            date_sold AS sold_at,
-            sold_by
+            accessory_name COLLATE utf8mb4_general_ci AS item_name,
+            'Accessory' AS category,
+            total_price AS price
         FROM sold_accessories
-        WHERE branch = :branch
+        WHERE DATE(date_sold) = CURDATE()
+        AND branch = ?
 
         UNION ALL
 
         SELECT 
-            charger_type COLLATE utf8mb4_general_ci,
-            'Charger',
-            quantity,
-            selling_price,
-            date_sold AS sold_at,
-            sold_by
+            charger_type COLLATE utf8mb4_general_ci AS item_name,
+            'Charger' AS category,
+            total_price AS price
         FROM sold_chargers
-        WHERE branch = :branch
+        WHERE DATE(date_sold) = CURDATE()
+        AND branch = ?
 
         UNION ALL
-
         SELECT 
             CONCAT(COALESCE(brand,''), ' ', COALESCE(model,'')) COLLATE utf8mb4_general_ci AS item_name,
-            'Phone',
-            1,
-            selling_price,
-            date_sold AS sold_at,
-            sold_by
+            'Phone' AS category,
+            selling_price AS price
         FROM phones
-        WHERE status = 'sold' AND branch = :branch
+        WHERE status='sold'
+        AND DATE(date_sold) = CURDATE()
+        AND branch = ?
 
         UNION ALL
-
         SELECT 
-            model COLLATE utf8mb4_general_ci,
-            'UPS',
-            1,
-            selling_price,
-            date_sold AS sold_at,
-            sold_by
+            model COLLATE utf8mb4_general_ci AS item_name,
+            'UPS' AS category,
+            selling_price AS price
         FROM ups
-        WHERE status = 'sold' AND branch = :branch
+        WHERE status='sold'
+        AND DATE(date_sold) = CURDATE()
+        AND branch = ?
 
         UNION ALL
-
         SELECT 
             CONCAT(COALESCE(type,''), ' ', COALESCE(storage,''), 'GB') COLLATE utf8mb4_general_ci AS item_name,
-            'RAM/SSD',
-            quantity,
-            total_price AS price,
-            date_sold AS sold_at,
-            sold_by
+            category AS category,
+            selling_price * quantity AS price
         FROM sold_rams_ssds
-        WHERE branch = :branch
+        WHERE DATE(date_sold) = CURDATE()
+        AND branch = ?
 
         UNION ALL
-
         SELECT 
             CONCAT(COALESCE(type,''), ' ', COALESCE(storage,'')) COLLATE utf8mb4_general_ci AS item_name,
-            'HDD',
-            quantity,
-            total_price AS price,
-            date_sold AS sold_at,
-            sold_by
+            'HDD' AS category,
+            selling_price * quantity AS price
         FROM sold_hdds
-        WHERE branch = :branch
+        WHERE DATE(date_sold) = CURDATE()
+        AND branch = ?
 
         UNION ALL
-
         SELECT 
             CONCAT(COALESCE(type,''), ' ', COALESCE(storage_capacity,''), 'GB') COLLATE utf8mb4_general_ci AS item_name,
-            'Graphics Card',
-            quantity,
-            total_price AS price,
-            date_sold AS sold_at,
-            sold_by
+            'Graphics Card' AS category,
+            selling_price * quantity AS price
         FROM sold_graphics_cards
-        WHERE branch = :branch
-    ) AS all_sales
-    ORDER BY sold_at DESC
-    LIMIT 10
-";
-$stmt = safeQuery($conn, $sql, ['branch' => $user_branch]);
-$recentSales = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        WHERE DATE(date_sold) = CURDATE()
+        AND branch = ?
 
-// Fetch seller names for recent sales
-$sellerIds = array_unique(array_column($recentSales, 'sold_by'));
-$sellerMap = [];
-if (!empty($sellerIds)) {
-    $placeholders = implode(',', array_fill(0, count($sellerIds), '?'));
-    $stmt = safeQuery($conn, "SELECT id, full_name FROM users WHERE id IN ($placeholders)", $sellerIds);
-    if ($stmt) {
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $sellerMap[$row['id']] = $row['full_name'];
-        }
-    }
+    ) AS all_sales_today
+    GROUP BY item_name, category
+    ORDER BY revenue DESC
+    LIMIT 5
+", array_fill(0, 11, $user_branch), $debug);
+if ($stmt) {
+    $topProductsToday = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-foreach ($recentSales as &$sale) {
-    $sale['sold_by_name'] = $sellerMap[$sale['sold_by']] ?? 'Unknown';
-}
-unset($sale);
 
 // ============================================================
-// ACTIVE SALES (from sales table with status 'active')
+// RECENT SALES FETCHER (updated to use ? placeholders)
+// ============================================================
+function fetchRecentSales($conn, $branch, $limit = 10, $debug = false) {
+    $allSales = [];
+
+    // 1. Devices
+    $sql = "SELECT d.model_name AS item_name, 'Device' AS category,
+                d.serial_number AS id, d.selling_price AS price,
+                d.sold_at, d.branch, d.sold_by, u.full_name AS sold_by_name,
+                CONCAT(
+                    d.processor, ' | ',
+                    d.ram, 'GB RAM | ',
+                    d.storage_type, ' ', d.storage_capacity, 'GB',
+                    IFNULL(CONCAT(' | ', d.graphics), ''),
+                    IF(c.category_name IN ('Laptop', 'AIO', 'POS'), CONCAT(' | ', d.touch), '')
+                ) AS specs
+            FROM devices d
+            LEFT JOIN users u ON d.sold_by = u.id
+            LEFT JOIN categories c ON d.category_id = c.id
+            WHERE d.status = 'Sold' AND d.branch = ?";
+    $stmt = secureQuery($conn, $sql, [$branch], $debug);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 2. Monitors
+    $sql = "SELECT m.model_name AS item_name, 'Monitor' AS category, 
+                   m.serial_number AS id, m.selling_price AS price, 
+                   m.sold_at, m.branch, m.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(m.size_inches, ' inch') AS specs
+            FROM monitors m
+            LEFT JOIN users u ON m.sold_by = u.id
+            WHERE m.status = 'Sold' AND m.branch = ?";
+    $stmt = secureQuery($conn, $sql, [$branch], $debug);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 3. Printers
+    $sql = "SELECT p.model_name AS item_name, 'Printer' AS category, 
+                   p.serial_number AS id, p.selling_price AS price, 
+                   p.date_sold AS sold_at, p.branch, p.sold_by, u.full_name AS sold_by_name,
+                   'N/A' AS specs
+            FROM printers p
+            LEFT JOIN users u ON p.sold_by = u.id
+            WHERE p.status = 'Sold' AND p.branch = ?";
+    $stmt = secureQuery($conn, $sql, [$branch], $debug);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 4. Smartboards
+    $sql = "SELECT s.model AS item_name, 'Smartboard' AS category, 
+                   s.serial_number AS id, s.selling_price AS price, 
+                   s.sold_at, s.branch, s.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(s.model, ' | ', s.size_inches, ' inch') AS specs
+            FROM smartboards s
+            LEFT JOIN users u ON s.sold_by = u.id
+            WHERE s.status = 'sold' AND s.branch = ?";
+    $stmt = secureQuery($conn, $sql, [$branch], $debug);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 5. UPS
+    $sql = "SELECT ups.model AS item_name, 'UPS' AS category, 
+                   ups.serial_number AS id, ups.selling_price AS price, 
+                   ups.date_sold AS sold_at, ups.branch, ups.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(ups.model, ' | ', ups.capacity, ' VA') AS specs
+            FROM ups
+            LEFT JOIN users u ON ups.sold_by = u.id
+            WHERE ups.status = 'sold' AND ups.branch = ?";
+    $stmt = secureQuery($conn, $sql, [$branch], $debug);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 6. Phones
+    $sql = "SELECT CONCAT(COALESCE(p.brand,''), ' ', COALESCE(p.model,'')) AS item_name, 'Phone' AS category, 
+                   p.serial_number AS id, p.selling_price AS price, 
+                   p.date_sold AS sold_at, p.branch, p.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(COALESCE(p.brand,''), ' ', COALESCE(p.model,''), ' | ', p.ram, 'GB RAM | ', p.storage_capacity, 'GB') AS specs
+            FROM phones p
+            LEFT JOIN users u ON p.sold_by = u.id
+            WHERE p.status = 'sold' AND p.branch = ?";
+    $stmt = secureQuery($conn, $sql, [$branch], $debug);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 7. Sold Accessories
+    $sql = "SELECT sa.accessory_name AS item_name, 'Accessory' AS category, 
+                   NULL AS id, sa.total_price AS price, 
+                   sa.date_sold AS sold_at, sa.branch, sa.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(sa.quantity, ' x ', sa.selling_price, ' = ', sa.total_price) AS specs
+            FROM sold_accessories sa
+            LEFT JOIN users u ON sa.sold_by = u.id
+            WHERE sa.branch = ?";
+    $stmt = secureQuery($conn, $sql, [$branch], $debug);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 8. Sold Chargers
+    $sql = "SELECT sc.charger_type AS item_name, 'Charger' AS category, 
+                   NULL AS id, sc.total_price AS price, 
+                   sc.date_sold AS sold_at, sc.branch, sc.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(sc.quantity, ' x ', sc.charger_condition, ' | ', sc.selling_price, ' each') AS specs
+            FROM sold_chargers sc
+            LEFT JOIN users u ON sc.sold_by = u.id
+            WHERE sc.branch = ?";
+    $stmt = secureQuery($conn, $sql, [$branch], $debug);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 9. Sold Graphics Cards
+    $sql = "SELECT CONCAT(COALESCE(sgc.type,''), ' ', COALESCE(sgc.storage_capacity,''), 'GB') AS item_name, 'Graphics Card' AS category, 
+                   NULL AS id, sgc.total_price AS price, 
+                   sgc.date_sold AS sold_at, sgc.branch, sgc.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(sgc.quantity, ' x ', sgc.type, ' ', sgc.storage_capacity, 'GB') AS specs
+            FROM sold_graphics_cards sgc
+            LEFT JOIN users u ON sgc.sold_by = u.id
+            WHERE sgc.branch = ?";
+    $stmt = secureQuery($conn, $sql, [$branch], $debug);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 10. Sold HDDs
+    $sql = "SELECT CONCAT(COALESCE(sh.type,''), ' ', COALESCE(sh.storage,'')) AS item_name, 'HDD' AS category, 
+                   NULL AS id, sh.total_price AS price, 
+                   sh.date_sold AS sold_at, sh.branch, sh.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(sh.quantity, ' x ', sh.type, ' ', sh.storage) AS specs
+            FROM sold_hdds sh
+            LEFT JOIN users u ON sh.sold_by = u.id
+            WHERE sh.branch = ?";
+    $stmt = secureQuery($conn, $sql, [$branch], $debug);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 11. Sold RAM/SSD
+    $sql = "SELECT CONCAT(COALESCE(srs.type,''), ' ', COALESCE(srs.storage,''), 'GB') AS item_name, srs.category AS category, 
+                   NULL AS id, srs.total_price AS price, 
+                   srs.date_sold AS sold_at, srs.branch, srs.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(srs.quantity, ' x ', srs.type, ' ', srs.storage, 'GB') AS specs
+            FROM sold_rams_ssds srs
+            LEFT JOIN users u ON srs.sold_by = u.id
+            WHERE srs.branch = ?";
+    $stmt = secureQuery($conn, $sql, [$branch], $debug);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // Sort by sold_at descending
+    usort($allSales, function($a, $b) {
+        $ta = $a['sold_at'] ? strtotime($a['sold_at']) : 0;
+        $tb = $b['sold_at'] ? strtotime($b['sold_at']) : 0;
+        return $tb - $ta;
+    });
+
+    return array_slice($allSales, 0, $limit);
+}
+
+// ============================================================
+// RECENT SALES
+// ============================================================
+$recentSales = fetchRecentSales($conn, $user_branch, 10, $debug);
+
+// ============================================================
+// ACTIVE SALES
 // ============================================================
 $activeSales = [];
-$stmt = safeQuery($conn, "
+$stmt = secureQuery($conn, "
     SELECT 
         s.id,
         s.client_name,
@@ -435,10 +433,10 @@ $stmt = safeQuery($conn, "
     FROM sales s
     LEFT JOIN users u ON s.sold_by = u.id
     WHERE s.sale_status = 'active'
-    AND u.branch = :branch
+    AND u.branch = ?
     ORDER BY s.created_at DESC
     LIMIT 20
-", ['branch' => $user_branch]);
+", [$user_branch], $debug);
 if ($stmt) {
     $activeSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -452,10 +450,7 @@ if ($hour < 12) $greeting = 'Good morning';
 elseif ($hour < 17) $greeting = 'Good afternoon';
 else $greeting = 'Good evening';
 
-// Store values for JavaScript toggle
-$todaysRevenueFormatted = number_format($todaysRevenue, 0);
-$weeklyRevenueFormatted = number_format($weeklyRevenue, 0);
-$monthlyRevenueFormatted = number_format($monthlyRevenue, 0);
+require_once "../includes/sidebar.php";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -464,6 +459,7 @@ $monthlyRevenueFormatted = number_format($monthlyRevenue, 0);
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=yes">
     <title>Cashier Dashboard | Mombasa Computers</title>
     <style>
+    /* (CSS unchanged – keep your existing styles) */
     :root {
         --primary: #1a4b2a;
         --primary-light: #2a6b3a;
@@ -992,7 +988,7 @@ $monthlyRevenueFormatted = number_format($monthlyRevenue, 0);
                             <td style="text-align:center; width:35px;"><?= $i++ ?></td>
                             <td><strong><?= htmlspecialchars($item['item_name']) ?></strong></td>
                             <td><span class="badge badge-info"><?= htmlspecialchars($item['category']) ?></span></td>
-                            <td><span class="badge badge-primary"><?= (int)$item['quantity'] ?></span></td>
+                            <td><span class="badge badge-primary"><?= (int)$item['quantity_sold'] ?></span></td>
                             <td class="text-success">KES <?= number_format($item['revenue'], 0) ?></td>
                         </tr>
                         <?php endforeach; else: ?>
@@ -1006,7 +1002,7 @@ $monthlyRevenueFormatted = number_format($monthlyRevenue, 0);
         <div class="section" style="margin-bottom: 0;">
             <div class="flex-between">
                 <h4><i class="fas fa-clock" style="color: var(--warning);"></i> Active Sales</h4>
-                <a href="/inventory_system/sales/sales_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                <a href="/inventory_system/sales/active_sales.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table">

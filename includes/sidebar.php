@@ -449,20 +449,7 @@ body {
                     ]
                 ];
             }
-            // cashier
-            if ($role === 'cashier') {
-                $sections['SALES'] = [
-                    'icon' => 'fas fa-chart-line',
-                    'items' => [
-                        ['Process New Sale', '/inventory_system/sales/make_sale.php', 'fas fa-cash-register'],
-                        ['Sales Logs', '/inventory_system/sales/sales_logs.php', 'fas fa-chart-bar'],
-                        ['Search Device', '/inventory_system/sales/search_device.php', 'fas fa-search'],
-                    ]
-                ];
-            }
-
-
-            if ($role === 'sales') {
+                 if ($role === 'sales') {
                 $sections['QUOTATIONS'] = [
                     'icon' => 'fas fa-file-invoice',
                     'items' => [
@@ -482,6 +469,50 @@ body {
                 ];
             }
 
+            if ($role === 'sales') {
+                $sections['CLIENTS'] = [
+                    'icon' => 'fas fa-users',
+                    'items' => [
+                        ['Add Client', '/inventory_system/sales/add_client.php', 'fas fa-user-plus'],
+                        ['My Clients', '/inventory_system/sales/view_clients.php', 'fas fa-users'],
+                    ]
+                ];
+            }
+
+            // cashier
+            if ($role === 'cashier') {
+                $sections['SALES'] = [
+                    'icon' => 'fas fa-chart-line',
+                    'items' => [
+                        ['Process Sale', '/inventory_system/sales/make_sale.php', 'fas fa-cash-register'],
+                        ['Active Sales', '/inventory_system/sales/active_sales.php', 'fas fa-shopping-cart'],
+                        ['Sales Logs', '/inventory_system/sales/sales_logs.php', 'fas fa-chart-bar'],
+                        ['Search Device', '/inventory_system/sales/search_device.php', 'fas fa-search'],
+                    ]
+                ];
+            }
+              if ($role === 'cashier') {
+                $sections['RETURNS'] = [
+                    'icon' => 'fas fa-undo',
+                    'items' => [
+                        ['Process Return', '/inventory_system/sales/process_return.php', 'fas fa-undo'],
+                        ['Return Logs', '/inventory_system/sales/return_logs.php', 'fas fa-chart-bar'],
+                    ]
+                ];
+            }
+
+            if ($role === 'cashier') {
+                $sections['CLIENTS'] = [
+                    'icon' => 'fas fa-users',
+                    'items' => [
+                        ['Add Client', '/inventory_system/sales/add_client.php', 'fas fa-user-plus'],
+                        ['View Clients', '/inventory_system/sales/view_clients.php', 'fas fa-users'],
+                    ]
+                ];
+            }
+
+
+       
             // Transfers
             if (in_array($role, ['super_admin','manager','inventory_admin'])) {
                 $sections['TRANSFERS'] = [

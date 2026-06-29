@@ -4,20 +4,35 @@ require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
 
-
 $role = $_SESSION['role'];
 $user_id = (int) $_SESSION['user_id'];
 
-// Allowed roles: super_admin, cashier, manager
+// Allowed roles: super_admin, manager, cashier
 if (!in_array($role, ['super_admin', 'manager', 'cashier'])) {
     die("ACCESS DENIED.");
 }
 
+// Determine branch only for cashier
 $user_branch = null;
-if ($role === 'manager') {
+$sales_users = []; // will hold salespersons for dropdown
+
+if ($role === 'cashier') {
     $stmt = $conn->prepare("SELECT branch FROM users WHERE id = ?");
     $stmt->execute([$user_id]);
     $user_branch = $stmt->fetchColumn();
+}
+
+// For super_admin and manager, get all sales users
+// For cashier, get only sales users from their branch
+if ($role === 'super_admin' || $role === 'manager') {
+    $stmt = $conn->query("SELECT id, full_name, branch FROM users WHERE role = 'sales' ORDER BY full_name");
+    $sales_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} else if ($role === 'cashier') {
+    if ($user_branch) {
+        $stmt = $conn->prepare("SELECT id, full_name, branch FROM users WHERE role = 'sales' AND branch = ? ORDER BY full_name");
+        $stmt->execute([$user_branch]);
+        $sales_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 
 // Get filter inputs
@@ -28,21 +43,14 @@ $filter_end_date = $_GET['filter_end_date'] ?? '';
 $filter_user = $_GET['filter_user'] ?? '';
 $filter_branch = $_GET['filter_branch'] ?? '';
 
-// For super_admin, get list of sales users for filter dropdown
-$sales_users = [];
-if ($role === 'super_admin') {
-    $stmt = $conn->query("SELECT id, full_name, branch FROM users WHERE role = 'sales' ORDER BY full_name");
-    $sales_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
 // ----------------------------------------------------------------------
 // Unified fetch function – returns all sales from all tables with specs
+// (unchanged)
 // ----------------------------------------------------------------------
 function fetchAllSales($conn, $filters) {
     $allSales = [];
 
     // 1. Devices
-  // 1. Devices – include touch for Laptop, AIO, POS
     $sql = "SELECT d.model_name AS item_name, 'Device' AS category,
                 d.serial_number AS id, d.selling_price AS price,
                 d.sold_at, d.branch, d.sold_by, u.full_name AS sold_by_name,
@@ -187,7 +195,7 @@ function fetchAllSales($conn, $filters) {
         });
     }
 
-    // 4. User filter (only for super_admin)
+    // 4. User filter
     if (!empty($filters['user_id'])) {
         $allSales = array_filter($allSales, function($s) use ($filters) {
             return $s['sold_by'] == $filters['user_id'];
@@ -217,9 +225,28 @@ $filters = [
     'search'     => $filter_search,
     'start_date' => $filter_start_date,
     'end_date'   => $filter_end_date,
-    'user_id'    => ($role === 'super_admin' && !empty($filter_user)) ? (int)$filter_user : null,
-    'branch'     => ($role === 'super_admin' && !empty($filter_branch)) ? $filter_branch : ($role === 'manager' ? $user_branch : null)
 ];
+
+// Set branch filter based on role
+if ($role === 'cashier') {
+    // Cashier: force branch to user's branch, no branch filter dropdown
+    $filters['branch'] = $user_branch;
+    if (!empty($filter_user)) {
+        $filters['user_id'] = (int)$filter_user;
+    } else {
+        $filters['user_id'] = null;
+    }
+} else {
+    // Super_admin and manager: use selected branch filter if provided
+    if (!empty($filter_branch)) {
+        $filters['branch'] = $filter_branch;
+    }
+    if (!empty($filter_user)) {
+        $filters['user_id'] = (int)$filter_user;
+    } else {
+        $filters['user_id'] = null;
+    }
+}
 
 $sales = fetchAllSales($conn, $filters);
 
@@ -230,7 +257,6 @@ date_default_timezone_set('Africa/Nairobi');
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 require_once "../includes/sidebar.php";
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -344,16 +370,9 @@ require_once "../includes/sidebar.php";
                 <label>End Date</label>
                 <input type="date" name="filter_end_date" value="<?= htmlspecialchars($filter_end_date) ?>" max="<?= date('Y-m-d') ?>">
             </div>
-            <?php if ($role === 'super_admin'): ?>
-                <div class="filter-group">
-                    <label>Salesperson</label>
-                    <select name="filter_user">
-                        <option value="">All Salespersons</option>
-                        <?php foreach ($sales_users as $u): ?>
-                            <option value="<?= $u['id'] ?>" <?= $filter_user == $u['id'] ? 'selected' : '' ?>><?= htmlspecialchars($u['full_name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
+
+            <!-- Branch filter: visible only for super_admin and manager -->
+            <?php if ($role === 'super_admin' || $role === 'manager'): ?>
                 <div class="filter-group">
                     <label>Branch</label>
                     <select name="filter_branch">
@@ -369,7 +388,22 @@ require_once "../includes/sidebar.php";
                         <?php endforeach; ?>
                     </select>
                 </div>
+            <?php else: ?>
+                <!-- Cashier: branch filter hidden, but we keep a hidden field if needed -->
+                <input type="hidden" name="filter_branch" value="">
             <?php endif; ?>
+
+            <!-- Salesperson filter: for super_admin and manager, show all sales users; for cashier, only their branch -->
+            <div class="filter-group">
+                <label>Salesperson</label>
+                <select name="filter_user">
+                    <option value="">All Salespersons</option>
+                    <?php foreach ($sales_users as $u): ?>
+                        <option value="<?= $u['id'] ?>" <?= $filter_user == $u['id'] ? 'selected' : '' ?>><?= htmlspecialchars($u['full_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
             <div class="filter-actions">
                 <button type="submit" class="btn"><i class="fas fa-search"></i> Filter</button>
                 <a href="sales_logs.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>

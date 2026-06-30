@@ -464,7 +464,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
-            <a href="hdd_list.php">HDDs</a>
+            <a href="hdds_instock.php">HDDs</a>
             <span> / </span>
             <span>Add HDD</span>
         </div>
@@ -530,7 +530,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div id="checkFeedback" class="check-feedback"></div>
 
                 <div class="form-actions">
-                    <a href="hdd_list.php" class="btn btn-secondary"><i class="fas fa-times"></i> Cancel</a>
+                    <a href="hdds_instock.php" class="btn btn-secondary"><i class="fas fa-times"></i> Cancel</a>
                     <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Add / Update HDD</button>
                 </div>
             </form>

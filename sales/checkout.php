@@ -77,17 +77,17 @@ function returnItemToStock($conn, $item_type, $item_id, $sale_item_id, $quantity
 
         case 'ram':
         case 'ssd':
-            $stmt = $conn->prepare("UPDATE rams_ssds SET quantity = quantity + ? WHERE id = ?");
-            $stmt->execute([$quantity, $item_id]);
             $stmt = $conn->prepare("DELETE FROM sold_rams_ssds WHERE ram_ssd_id = ? AND sale_item_id = ?");
             $stmt->execute([$item_id, $sale_item_id]);
+            $stmt = $conn->prepare("UPDATE rams_ssds_logs SET status = 'pending_sale', sale_item_id = NULL WHERE sale_item_id = ?");
+            $stmt->execute([$sale_item_id]);
             break;
 
         case 'charger':
-            $stmt = $conn->prepare("UPDATE chargers SET quantity = quantity + ? WHERE id = ?");
-            $stmt->execute([$quantity, $item_id]);
             $stmt = $conn->prepare("DELETE FROM sold_chargers WHERE charger_id = ? AND sale_item_id = ?");
             $stmt->execute([$item_id, $sale_item_id]);
+            $stmt = $conn->prepare("UPDATE charger_logs SET status = 'pending_sale', sale_item_id = NULL WHERE sale_item_id = ?");
+            $stmt->execute([$sale_item_id]);
             break;
 
         case 'accessory':
@@ -98,17 +98,17 @@ function returnItemToStock($conn, $item_type, $item_id, $sale_item_id, $quantity
             break;
 
         case 'hdd':
-            $stmt = $conn->prepare("UPDATE hdds SET quantity = quantity + ? WHERE id = ?");
-            $stmt->execute([$quantity, $item_id]);
             $stmt = $conn->prepare("DELETE FROM sold_hdds WHERE hdd_id = ? AND sale_item_id = ?");
             $stmt->execute([$item_id, $sale_item_id]);
+            $stmt = $conn->prepare("UPDATE hdd_logs SET status = 'pending_sale', sale_item_id = NULL WHERE sale_item_id = ?");
+            $stmt->execute([$sale_item_id]);
             break;
 
         case 'graphic':
-            $stmt = $conn->prepare("UPDATE graphic_cards SET quantity = quantity + ? WHERE id = ?");
-            $stmt->execute([$quantity, $item_id]);
             $stmt = $conn->prepare("DELETE FROM sold_graphics_cards WHERE graphic_card_id = ? AND sale_item_id = ?");
             $stmt->execute([$item_id, $sale_item_id]);
+            $stmt = $conn->prepare("UPDATE graphic_cards_logs SET status = 'pending_sale', sale_item_id = NULL WHERE sale_item_id = ?");
+            $stmt->execute([$sale_item_id]);
             break;
 
         default:

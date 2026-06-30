@@ -19,39 +19,60 @@ $searched = ($search_sn || $search_model);
 $allResults = [];
 
 if ($searched) {
-    function addResults(&$allResults, $rows, $type, $idField, $nameField, $branchField, $qtyField, $priceField, $viewLink) {
-        foreach ($rows as $row) {
-            $allResults[] = [
-                'type' => $type,
-                'id' => $row[$idField] ?? '-',
-                'name' => $row[$nameField] ?? '-',
-                'branch' => $row[$branchField] ?? '-',
-                'quantity' => (int)($row[$qtyField] ?? 0),
-                'price' => $row[$priceField] ?? null,
-                'view' => $viewLink . urlencode($row[$idField] ?? ''),
-            ];
-        }
+    // Helper to add a result item
+    function addResult(&$allResults, $type, $id, $name, $branch, $quantity, $price, $specs, $viewLink = null) {
+        $allResults[] = [
+            'type' => $type,
+            'id' => $id,
+            'name' => $name,
+            'branch' => $branch,
+            'quantity' => (int)$quantity,
+            'price' => $price,
+            'specs' => $specs,
+            'view' => $viewLink,
+        ];
     }
 
+    // Define allowed types for "View" button
+    $viewableTypes = ['Device', 'Smartboard', 'Monitor', 'Printer', 'Phone', 'UPS'];
+
     // 1. Devices
-    $sql = "SELECT d.serial_number, d.model_name, d.branch, 1 AS quantity, d.price, d.selling_price
+    $sql = "SELECT d.serial_number, d.model_name, d.branch, 1 AS quantity, d.price, d.selling_price,
+                   d.processor, d.ram, d.storage_type, d.storage_capacity, d.graphics, d.touch
             FROM devices d WHERE d.status = 'In Stock'";
     $params = [];
     if ($search_sn) { $sql .= " AND d.serial_number LIKE ?"; $params[] = "%$search_sn%"; }
     if ($search_model) { $sql .= " AND d.model_name LIKE ?"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Device', 'serial_number', 'model_name', 'branch', 'quantity', 'price', '../devices/view_device.php?sn=');
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $specs = trim(
+            ($row['processor'] ?? '') . ' | ' .
+            ($row['ram'] ? $row['ram'] . 'GB RAM' : '') .
+            ($row['storage_type'] && $row['storage_capacity'] ? ' | ' . $row['storage_type'] . ' ' . $row['storage_capacity'] . 'GB' : '') .
+            ($row['graphics'] ? ' | ' . $row['graphics'] : '') .
+            ($row['touch'] && $row['touch'] != 'N/A' ? ' | ' . $row['touch'] : '')
+        );
+        if (empty($specs)) $specs = '-';
+        $viewLink = in_array('Device', $viewableTypes) ? '../devices/view_device.php?sn=' . urlencode($row['serial_number']) : null;
+        addResult($allResults, 'Device', $row['serial_number'], $row['model_name'], $row['branch'], 1, $row['price'] ?? null, $specs, $viewLink);
+    }
 
     // 2. Monitors
-    $sql = "SELECT m.serial_number, m.model_name, m.branch, 1 AS quantity, m.price, m.selling_price
+    $sql = "SELECT m.serial_number, m.model_name, m.branch, 1 AS quantity, m.price, m.selling_price, m.size_inches
             FROM monitors m WHERE m.status = 'In Stock'";
     $params = [];
     if ($search_sn) { $sql .= " AND m.serial_number LIKE ?"; $params[] = "%$search_sn%"; }
     if ($search_model) { $sql .= " AND m.model_name LIKE ?"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Monitor', 'serial_number', 'model_name', 'branch', 'quantity', 'price', '../monitors/view_monitor.php?sn=');
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $specs = ($row['size_inches'] ?? '') ? $row['size_inches'] . ' inch' : '-';
+        $viewLink = in_array('Monitor', $viewableTypes) ? '../monitors/view_monitor.php?sn=' . urlencode($row['serial_number']) : null;
+        addResult($allResults, 'Monitor', $row['serial_number'], $row['model_name'], $row['branch'], 1, $row['price'] ?? null, $specs, $viewLink);
+    }
 
     // 3. Printers
     $sql = "SELECT p.serial_number, p.model_name, p.branch, 1 AS quantity, p.price, p.selling_price
@@ -61,37 +82,63 @@ if ($searched) {
     if ($search_model) { $sql .= " AND p.model_name LIKE ?"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Printer', 'serial_number', 'model_name', 'branch', 'quantity', 'price', '../printers/view_printer.php?sn=');
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $specs = 'N/A'; // as per sales_logs
+        $viewLink = in_array('Printer', $viewableTypes) ? '../printers/view_printer.php?sn=' . urlencode($row['serial_number']) : null;
+        addResult($allResults, 'Printer', $row['serial_number'], $row['model_name'], $row['branch'], 1, $row['price'] ?? null, $specs, $viewLink);
+    }
 
     // 4. Smartboards
-    $sql = "SELECT s.serial_number, s.model, s.branch, 1 AS quantity, s.price, s.selling_price
+    $sql = "SELECT s.serial_number, s.model, s.branch, 1 AS quantity, s.price, s.selling_price, s.size_inches
             FROM smartboards s WHERE s.status = 'instock'";
     $params = [];
     if ($search_sn) { $sql .= " AND s.serial_number LIKE ?"; $params[] = "%$search_sn%"; }
     if ($search_model) { $sql .= " AND s.model LIKE ?"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Smartboard', 'serial_number', 'model', 'branch', 'quantity', 'price', '../smartboards/view_smartboard.php?sn=');
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $specs = ($row['model'] ?? '') . ($row['size_inches'] ? ' | ' . $row['size_inches'] . ' inch' : '');
+        if (empty($specs)) $specs = '-';
+        $viewLink = in_array('Smartboard', $viewableTypes) ? '../smartboards/view_smartboard.php?sn=' . urlencode($row['serial_number']) : null;
+        addResult($allResults, 'Smartboard', $row['serial_number'], $row['model'], $row['branch'], 1, $row['price'] ?? null, $specs, $viewLink);
+    }
 
     // 5. UPS
-    $sql = "SELECT u.serial_number, u.model, u.branch, 1 AS quantity, u.price, u.selling_price
+    $sql = "SELECT u.serial_number, u.model, u.branch, 1 AS quantity, u.price, u.selling_price, u.capacity
             FROM ups u WHERE u.status = 'instock'";
     $params = [];
     if ($search_sn) { $sql .= " AND u.serial_number LIKE ?"; $params[] = "%$search_sn%"; }
     if ($search_model) { $sql .= " AND u.model LIKE ?"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'UPS', 'serial_number', 'model', 'branch', 'quantity', 'price', '../ups/view_ups.php?sn=');
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $specs = ($row['model'] ?? '') . ($row['capacity'] ? ' | ' . $row['capacity'] . ' VA' : '');
+        if (empty($specs)) $specs = '-';
+        $viewLink = in_array('UPS', $viewableTypes) ? '../ups/view_ups.php?sn=' . urlencode($row['serial_number']) : null;
+        addResult($allResults, 'UPS', $row['serial_number'], $row['model'], $row['branch'], 1, $row['price'] ?? null, $specs, $viewLink);
+    }
 
     // 6. Phones
-    $sql = "SELECT p.serial_number, CONCAT(p.brand, ' ', p.model) AS model, p.branch, 1 AS quantity, p.price, p.selling_price
+    $sql = "SELECT p.serial_number, p.brand, p.model, p.branch, 1 AS quantity, p.price, p.selling_price, p.ram, p.storage_capacity
             FROM phones p WHERE p.status = 'instock'";
     $params = [];
     if ($search_sn) { $sql .= " AND p.serial_number LIKE ?"; $params[] = "%$search_sn%"; }
     if ($search_model) { $sql .= " AND (p.brand LIKE ? OR p.model LIKE ?)"; $params[] = "%$search_model%"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Phone', 'serial_number', 'model', 'branch', 'quantity', 'price', '../phones/view_phone.php?sn=');
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $name = trim(($row['brand'] ?? '') . ' ' . ($row['model'] ?? ''));
+        if (empty($name)) $name = 'Phone';
+        $specs = ($row['ram'] ? $row['ram'] . 'GB RAM' : '') .
+                 ($row['storage_capacity'] ? ' | ' . $row['storage_capacity'] . 'GB' : '');
+        if (empty($specs)) $specs = '-';
+        $viewLink = in_array('Phone', $viewableTypes) ? '../phones/view_phone.php?sn=' . urlencode($row['serial_number']) : null;
+        addResult($allResults, 'Phone', $row['serial_number'], $name, $row['branch'], 1, $row['price'] ?? null, $specs, $viewLink);
+    }
 
     // 7. Accessories
     $sql = "SELECT a.id, a.name, a.branch, a.quantity, a.price
@@ -101,47 +148,78 @@ if ($searched) {
     if ($search_model) { $sql .= " AND a.name LIKE ?"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Accessory', 'id', 'name', 'branch', 'quantity', 'price', '../accessories/view_accessory.php?id=');
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $specs = 'Qty: ' . $row['quantity']; // simple spec
+        $viewLink = null; // not viewable
+        addResult($allResults, 'Accessory', $row['id'], $row['name'], $row['branch'], $row['quantity'], $row['price'] ?? null, $specs, $viewLink);
+    }
 
     // 8. Graphics Cards
-    $sql = "SELECT g.id, g.type AS name, g.branch, g.quantity, g.price
+    $sql = "SELECT g.id, g.type AS name, g.branch, g.quantity, g.price, g.storage_capacity
             FROM graphic_cards g WHERE g.status = 'instock'";
     $params = [];
     if ($search_sn) { $sql .= " AND g.id LIKE ?"; $params[] = "%$search_sn%"; }
     if ($search_model) { $sql .= " AND g.type LIKE ?"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Graphics Card', 'id', 'name', 'branch', 'quantity', 'price', '../graphics_cards/view_graphics_card.php?id=');
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $specs = ($row['storage_capacity'] ?? '') ? $row['storage_capacity'] . 'GB' : '-';
+        $viewLink = null;
+        addResult($allResults, 'Graphics Card', $row['id'], $row['name'], $row['branch'], $row['quantity'], $row['price'] ?? null, $specs, $viewLink);
+    }
 
-    // 9. HDDs (quantity > 0)
-    $sql = "SELECT h.id, CONCAT(h.type, ' ', h.storage) AS name, h.branch, h.quantity, h.price
+    // 9. HDDs
+    $sql = "SELECT h.id, h.type, h.storage, h.branch, h.quantity, h.price
             FROM hdds h WHERE h.quantity > 0";
     $params = [];
     if ($search_sn) { $sql .= " AND h.id LIKE ?"; $params[] = "%$search_sn%"; }
     if ($search_model) { $sql .= " AND (h.type LIKE ? OR h.storage LIKE ?)"; $params[] = "%$search_model%"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'HDD', 'id', 'name', 'branch', 'quantity', 'price', '../hdds/view_hdd.php?id=');
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $name = trim(($row['type'] ?? '') . ' ' . ($row['storage'] ?? ''));
+        if (empty($name)) $name = 'HDD';
+        $specs = ($row['storage'] ?? '') ? $row['storage'] : '-';
+        $viewLink = null;
+        addResult($allResults, 'HDD', $row['id'], $name, $row['branch'], $row['quantity'], $row['price'] ?? null, $specs, $viewLink);
+    }
 
-    // 10. RAM/SSD (quantity > 0)
-    $sql = "SELECT r.id, CONCAT(r.category, ' ', r.type, ' ', r.storage, 'GB') AS name, r.branch, r.quantity, NULL AS price
+    // 10. RAM/SSD
+    $sql = "SELECT r.id, r.category, r.type, r.storage, r.branch, r.quantity, r.price
             FROM rams_ssds r WHERE r.quantity > 0";
     $params = [];
     if ($search_sn) { $sql .= " AND r.id LIKE ?"; $params[] = "%$search_sn%"; }
     if ($search_model) { $sql .= " AND (r.category LIKE ? OR r.type LIKE ?)"; $params[] = "%$search_model%"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'RAM/SSD', 'id', 'name', 'branch', 'quantity', 'price', '../rams_ssds/view_ram_ssd.php?id=');
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $name = trim(($row['category'] ?? '') . ' ' . ($row['type'] ?? '') . ' ' . ($row['storage'] ?? '') . 'GB');
+        if (empty($name)) $name = 'RAM/SSD';
+        $specs = ($row['storage'] ?? '') ? $row['storage'] . 'GB' : '-';
+        $viewLink = null;
+        addResult($allResults, 'RAM/SSD', $row['id'], $name, $row['branch'], $row['quantity'], $row['price'] ?? null, $specs, $viewLink);
+    }
 
-    // 11. Chargers (quantity > 0)
-    $sql = "SELECT c.id, CONCAT(c.charger_type, ' ', c.watts, 'W') AS name, c.branch, c.quantity, NULL AS price
+    // 11. Chargers
+    $sql = "SELECT c.id, c.charger_type, c.watts, c.branch, c.quantity
             FROM chargers c WHERE c.quantity > 0";
     $params = [];
     if ($search_sn) { $sql .= " AND c.id LIKE ?"; $params[] = "%$search_sn%"; }
     if ($search_model) { $sql .= " AND c.charger_type LIKE ?"; $params[] = "%$search_model%"; }
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
-    addResults($allResults, $stmt->fetchAll(PDO::FETCH_ASSOC), 'Charger', 'id', 'name', 'branch', 'quantity', 'price', '../chargers/view_charger.php?id=');
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $name = trim(($row['charger_type'] ?? '') . ' ' . ($row['watts'] ?? '') . 'W');
+        if (empty($name)) $name = 'Charger';
+        $specs = ($row['watts'] ?? '') ? $row['watts'] . 'W' : '-';
+        $viewLink = null;
+        addResult($allResults, 'Charger', $row['id'], $name, $row['branch'], $row['quantity'], null, $specs, $viewLink);
+    }
 
     // Sort results: group by type, then by name
     usort($allResults, function($a, $b) {
@@ -203,6 +281,7 @@ require_once "../includes/sidebar.php";
         .view-btn:hover { background: #2a6b3a; }
         .empty-state { text-align: center; padding: 2rem; color: var(--gray-500); }
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
+        .specs-cell { font-size: 0.8rem; color: var(--gray-600); max-width: 300px; word-break: break-word; }
 
         @media (max-width: 1200px) {
             .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
@@ -220,6 +299,7 @@ require_once "../includes/sidebar.php";
             table { font-size: 0.75rem; min-width: 600px; }
             th, td { padding: 0.5rem; }
             .view-btn { font-size: 0.65rem; padding: 0.2rem 0.5rem; }
+            .specs-cell { max-width: 150px; }
         }
         @media (max-width: 480px) {
             .main-content { padding: 0.75rem 0.5rem 0.5rem !important; padding-top: 4rem !important; }
@@ -227,6 +307,7 @@ require_once "../includes/sidebar.php";
             .search-group input { font-size: 0.9rem; padding: 0.6rem; }
             table { font-size: 0.65rem; min-width: 480px; }
             th, td { padding: 0.3rem; }
+            .specs-cell { max-width: 100px; }
         }
     </style>
 </head>
@@ -296,6 +377,7 @@ require_once "../includes/sidebar.php";
                                 <th>Branch</th>
                                 <th>Qty</th>
                                 <th>Price</th>
+                                <th>Specifications</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -308,11 +390,12 @@ require_once "../includes/sidebar.php";
                                 <td><span class="badge"><?= htmlspecialchars($item['branch']) ?></span></td>
                                 <td><?= $item['quantity'] ?></td>
                                 <td><?= $item['price'] !== null ? 'KES ' . number_format($item['price'], 0) : '-' ?></td>
+                                <td class="specs-cell"><?= htmlspecialchars($item['specs'] ?? '-') ?></td>
                                 <td>
                                     <?php if (!empty($item['view'])): ?>
                                         <a href="<?= $item['view'] ?>" class="view-btn">View</a>
                                     <?php else: ?>
-                                        <span class="badge">No view</span>
+                                        <span style="color: var(--gray-500);">-</span>
                                     <?php endif; ?>
                                 </td>
                             </tr>

@@ -67,7 +67,7 @@ if ($hour < 12) $greeting = 'Good morning';
 elseif ($hour < 17) $greeting = 'Good afternoon';
 else $greeting = 'Good evening';
 
-require_once "../includes/sidebar.php";
+
 
 function secureQuery($conn, $sql, $params = []) {
     try {
@@ -106,6 +106,7 @@ if ($role === 'cashier') {
 }
 
 $show_cards = $sale_valid && $current_sale_id > 0;
+require_once "../includes/sidebar.php";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -643,7 +644,7 @@ $show_cards = $sale_valid && $current_sale_id > 0;
         </div>
 
         <div style="margin-top:1rem;">
-            <a href="checkout.php?sale_id=<?= $current_sale_id ?>" class="btn"><i class="fas fa-eye"></i> View Sale Details</a>
+            <a href="checkout.php?sale_id=<?= $current_sale_id ?>" class="btn"><i class="fas fa-shopping-cart"></i> Go to Checkout</a>
         </div>
     <?php endif; ?>
 

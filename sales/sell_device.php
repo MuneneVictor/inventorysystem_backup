@@ -255,8 +255,7 @@ if (isset($_POST['sell_bulk_devices'])) {
 // ============================================================
 // NOW WE INCLUDE HEADER AND SIDEBAR (HTML OUTPUT STARTS)
 // ============================================================
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 
 date_default_timezone_set('Africa/Nairobi');
 $hour = date('G');
@@ -264,6 +263,8 @@ if ($hour < 12) $greeting = 'Good morning';
 elseif ($hour < 17) $greeting = 'Good afternoon';
 else $greeting = 'Good evening';
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
+require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 ?>
 <!DOCTYPE html>
 <html lang="en">

@@ -23,56 +23,61 @@ if ($role === 'manager') {
 }
 
 // Handle search inputs
-$search_category = trim($_GET['category'] ?? '');
 $search_type = trim($_GET['type'] ?? '');
-$search_storage = trim($_GET['storage'] ?? '');
+$search_condition = trim($_GET['condition'] ?? '');
 $search_branch = trim($_GET['branch'] ?? '');
+$date_from = trim($_GET['date_from'] ?? '');
+$date_to = trim($_GET['date_to'] ?? '');
 
-// Build query
-$sql = "SELECT r.*, 
+// Build query – all chargers (quantity may be 0, but we show them)
+$sql = "SELECT c.*, 
                u1.full_name AS added_by_name,
                u2.full_name AS updated_by_name
-        FROM rams_ssds r
-        LEFT JOIN users u1 ON r.added_by = u1.id
-        LEFT JOIN users u2 ON r.updated_by = u2.id
+        FROM chargers c
+        LEFT JOIN users u1 ON c.added_by = u1.id
+        LEFT JOIN users u2 ON c.updated_by = u2.id
         WHERE 1=1";
 $params = [];
 
 // Manager restriction
 if ($role === 'manager' && !empty($user_branch)) {
-    $sql .= " AND r.branch = :user_branch";
+    $sql .= " AND c.branch = :user_branch";
     $params['user_branch'] = $user_branch;
 }
 
 // Search filters
-if ($search_category) {
-    $sql .= " AND r.category = :category";
-    $params['category'] = $search_category;
-}
 if ($search_type) {
-    $sql .= " AND r.type LIKE :type";
+    $sql .= " AND c.charger_type LIKE :type";
     $params['type'] = "%$search_type%";
 }
-if ($search_storage) {
-    $sql .= " AND r.storage = :storage";
-    $params['storage'] = $search_storage;
+if ($search_condition) {
+    $sql .= " AND c.charger_condition LIKE :condition";
+    $params['condition'] = "%$search_condition%";
 }
 if ($search_branch && $role !== 'manager') {
-    $sql .= " AND r.branch = :branch";
+    $sql .= " AND c.branch = :branch";
     $params['branch'] = $search_branch;
 }
+if ($date_from) {
+    $sql .= " AND DATE(c.date_added) >= :date_from";
+    $params['date_from'] = $date_from;
+}
+if ($date_to) {
+    $sql .= " AND DATE(c.date_added) <= :date_to";
+    $params['date_to'] = $date_to;
+}
 
-$sql .= " ORDER BY r.date_added DESC";
+$sql .= " ORDER BY c.date_added DESC";
 
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
-$items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$chargers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Stats
-$total_items = count($items);
-$total_quantity = array_sum(array_column($items, 'quantity'));
-$total_value = array_sum(array_column($items, 'total_price'));
-$branches = array_unique(array_column($items, 'branch'));
+$total_items = count($chargers);
+$total_quantity = array_sum(array_column($chargers, 'quantity'));
+$total_value = array_sum(array_column($chargers, 'total_price'));
+$branches = array_unique(array_column($chargers, 'branch'));
 ?>
 
 <!DOCTYPE html>
@@ -80,10 +85,10 @@ $branches = array_unique(array_column($items, 'branch'));
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>In‑Stock RAM/SSD | Mombasa Computers</title>
+    <title>In‑Stock Chargers | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Same CSS as hdds_instock.php – unchanged */
+        /* Same CSS as hdd_instock.php */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -244,6 +249,8 @@ $branches = array_unique(array_column($items, 'branch'));
         .btn-secondary:hover { background: var(--gray-200); }
         .btn-excel { background: #217346; color: white; }
         .btn-excel:hover { background: #1a5e33; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
 
         .table-wrapper {
             background: white;
@@ -259,7 +266,7 @@ $branches = array_unique(array_column($items, 'branch'));
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
-            min-width: 700px;
+            min-width: 900px;
         }
 
         th {
@@ -361,7 +368,7 @@ $branches = array_unique(array_column($items, 'branch'));
 
 <div class="main-content">
     <div class="page-header">
-        <h1><i class="fas fa-microchip"></i> In‑Stock RAM / SSD</h1>
+        <h1><i class="fas fa-bolt"></i> In‑Stock Chargers</h1>
         <div class="breadcrumb">
             <?php if ($_SESSION['role'] === 'super_admin'): ?>
                 <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
@@ -373,7 +380,7 @@ $branches = array_unique(array_column($items, 'branch'));
                 <a href="/inventory_system/dashboard/salesdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
-            <span>In‑Stock RAM/SSD</span>
+            <span>In‑Stock Chargers</span>
         </div>
     </div>
 
@@ -403,23 +410,19 @@ $branches = array_unique(array_column($items, 'branch'));
 
     <!-- Search Section -->
     <div class="search-section">
-        <div class="search-title"><i class="fas fa-filter"></i> Filter RAM/SSD</div>
+        <div class="search-title"><i class="fas fa-filter"></i> Filter Chargers</div>
         <form method="GET" class="search-grid">
             <div class="search-group">
-                <label>Category</label>
-                <select name="category">
+                <label>Charger Type</label>
+                <input type="text" name="type" placeholder="e.g., HP Blue Pin" value="<?= htmlspecialchars($search_type) ?>">
+            </div>
+            <div class="search-group">
+                <label>Condition</label>
+                <select name="condition">
                     <option value="">-- All --</option>
-                    <option value="RAM" <?= $search_category == 'RAM' ? 'selected' : '' ?>>RAM</option>
-                    <option value="SSD" <?= $search_category == 'SSD' ? 'selected' : '' ?>>SSD</option>
+                    <option value="new" <?= $search_condition == 'new' ? 'selected' : '' ?>>New</option>
+                    <option value="ex-uk" <?= $search_condition == 'ex-uk' ? 'selected' : '' ?>>Ex‑UK</option>
                 </select>
-            </div>
-            <div class="search-group">
-                <label>Type</label>
-                <input type="text" name="type" placeholder="e.g., DDR4, SATA" value="<?= htmlspecialchars($search_type) ?>">
-            </div>
-            <div class="search-group">
-                <label>Storage (GB)</label>
-                <input type="number" name="storage" placeholder="e.g., 8, 256" value="<?= htmlspecialchars($search_storage) ?>">
             </div>
             <?php if ($role !== 'manager'): ?>
             <div class="search-group">
@@ -431,24 +434,32 @@ $branches = array_unique(array_column($items, 'branch'));
                 </select>
             </div>
             <?php endif; ?>
+            <div class="search-group">
+                <label>Date Added From</label>
+                <input type="date" name="date_from" value="<?= htmlspecialchars($date_from) ?>">
+            </div>
+            <div class="search-group">
+                <label>Date Added To</label>
+                <input type="date" name="date_to" value="<?= htmlspecialchars($date_to) ?>">
+            </div>
             <div class="search-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
-                <a href="rams_instock.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
-                <?php if (!empty($items)): ?>
-                    <a href="export_rams_excel.php?<?= http_build_query(array_merge($_GET, ['export' => '1'])) ?>" class="btn btn-excel"><i class="fas fa-file-excel"></i> Export to Excel</a>
+                <a href="chargers_instock.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
+                <?php if (!empty($chargers)): ?>
+                    <a href="export_chargers_excel.php?<?= http_build_query(array_merge($_GET, ['export' => '1'])) ?>" class="btn btn-excel"><i class="fas fa-file-excel"></i> Export to Excel</a>
                 <?php endif; ?>
             </div>
         </form>
     </div>
 
-    <!-- Table -->
+    <!-- Chargers Table -->
     <div class="table-wrapper">
         <div class="table-responsive">
-            <?php if (empty($items)): ?>
+            <?php if (empty($chargers)): ?>
                 <div class="empty-state">
-                    <i class="fas fa-microchip"></i>
-                    <p>No RAM/SSD items found matching your criteria.</p>
-                    <a href="rams_instock.php" class="btn btn-primary" style="margin-top: 1rem;">
+                    <i class="fas fa-bolt"></i>
+                    <p>No chargers found matching your criteria.</p>
+                    <a href="chargers_instock.php" class="btn btn-primary" style="margin-top: 1rem;">
                         <i class="fas fa-undo"></i> Clear Filters
                     </a>
                 </div>
@@ -457,9 +468,8 @@ $branches = array_unique(array_column($items, 'branch'));
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Category</th>
-                            <th>Type</th>
-                            <th>Storage (GB)</th>
+                            <th>Charger Type</th>
+                            <th>Condition</th>
                             <th>Quantity</th>
                             <th>Branch</th>
                             <th>Price (KES)</th>
@@ -471,32 +481,31 @@ $branches = array_unique(array_column($items, 'branch'));
                         </tr>
                     </thead>
                     <tbody>
-                        <?php $i = 1; foreach ($items as $item): ?>
+                        <?php $i = 1; foreach ($chargers as $c): ?>
                             <tr>
                                 <td><?= $i++ ?></td>
-                                <td><span class="badge"><?= htmlspecialchars($item['category']) ?></span></td>
-                                <td><strong><?= htmlspecialchars($item['type']) ?></strong></td>
-                                <td><?= (int)$item['storage'] ?>GB</td>
-                                <td><span class="badge"><?= (int)$item['quantity'] ?></span></td>
+                                <td><strong><?= htmlspecialchars($c['charger_type']) ?></strong></td>
+                                <td><span class="badge"><?= htmlspecialchars(ucfirst($c['charger_condition'])) ?></span></td>
+                                <td><span class="badge"><?= (int)$c['quantity'] ?></span></td>
                                 <td>
-                                    <span class="<?= $item['branch'] == 'KIMATHI' ? 'branch-kimathi' : 'branch-moi' ?>">
-                                        <?= htmlspecialchars($item['branch']) ?>
+                                    <span class="<?= $c['branch'] == 'KIMATHI' ? 'branch-kimathi' : 'branch-moi' ?>">
+                                        <?= htmlspecialchars($c['branch']) ?>
                                     </span>
                                 </td>
-                                <td class="price"><?= $item['price'] !== null ? 'KES '.number_format($item['price'], 2) : '-' ?></td>
-                                <td class="price"><?= $item['total_price'] !== null ? 'KES '.number_format($item['total_price'], 2) : '-' ?></td>
-                                <td><?= htmlspecialchars($item['added_by_name'] ?? 'N/A') ?></td>
-                                <td><?= htmlspecialchars($item['updated_by_name'] ?? 'Not updated yet') ?></td>
-                                <td><small><?= date('M j, Y g:i A', strtotime($item['date_added'])) ?></small></td>
+                                <td class="price"><?= $c['price'] !== null ? 'KES '.number_format($c['price'], 2) : '-' ?></td>
+                                <td class="price"><?= $c['total_price'] !== null ? 'KES '.number_format($c['total_price'], 2) : '-' ?></td>
+                                <td><?= htmlspecialchars($c['added_by_name'] ?? 'N/A') ?></td>
+                                <td><?= htmlspecialchars($c['updated_by_name'] ?? 'Not updated yet') ?></td>
+                                <td><small><?= date('M j, Y g:i A', strtotime($c['date_added'])) ?></small></td>
                                 <td>
                                     <div class="action-links">
                                         <?php if (in_array($role, ['super_admin', 'inventory_admin', 'manager'])): ?>
-                                            <?php if ($item['price'] === null): ?>
-                                                <a href="add_price_ram.php?id=<?= urlencode($item['id']) ?>" class="action-link">
+                                            <?php if ($c['price'] === null): ?>
+                                                <a href="add_price_charger.php?id=<?= urlencode($c['id']) ?>" class="action-link">
                                                     <i class="fas fa-plus-circle"></i> Add Price
                                                 </a>
                                             <?php else: ?>
-                                                <a href="update_price_ram.php?id=<?= urlencode($item['id']) ?>" class="action-link">
+                                                <a href="update_price_charger.php?id=<?= urlencode($c['id']) ?>" class="action-link">
                                                     <i class="fas fa-edit"></i> Update Price
                                                 </a>
                                             <?php endif; ?>

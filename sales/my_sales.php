@@ -20,139 +20,211 @@ $search     = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 // ============================================================
 // FETCH ALL SALES FOR THIS SALESPERSON FROM ALL TABLES
+// with specs (including condition if available)
 // ============================================================
 function fetchUnifiedSales($conn, $user_id, $start_date, $end_date, $search = '') {
     $allSales = [];
 
-    $queries = [
-        // 1. Devices
-        "SELECT 
-            model_name AS item_name,
-            'Device' AS category,
-            serial_number AS id,
-            selling_price AS price,
-            sold_at,
-            branch
-        FROM devices
-        WHERE status = 'Sold' AND sold_by = :uid",
+    // Helper to build specs with optional condition
+    // In SQL we'll build it directly using CONCAT and IF
 
-        // 2. Monitors
-        "SELECT 
-            model_name AS item_name,
-            'Monitor' AS category,
-            serial_number AS id,
-            selling_price AS price,
-            sold_at,
-            branch
-        FROM monitors
-        WHERE status = 'Sold' AND sold_by = :uid",
+    // 1. Devices
+    $sql = "SELECT 
+                model_name AS item_name,
+                'Device' AS category,
+                serial_number AS id,
+                selling_price AS price,
+                sold_at,
+                branch,
+                TRIM(CONCAT(
+                    COALESCE(processor, ''),
+                    IF(processor IS NOT NULL, ' | ', ''),
+                    COALESCE(ram, ''), IF(ram IS NOT NULL, 'GB RAM', ''),
+                    IF(storage_type IS NOT NULL AND storage_capacity IS NOT NULL, CONCAT(' | ', storage_type, ' ', storage_capacity, 'GB'), ''),
+                    IF(graphics IS NOT NULL AND graphics != '', CONCAT(' | ', graphics), ''),
+                    IF(touch IS NOT NULL AND touch != 'N/A', CONCAT(' | ', touch), ''),
+                    IF(device_condition IS NOT NULL AND device_condition != '', CONCAT(' | ', device_condition), '')
+                )) AS specs
+            FROM devices
+            WHERE status = 'Sold' AND sold_by = :uid";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['uid' => $user_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allSales = array_merge($allSales, $rows);
 
-        // 3. Printers
-        "SELECT 
-            model_name AS item_name,
-            'Printer' AS category,
-            serial_number AS id,
-            selling_price AS price,
-            date_sold AS sold_at,
-            branch
-        FROM printers
-        WHERE status = 'Sold' AND sold_by = :uid",
+    // 2. Monitors
+    $sql = "SELECT 
+                model_name AS item_name,
+                'Monitor' AS category,
+                serial_number AS id,
+                selling_price AS price,
+                sold_at,
+                branch,
+                TRIM(CONCAT(
+                    size_inches, ' inch',
+                    IF(monitor_condition IS NOT NULL AND monitor_condition != '', CONCAT(' | ', monitor_condition), '')
+                )) AS specs
+            FROM monitors
+            WHERE status = 'Sold' AND sold_by = :uid";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['uid' => $user_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allSales = array_merge($allSales, $rows);
 
-        // 4. Smartboards
-        "SELECT 
-            model AS item_name,
-            'Smartboard' AS category,
-            serial_number AS id,
-            selling_price AS price,
-            sold_at,
-            branch
-        FROM smartboards
-        WHERE status = 'sold' AND sold_by = :uid",
+    // 3. Printers
+    $sql = "SELECT 
+                model_name AS item_name,
+                'Printer' AS category,
+                serial_number AS id,
+                selling_price AS price,
+                date_sold AS sold_at,
+                branch,
+                TRIM(CONCAT(
+                    'N/A',
+                    IF(printer_condition IS NOT NULL AND printer_condition != '', CONCAT(' | ', printer_condition), '')
+                )) AS specs
+            FROM printers
+            WHERE status = 'Sold' AND sold_by = :uid";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['uid' => $user_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allSales = array_merge($allSales, $rows);
 
-        // 5. Sold Accessories
-        "SELECT 
-            accessory_name AS item_name,
-            'Accessory' AS category,
-            CAST(accessory_id AS CHAR) AS id,
-            total_price AS price,
-            date_sold AS sold_at,
-            branch
-        FROM sold_accessories
-        WHERE sold_by = :uid",
+    // 4. Smartboards (no condition field)
+    $sql = "SELECT 
+                model AS item_name,
+                'Smartboard' AS category,
+                serial_number AS id,
+                selling_price AS price,
+                sold_at,
+                branch,
+                CONCAT(model, ' | ', size_inches, ' inch') AS specs
+            FROM smartboards
+            WHERE status = 'sold' AND sold_by = :uid";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['uid' => $user_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allSales = array_merge($allSales, $rows);
 
-        // 6. Sold Chargers
-        "SELECT 
-            charger_type AS item_name,
-            'Charger' AS category,
-            CAST(charger_id AS CHAR) AS id,
-            total_price AS price,
-            date_sold AS sold_at,
-            branch
-        FROM sold_chargers
-        WHERE sold_by = :uid",
+    // 5. Sold Accessories (no condition)
+    $sql = "SELECT 
+                accessory_name AS item_name,
+                'Accessory' AS category,
+                CAST(accessory_id AS CHAR) AS id,
+                total_price AS price,
+                date_sold AS sold_at,
+                branch,
+                CONCAT(quantity, ' x ', selling_price, ' = ', total_price) AS specs
+            FROM sold_accessories
+            WHERE sold_by = :uid";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['uid' => $user_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allSales = array_merge($allSales, $rows);
 
-        // 7. Phones
-        "SELECT 
-            CONCAT(COALESCE(brand,''), ' ', COALESCE(model,'')) AS item_name,
-            'Phone' AS category,
-            serial_number AS id,
-            selling_price AS price,
-            date_sold AS sold_at,
-            branch
-        FROM phones
-        WHERE status = 'sold' AND sold_by = :uid",
+    // 6. Sold Chargers (no condition)
+    $sql = "SELECT 
+                charger_type AS item_name,
+                'Charger' AS category,
+                CAST(charger_id AS CHAR) AS id,
+                total_price AS price,
+                date_sold AS sold_at,
+                branch,
+                CONCAT(quantity, ' x ', charger_condition, ' | ', selling_price, ' each') AS specs
+            FROM sold_chargers
+            WHERE sold_by = :uid";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['uid' => $user_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allSales = array_merge($allSales, $rows);
 
-        // 8. UPS
-        "SELECT 
-            model AS item_name,
-            'UPS' AS category,
-            serial_number AS id,
-            selling_price AS price,
-            date_sold AS sold_at,
-            branch
-        FROM ups
-        WHERE status = 'sold' AND sold_by = :uid",
+    // 7. Phones
+    $sql = "SELECT 
+                CONCAT(COALESCE(brand,''), ' ', COALESCE(model,'')) AS item_name,
+                'Phone' AS category,
+                serial_number AS id,
+                selling_price AS price,
+                date_sold AS sold_at,
+                branch,
+                TRIM(CONCAT(
+                    COALESCE(brand,''), ' ', COALESCE(model,''), ' | ',
+                    ram, 'GB RAM | ',
+                    storage_capacity, 'GB',
+                    IF(phone_condition IS NOT NULL AND phone_condition != '', CONCAT(' | ', phone_condition), '')
+                )) AS specs
+            FROM phones
+            WHERE status = 'sold' AND sold_by = :uid";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['uid' => $user_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allSales = array_merge($allSales, $rows);
 
-        // 9. Sold RAM/SSD
-        "SELECT 
-            CONCAT(COALESCE(type,''), ' ', COALESCE(storage,''), 'GB') AS item_name,
-            category AS category,
-            CONCAT('ID:', ram_ssd_id) AS id,
-            total_price AS price,
-            date_sold AS sold_at,
-            branch
-        FROM sold_rams_ssds
-        WHERE sold_by = :uid",
+    // 8. UPS
+    $sql = "SELECT 
+                model AS item_name,
+                'UPS' AS category,
+                serial_number AS id,
+                selling_price AS price,
+                date_sold AS sold_at,
+                branch,
+                TRIM(CONCAT(
+                    model, ' | ', capacity, ' VA',
+                    IF(ups_condition IS NOT NULL AND ups_condition != '', CONCAT(' | ', ups_condition), '')
+                )) AS specs
+            FROM ups
+            WHERE status = 'sold' AND sold_by = :uid";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['uid' => $user_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allSales = array_merge($allSales, $rows);
 
-        // 10. Sold HDDs
-        "SELECT 
-            CONCAT(COALESCE(type,''), ' ', COALESCE(storage,'')) AS item_name,
-            'HDD' AS category,
-            CONCAT('ID:', hdd_id) AS id,
-            total_price AS price,
-            date_sold AS sold_at,
-            branch
-        FROM sold_hdds
-        WHERE sold_by = :uid",
+    // 9. Sold RAM/SSD (no condition)
+    $sql = "SELECT 
+                CONCAT(COALESCE(type,''), ' ', COALESCE(storage,''), 'GB') AS item_name,
+                category AS category,
+                CONCAT('ID:', ram_ssd_id) AS id,
+                total_price AS price,
+                date_sold AS sold_at,
+                branch,
+                CONCAT(quantity, ' x ', type, ' ', storage, 'GB') AS specs
+            FROM sold_rams_ssds
+            WHERE sold_by = :uid";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['uid' => $user_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allSales = array_merge($allSales, $rows);
 
-        // 11. Sold Graphics Cards
-        "SELECT 
-            CONCAT(COALESCE(type,''), ' ', COALESCE(storage_capacity,''), 'GB') AS item_name,
-            'Graphics Card' AS category,
-            CONCAT('ID:', graphic_card_id) AS id,
-            total_price AS price,
-            date_sold AS sold_at,
-            branch
-        FROM sold_graphics_cards
-        WHERE sold_by = :uid"
-    ];
+    // 10. Sold HDDs (no condition)
+    $sql = "SELECT 
+                CONCAT(COALESCE(type,''), ' ', COALESCE(storage,'')) AS item_name,
+                'HDD' AS category,
+                CONCAT('ID:', hdd_id) AS id,
+                total_price AS price,
+                date_sold AS sold_at,
+                branch,
+                CONCAT(quantity, ' x ', type, ' ', storage) AS specs
+            FROM sold_hdds
+            WHERE sold_by = :uid";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['uid' => $user_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allSales = array_merge($allSales, $rows);
 
-    foreach ($queries as $sql) {
-        $stmt = $conn->prepare($sql);
-        $stmt->execute(['uid' => $user_id]);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $allSales = array_merge($allSales, $rows);
-    }
+    // 11. Sold Graphics Cards (no condition)
+    $sql = "SELECT 
+                CONCAT(COALESCE(type,''), ' ', COALESCE(storage_capacity,''), 'GB') AS item_name,
+                'Graphics Card' AS category,
+                CONCAT('ID:', graphic_card_id) AS id,
+                total_price AS price,
+                date_sold AS sold_at,
+                branch,
+                CONCAT(quantity, ' x ', type, ' ', storage_capacity, 'GB') AS specs
+            FROM sold_graphics_cards
+            WHERE sold_by = :uid";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['uid' => $user_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allSales = array_merge($allSales, $rows);
 
     // Date range filter
     if (!empty($start_date) && !empty($end_date)) {
@@ -162,12 +234,13 @@ function fetchUnifiedSales($conn, $user_id, $start_date, $end_date, $search = ''
         });
     }
 
-    // Search filter
+    // Search filter (item_name or id)
     if (!empty($search)) {
         $searchLower = strtolower($search);
         $allSales = array_filter($allSales, function($sale) use ($searchLower) {
             return stripos($sale['item_name'], $searchLower) !== false ||
-                   stripos($sale['id'], $searchLower) !== false;
+                   stripos($sale['id'], $searchLower) !== false ||
+                   stripos($sale['specs'] ?? '', $searchLower) !== false;
         });
     }
 
@@ -241,12 +314,13 @@ else $greeting = 'Good evening';
         .btn-excel { background: #217346; }
         .btn:hover { opacity: 0.9; }
         .table-wrapper { background: white; border-radius: var(--radius-xl); border: 1px solid var(--gray-200); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 700px; font-size: 0.9rem; }
+        table { width: 100%; border-collapse: collapse; min-width: 850px; font-size: 0.9rem; }
         th { background: var(--gray-50); padding: 1rem; text-align: left; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); }
         td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
         .badge { display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; background: var(--gray-100); }
         .empty-state { text-align: center; padding: 3rem; color: var(--gray-500); }
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
+        .specs-text { font-size: 0.8rem; color: var(--gray-600); word-wrap: break-word; max-width: 350px; display: inline-block; }
         @media (max-width: 1200px) { 
             .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } 
         }
@@ -255,6 +329,8 @@ else $greeting = 'Good evening';
             .btn { width: 100%; justify-content: center; } 
             .stats-row { flex-direction: column; } 
             .filter-actions { flex-direction: column; align-items: stretch; }
+            table { font-size: 0.75rem; min-width: 650px; }
+            .specs-text { max-width: 150px; }
         }
         .text-muted { color: var(--gray-500); }
     </style>
@@ -312,6 +388,7 @@ else $greeting = 'Good evening';
                         <th>Item Name</th>
                         <th>Category</th>
                         <th>ID / Serial</th>
+                        <th>Specifications</th>
                         <th>Price (KES)</th>
                         <th>Branch</th>
                         <th>Date Sold</th>
@@ -324,6 +401,7 @@ else $greeting = 'Good evening';
                         <td><strong><?= htmlspecialchars($sale['item_name']) ?></strong></td>
                         <td><span class="badge"><?= htmlspecialchars($sale['category']) ?></span></td>
                         <td><code><?= htmlspecialchars($sale['id'] ?? '-') ?></code></td>
+                        <td><span class="specs-text" title="<?= htmlspecialchars($sale['specs'] ?? '') ?>"><?= htmlspecialchars($sale['specs'] ?? '-') ?></span></td>
                         <td><span class="text-muted">KES <?= number_format($sale['price'] ?? 0, 0) ?></span></td>
                         <td><?= htmlspecialchars($sale['branch'] ?? '-') ?></td>
                         <td><?= date('M j, Y g:i A', strtotime($sale['sold_at'])) ?></td>

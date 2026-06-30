@@ -110,8 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sell_hdd'])) {
                 $sale_item_id
             ]);
 
-            $update = $conn->prepare("UPDATE hdd_logs SET status = 'sold' WHERE id = ?");
-            $update->execute([$log_id]);
+            $update = $conn->prepare("UPDATE hdd_logs SET status = 'sold', sale_item_id = ? WHERE id = ?");
+            $update->execute([$sale_item_id, $log_id]);
 
             $updateSale = $conn->prepare("UPDATE sales SET completion_status = 'pending' WHERE id = ?");
             $updateSale->execute([$sale_id]);

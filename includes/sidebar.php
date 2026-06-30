@@ -385,6 +385,7 @@ body {
                     'icon' => 'fas fa-database',
                     'items' => [
                         ['Add HDD', '/inventory_system/hdds/add_hdd.php', 'fas fa-plus'],
+                        ['Bulk Upload', '/inventory_system/hdds/bulkupload_hdd.php', 'fas fa-file-upload'],
                         ['View Stock', '/inventory_system/hdds/hdds_instock.php', 'fas fa-box'],
                         ['Give Out HDD', '/inventory_system/hdds/give_hdd.php', 'fas fa-gift'],
                         ['HDDs Logs', '/inventory_system/hdds/hdd_logs.php', 'fas fa-clipboard-list'],
@@ -398,12 +399,14 @@ body {
                 $charger_items = [];
                 if (in_array($role, ['super_admin','manager','inventory_admin'])) {
                     $charger_items[] = ['Add Charger', '/inventory_system/chargers/add_charger.php', 'fas fa-plus'];
-                    $charger_items[] = ['Chargers In Stock', '/inventory_system/chargers/chargers_instocks.php', 'fas fa-box'];
+                    $charger_items[] = ['Bulk Upload', '/inventory_system/chargers/bulkupload_charger.php', 'fas fa-file-upload'];
+                    $charger_items[] = ['View Stock', '/inventory_system/chargers/chargers_instock.php', 'fas fa-box'];
                 }
                 if (in_array($role, ['inventory_admin','software'])) {
                     $charger_items[] = ['Give Out Charger', '/inventory_system/chargers/give_charger.php', 'fas fa-gift'];
                 }
                 $charger_items[] = ['Charger Logs', '/inventory_system/chargers/charger_logs.php', 'fas fa-clipboard-list'];
+                $charger_items[] = ['Sold Chargers', '/inventory_system/chargers/sold_chargers.php', 'fas fa-shopping-cart'];
                 if (!empty($charger_items)) {
                     $sections['CHARGERS'] = ['icon' => 'fas fa-bolt', 'items' => $charger_items];
                 }
@@ -445,7 +448,7 @@ body {
                     'items' => [
                         ['Make a Sale', '/inventory_system/sales/make_sale.php', 'fas fa-cash-register'],
                         ['My Sales', '/inventory_system/sales/my_sales.php', 'fas fa-chart-bar'],
-                        ['Search Device', '/inventory_system/sales/search_device.php', 'fas fa-search'],
+                        ['Search', '/inventory_system/sales/search_device.php', 'fas fa-search'],
                     ]
                 ];
             }
@@ -487,7 +490,7 @@ body {
                         ['Process Sale', '/inventory_system/sales/make_sale.php', 'fas fa-cash-register'],
                         ['Active Sales', '/inventory_system/sales/active_sales.php', 'fas fa-shopping-cart'],
                         ['Sales Logs', '/inventory_system/sales/sales_logs.php', 'fas fa-chart-bar'],
-                        ['Search Device', '/inventory_system/sales/search_device.php', 'fas fa-search'],
+                        ['Search', '/inventory_system/sales/search_device.php', 'fas fa-search'],
                     ]
                 ];
             }

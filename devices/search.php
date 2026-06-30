@@ -3,7 +3,7 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 
 $serial = $_GET['serial'] ?? '';
 $device = null;
@@ -33,10 +33,10 @@ if($serial){
 
     if($device && $device['status'] === 'Sold'){
         // Fetch sold device info using prepared statement
-        $saleStmt = $conn->prepare("SELECT sd.*, u.full_name as sold_by_name 
-                                    FROM sold_devices sd
-                                    LEFT JOIN users u ON sd.sold_by = u.id
-                                    WHERE sd.serial_number = :sn");
+        $saleStmt = $conn->prepare("SELECT d.*, u.full_name as sold_by_name 
+                                    FROM devices d
+                                    LEFT JOIN users u ON d.sold_by = u.id
+                                    WHERE d.serial_number = :sn");
         $saleStmt->execute(['sn'=>$serial]);
         $sold_info = $saleStmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -53,6 +53,7 @@ if($serial){
         $maintenance_logs = $maintenanceStmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
+require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>

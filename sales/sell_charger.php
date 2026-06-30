@@ -4,7 +4,7 @@ require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
 if (!in_array($_SESSION['role'], ['sales', 'cashier'])) {
-    die("ACCESS DENIED. Only sales personnel and cashiers can sell RAM/SSD.");
+    die("ACCESS DENIED. Only sales personnel and cashiers can sell chargers.");
 }
 
 $user_id = (int) $_SESSION['user_id'];
@@ -29,11 +29,10 @@ $salesperson_name = $sale['salesperson_name'] ?? 'Unknown';
 $error = "";
 $success = "";
 
-function buildRamSsdSpecs($log) {
+function buildChargerSpecs($log) {
     $specs = "";
-    if (!empty($log['category'])) $specs .= $log['category'];
-    if (!empty($log['type'])) $specs .= " | " . $log['type'];
-    if (!empty($log['storage'])) $specs .= " | " . $log['storage'] . "GB";
+    if (!empty($log['charger_type'])) $specs .= $log['charger_type'];
+    if (!empty($log['charger_condition'])) $specs .= " | " . ucfirst($log['charger_condition']);
     return trim($specs, " |");
 }
 
@@ -46,16 +45,16 @@ function updateSaleTotal($conn, $sale_id) {
 }
 
 $pendingStmt = $conn->prepare("
-    SELECT l.*, s.price AS stock_price
-    FROM rams_ssds_logs l
-    LEFT JOIN rams_ssds s ON l.ram_ssd_id = s.id
+    SELECT l.*, c.price AS stock_price
+    FROM charger_logs l
+    LEFT JOIN chargers c ON l.charger_id = c.id
     WHERE l.given_to = ? AND l.status = 'pending_sale'
     ORDER BY l.date_given DESC
 ");
 $pendingStmt->execute([$sales_person]);
 $pending = $pendingStmt->fetchAll(PDO::FETCH_ASSOC);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sell_ram_ssd'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sell_charger'])) {
     $log_id = (int) $_POST['log_id'];
     $selling_price = (float) $_POST['selling_price'];
 
@@ -66,9 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sell_ram_ssd'])) {
             $conn->beginTransaction();
 
             $logStmt = $conn->prepare("
-                SELECT l.*, s.price AS stock_price
-                FROM rams_ssds_logs l
-                LEFT JOIN rams_ssds s ON l.ram_ssd_id = s.id
+                SELECT l.*, c.price AS stock_price
+                FROM charger_logs l
+                LEFT JOIN chargers c ON l.charger_id = c.id
                 WHERE l.id = ? AND l.given_to = ? AND l.status = 'pending_sale'
                 FOR UPDATE
             ");
@@ -76,51 +75,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sell_ram_ssd'])) {
             $log = $logStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$log) {
-                throw new Exception("RAM/SSD log not found, not assigned to the salesperson, or already sold.");
+                throw new Exception("Charger log not found, not assigned to the salesperson, or already sold.");
             }
 
             if ($log['stock_price'] !== null && $selling_price < $log['stock_price']) {
                 throw new Exception("Selling price cannot be lower than the set price of KES " . number_format($log['stock_price'], 2));
             }
 
-            $specs = buildRamSsdSpecs($log);
-            $item_type = strtolower($log['category']); // 'ram' or 'ssd'
+            $specs = buildChargerSpecs($log);
 
             $insert = $conn->prepare("
                 INSERT INTO sale_items 
                 (sale_id, item_type, item_id, description, quantity, unit_price, sales_person)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, 'charger', ?, ?, ?, ?, ?)
             ");
             $insert->execute([
                 $sale_id,
-                $item_type,
-                $log['ram_ssd_id'],
+                $log['charger_id'],
                 $specs,
-                $log['quantity_given'],
+                $log['quantity'],
                 $selling_price,
                 $sales_person
             ]);
             $sale_item_id = $conn->lastInsertId();
 
-            // Insert into sold_rams_ssds with sale_item_id
+            // Insert into sold_chargers with sale_item_id
             $soldInsert = $conn->prepare("
-                INSERT INTO sold_rams_ssds 
-                (ram_ssd_id, category, type, storage, branch, quantity, selling_price, date_sold, sold_by, sale_item_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
+                INSERT INTO sold_chargers 
+                (charger_id, charger_type, charger_condition, quantity, selling_price, branch, sold_by, date_sold, sale_item_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)
             ");
+            // Convert condition case: charger_logs uses 'new' or 'ex_uk', sold_chargers uses 'New' or 'ex-uk'
+            $condition = $log['charger_condition'];
+            if (strtolower($condition) === 'new') {
+                $condition = 'New';
+            }
+            // else keep as is ('ex-uk')
             $soldInsert->execute([
-                $log['ram_ssd_id'],
-                $log['category'],
-                $log['type'],
-                $log['storage'],
-                $log['branch'],
-                $log['quantity_given'],
+                $log['charger_id'],
+                $log['charger_type'],
+                $condition,
+                $log['quantity'],
                 $selling_price,
+                $log['branch'],
                 $user_id,
                 $sale_item_id
             ]);
 
-            $update = $conn->prepare("UPDATE rams_ssds_logs SET status = 'sold', sale_item_id = ? WHERE id = ?");
+            $update = $conn->prepare("UPDATE charger_logs SET status = 'sold', sale_item_id = ? WHERE id = ?");
             $update->execute([$sale_item_id, $log_id]);
 
             $updateSale = $conn->prepare("UPDATE sales SET completion_status = 'pending' WHERE id = ?");
@@ -128,14 +130,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sell_ram_ssd'])) {
 
             updateSaleTotal($conn, $sale_id);
 
-            $activity = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Sold RAM/SSD', ?)");
+            $activity = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Sold Charger', ?)");
             $activity->execute([
                 $user_id,
-                "Sold {$log['category']} ({$log['type']}, {$log['storage']}GB) - Quantity: {$log['quantity_given']} for KES " . number_format($selling_price, 2) . " in sale #$sale_id"
+                "Sold Charger ({$log['charger_type']}, {$log['charger_condition']}) - Quantity: {$log['quantity']} for KES " . number_format($selling_price, 2) . " in sale #$sale_id"
             ]);
 
             $conn->commit();
-            header("Location: checkout.php?sale_id=$sale_id&success=ram_ssd_sold");
+            header("Location: checkout.php?sale_id=$sale_id&success=charger_sold");
             exit;
 
         } catch (Exception $e) {
@@ -156,11 +158,11 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Sell RAM/SSD | Mombasa Computers</title>
+    <title>Sell Charger | Mombasa Computers</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Same as sell_hdd.php – using identical styles */
+        /* Same as sell_hdd.php */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -227,11 +229,11 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 <body>
 <div class="main-content">
     <div class="page-header">
-        <h1><i class="fas fa-memory"></i> Sell RAM / SSD</h1>
+        <h1><i class="fas fa-bolt"></i> Sell Charger</h1>
         <div class="breadcrumb">
             <a href="/inventory_system/dashboard/<?= $_SESSION['role'] === 'sales' ? 'salesdashboard.php' : 'cashierdashboard.php' ?>">Dashboard</a>
             <span> / </span>
-            <span>Sell RAM/SSD</span>
+            <span>Sell Charger</span>
         </div>
         <?php if ($sale_id): ?>
             <div style="margin-top:0.5rem; display:flex; flex-wrap:wrap; align-items:center; gap:1rem;">
@@ -261,10 +263,10 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
             <div class="empty-state">
                 <i class="fas fa-box-open"></i>
                 <?php if ($user_role === 'cashier'): ?>
-                    <p>No pending RAM/SSD items assigned to this salesperson.</p>
+                    <p>No pending chargers assigned to this salesperson.</p>
                 <?php else: ?>
-                    <p>No pending RAM/SSD items assigned to you.</p>
-                    <p class="text-muted" style="margin-top:0.5rem;">RAM/SSD must be given to you by the inventory admin before they can be sold.</p>
+                    <p>No pending chargers assigned to you.</p>
+                    <p class="text-muted" style="margin-top:0.5rem;">Chargers must be given to you by the inventory admin before they can be sold.</p>
                 <?php endif; ?>
             </div>
         <?php else: ?>
@@ -272,9 +274,8 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Category</th>
-                        <th>Type</th>
-                        <th>Storage (GB)</th>
+                        <th>Charger Type</th>
+                        <th>Condition</th>
                         <th>Quantity</th>
                         <th>Branch</th>
                         <th>Set Price (KES)</th>
@@ -285,10 +286,9 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                     <?php $i = 1; foreach ($pending as $log): ?>
                         <tr>
                             <td><?= $i++ ?></td>
-                            <td><span class="badge"><?= htmlspecialchars($log['category']) ?></span></td>
-                            <td><strong><?= htmlspecialchars($log['type']) ?></strong></td>
-                            <td><?= htmlspecialchars($log['storage']) ?></td>
-                            <td><span class="badge"><?= (int)$log['quantity_given'] ?></span></td>
+                            <td><strong><?= htmlspecialchars($log['charger_type']) ?></strong></td>
+                            <td><span class="badge"><?= htmlspecialchars(ucfirst($log['charger_condition'])) ?></span></td>
+                            <td><span class="badge"><?= (int)$log['quantity'] ?></span></td>
                             <td><span class="badge"><?= htmlspecialchars($log['branch']) ?></span></td>
                             <td>
                                 <?php if ($log['stock_price'] !== null): ?>
@@ -306,7 +306,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                                     <?php if ($log['stock_price'] !== null): ?>
                                         <span class="min-price">Min: <?= number_format($log['stock_price'], 2) ?></span>
                                     <?php endif; ?>
-                                    <button type="submit" name="sell_ram_ssd" class="btn btn-primary"><i class="fas fa-check"></i> Sell</button>
+                                    <button type="submit" name="sell_charger" class="btn btn-primary"><i class="fas fa-check"></i> Sell</button>
                                 </form>
                             </td>
                         </tr>

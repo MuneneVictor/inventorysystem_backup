@@ -4,10 +4,9 @@ require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
 $role = $_SESSION['role'];
-$user_id = (int) $_SESSION['user_id'];
+$user_id = $_SESSION['user_id'];
 
-// Allow same roles as the view page
-if (!in_array($role, ['super_admin', 'inventory_admin', 'manager', 'sales', 'cashier'])) {
+if (!in_array($role, ['super_admin', 'inventory_admin', 'manager', 'sales'])) {
     die("ACCESS DENIED.");
 }
 
@@ -19,14 +18,11 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-// Get filters (same as sold_rams_ssds.php)
+// Get filters (same as rams_instock.php)
 $search_category = trim($_GET['category'] ?? '');
 $search_type = trim($_GET['type'] ?? '');
 $search_storage = trim($_GET['storage'] ?? '');
 $search_branch = trim($_GET['branch'] ?? '');
-$date_from = trim($_GET['date_from'] ?? '');
-$date_to = trim($_GET['date_to'] ?? '');
-$filter_salesperson = trim($_GET['salesperson'] ?? '');
 
 // Manager branch restriction
 $user_branch = '';
@@ -37,71 +33,62 @@ if ($role === 'manager') {
     $user_branch = $user_data['branch'] ?? '';
 }
 
-// Build query (same as sold_rams_ssds.php)
-$sql = "SELECT s.*, u.full_name AS sold_by_name
-        FROM sold_rams_ssds s
-        LEFT JOIN users u ON s.sold_by = u.id
+// Build query
+$sql = "SELECT r.*, 
+               u1.full_name AS added_by_name,
+               u2.full_name AS updated_by_name
+        FROM rams_ssds r
+        LEFT JOIN users u1 ON r.added_by = u1.id
+        LEFT JOIN users u2 ON r.updated_by = u2.id
         WHERE 1=1";
 $params = [];
 
 if ($role === 'manager' && !empty($user_branch)) {
-    $sql .= " AND s.branch = :user_branch";
+    $sql .= " AND r.branch = :user_branch";
     $params['user_branch'] = $user_branch;
 }
 if ($search_category) {
-    $sql .= " AND s.category = :category";
+    $sql .= " AND r.category = :category";
     $params['category'] = $search_category;
 }
 if ($search_type) {
-    $sql .= " AND s.type LIKE :type";
+    $sql .= " AND r.type LIKE :type";
     $params['type'] = "%$search_type%";
 }
 if ($search_storage) {
-    $sql .= " AND s.storage = :storage";
+    $sql .= " AND r.storage = :storage";
     $params['storage'] = $search_storage;
 }
 if ($search_branch && $role !== 'manager') {
-    $sql .= " AND s.branch = :branch";
+    $sql .= " AND r.branch = :branch";
     $params['branch'] = $search_branch;
 }
-if ($date_from) {
-    $sql .= " AND DATE(s.date_sold) >= :date_from";
-    $params['date_from'] = $date_from;
-}
-if ($date_to) {
-    $sql .= " AND DATE(s.date_sold) <= :date_to";
-    $params['date_to'] = $date_to;
-}
-if (in_array($role, ['super_admin', 'inventory_admin']) && !empty($filter_salesperson)) {
-    $sql .= " AND s.sold_by = :salesperson";
-    $params['salesperson'] = $filter_salesperson;
-}
 
-$sql .= " ORDER BY s.date_sold DESC";
+$sql .= " ORDER BY r.date_added DESC";
 
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
-$sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-if (empty($sales)) {
-    die("No sold RAM/SSD data to export.");
+if (empty($items)) {
+    die("No RAM/SSD data to export.");
 }
 
 // Create spreadsheet
 $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
-$sheet->setTitle('Sold RAM_SSD'); // FIXED: removed slash
+$sheet->setTitle('In-Stock RAM_SSD'); // Fixed: removed slash
 
 // Set column widths
-foreach (range('A', 'J') as $col) {
-    $sheet->getColumnDimension($col)->setWidth(15);
+foreach (range('A', 'K') as $col) {
+    $sheet->getColumnDimension($col)->setWidth(18);
 }
 
 $row = 1;
 
 // ---- Title ----
-$sheet->setCellValue('A' . $row, 'Sold RAM/SSD Report');
-$sheet->mergeCells('A' . $row . ':J' . $row);
+$sheet->setCellValue('A' . $row, 'In-Stock RAM/SSD Report');
+$sheet->mergeCells('A' . $row . ':K' . $row);
 $sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(14);
 $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 $row++;
@@ -114,26 +101,19 @@ if (!empty($search_type)) $criteria[] = "Type: " . $search_type;
 if (!empty($search_storage)) $criteria[] = "Storage: " . $search_storage . "GB";
 if (!empty($search_branch) && $role !== 'manager') $criteria[] = "Branch: " . $search_branch;
 if ($role === 'manager' && !empty($user_branch)) $criteria[] = "Branch: " . $user_branch;
-if (!empty($date_from) && !empty($date_to)) $criteria[] = "Date: " . $date_from . " to " . $date_to;
-if (!empty($filter_salesperson) && in_array($role, ['super_admin', 'inventory_admin'])) {
-    $userStmt = $conn->prepare("SELECT full_name FROM users WHERE id = ?");
-    $userStmt->execute([$filter_salesperson]);
-    $userName = $userStmt->fetchColumn();
-    if ($userName) $criteria[] = "Sold By: " . $userName;
-}
 $filterNote .= !empty($criteria) ? implode(', ', $criteria) : "None (All data)";
 
 $sheet->setCellValue('A' . $row, $filterNote);
-$sheet->mergeCells('A' . $row . ':J' . $row);
+$sheet->mergeCells('A' . $row . ':K' . $row);
 $sheet->getStyle('A' . $row)->getFont()->setItalic(true)->setSize(10);
 $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
 $row++;
 
-// Blank row for spacing
+// Blank row
 $row++;
 
 // ---- Headers ----
-$headers = ['#', 'Category', 'Type', 'Storage (GB)', 'Quantity', 'Selling Price (KES)', 'Total (KES)', 'Branch', 'Sold By', 'Date Sold'];
+$headers = ['#', 'Category', 'Type', 'Storage (GB)', 'Quantity', 'Branch', 'Price (KES)', 'Total Value (KES)', 'Added By', 'Updated By', 'Date Added'];
 $headerRow = $row;
 foreach ($headers as $idx => $header) {
     $sheet->setCellValue(chr(65 + $idx) . $headerRow, $header);
@@ -146,35 +126,36 @@ $headerStyle = [
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
     'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
 ];
-$sheet->getStyle('A' . $headerRow . ':J' . $headerRow)->applyFromArray($headerStyle);
+$sheet->getStyle('A' . $headerRow . ':K' . $headerRow)->applyFromArray($headerStyle);
 
 // ---- Data rows ----
 $dataRow = $headerRow + 1;
 $i = 1;
-foreach ($sales as $sale) {
+foreach ($items as $item) {
     $sheet->setCellValue('A' . $dataRow, $i++);
-    $sheet->setCellValue('B' . $dataRow, $sale['category']);
-    $sheet->setCellValue('C' . $dataRow, $sale['type']);
-    $sheet->setCellValue('D' . $dataRow, $sale['storage']);
-    $sheet->setCellValue('E' . $dataRow, $sale['quantity']);
-    $sheet->setCellValue('F' . $dataRow, $sale['selling_price']);
-    $sheet->setCellValue('G' . $dataRow, $sale['total_price']);
-    $sheet->setCellValue('H' . $dataRow, $sale['branch']);
-    $sheet->setCellValue('I' . $dataRow, $sale['sold_by_name'] ?? 'Unknown');
-    $sheet->setCellValue('J' . $dataRow, date('Y-m-d H:i:s', strtotime($sale['date_sold'])));
+    $sheet->setCellValue('B' . $dataRow, $item['category']);
+    $sheet->setCellValue('C' . $dataRow, $item['type']);
+    $sheet->setCellValue('D' . $dataRow, $item['storage']);
+    $sheet->setCellValue('E' . $dataRow, $item['quantity']);
+    $sheet->setCellValue('F' . $dataRow, $item['branch']);
+    $sheet->setCellValue('G' . $dataRow, $item['price'] ?? '');
+    $sheet->setCellValue('H' . $dataRow, $item['total_price'] ?? '');
+    $sheet->setCellValue('I' . $dataRow, $item['added_by_name'] ?? 'N/A');
+    $sheet->setCellValue('J' . $dataRow, $item['updated_by_name'] ?? 'Not updated yet');
+    $sheet->setCellValue('K' . $dataRow, date('Y-m-d H:i:s', strtotime($item['date_added'])));
     $dataRow++;
 }
 
 // ---- Number formatting ----
-$sheet->getStyle('F' . ($headerRow+1) . ':G' . ($dataRow-1))->getNumberFormat()->setFormatCode('#,##0.00');
+$sheet->getStyle('G' . ($headerRow+1) . ':H' . ($dataRow-1))->getNumberFormat()->setFormatCode('#,##0.00');
 
 // ---- Alignment ----
 $sheet->getStyle('A' . ($headerRow+1) . ':A' . ($dataRow-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 $sheet->getStyle('E' . ($headerRow+1) . ':E' . ($dataRow-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-$sheet->getStyle('F' . ($headerRow+1) . ':G' . ($dataRow-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+$sheet->getStyle('G' . ($headerRow+1) . ':H' . ($dataRow-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
 // ---- Borders ----
-$sheet->getStyle('A' . ($headerRow+1) . ':J' . ($dataRow-1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+$sheet->getStyle('A' . ($headerRow+1) . ':K' . ($dataRow-1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
 // ---- Summary row ----
 $summaryRow = $dataRow;
@@ -184,20 +165,20 @@ $sheet->setCellValue('C' . $summaryRow, '');
 $sheet->setCellValue('D' . $summaryRow, '');
 $sheet->setCellValue('E' . $summaryRow, '');
 $sheet->setCellValue('F' . $summaryRow, '');
-$sheet->setCellValue('G' . $summaryRow, array_sum(array_column($sales, 'total_price')));
-$sheet->setCellValue('H' . $summaryRow, '');
+$sheet->setCellValue('G' . $summaryRow, '');
+$sheet->setCellValue('H' . $summaryRow, array_sum(array_column($items, 'total_price')));
 $sheet->setCellValue('I' . $summaryRow, '');
 $sheet->setCellValue('J' . $summaryRow, '');
-$sheet->getStyle('G' . $summaryRow)->getFont()->setBold(true);
-$sheet->getStyle('G' . $summaryRow)->getNumberFormat()->setFormatCode('#,##0.00');
+$sheet->setCellValue('K' . $summaryRow, '');
+$sheet->getStyle('H' . $summaryRow)->getFont()->setBold(true);
+$sheet->getStyle('H' . $summaryRow)->getNumberFormat()->setFormatCode('#,##0.00');
 // Merge cells for spacing
-$sheet->mergeCells('A' . $summaryRow . ':F' . $summaryRow);
-$sheet->mergeCells('H' . $summaryRow . ':J' . $summaryRow);
+$sheet->mergeCells('A' . $summaryRow . ':G' . $summaryRow);
+$sheet->mergeCells('I' . $summaryRow . ':K' . $summaryRow);
 
-// ---- Output file ----
-$filename = 'Sold_RAM_SSD_' . date('Y-m-d') . '.xlsx';
+// ---- Output ----
+$filename = 'In-Stock_RAM_SSD_' . date('Y-m-d') . '.xlsx';
 
-// Clear output buffers
 if (ob_get_level()) {
     ob_end_clean();
 }

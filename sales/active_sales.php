@@ -3,7 +3,7 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 
 $role = $_SESSION['role'];
 $user_id = (int) $_SESSION['user_id'];
@@ -53,6 +53,7 @@ $stmt->execute($params);
 $activeSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 date_default_timezone_set('Africa/Nairobi');
+require_once "../includes/sidebar.php";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -174,7 +175,7 @@ date_default_timezone_set('Africa/Nairobi');
                             <td><span class="badge badge-active"><i class="fas fa-circle" style="color:#2563eb; font-size:0.5rem; margin-right:0.25rem;"></i> Active</span></td>
                             <td>
                                 <a href="checkout.php?sale_id=<?= $sale['id'] ?>" class="btn btn-success">
-                                    <i class="fas fa-arrow-right"></i> Checkout
+                                    <i class="fas fa-shopping-cart"></i> Checkout
                                 </a>
                             </td>
                         </tr>

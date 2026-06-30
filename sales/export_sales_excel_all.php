@@ -26,24 +26,35 @@ $filter_end_date = $_GET['filter_end_date'] ?? '';
 $filter_user = $_GET['filter_user'] ?? '';
 $filter_branch = $_GET['filter_branch'] ?? '';
 
-// Manager branch restriction
+// Determine branch only for cashier (same as sales_logs.php)
 $user_branch = null;
-if ($role === 'manager') {
+if ($role === 'cashier') {
     $stmt = $conn->prepare("SELECT branch FROM users WHERE id = ?");
     $stmt->execute([$user_id]);
     $user_branch = $stmt->fetchColumn();
 }
 
+// Build filters array – exactly as in sales_logs.php
 $filters = [
     'category'   => $filter_category,
     'search'     => $filter_search,
     'start_date' => $filter_start_date,
     'end_date'   => $filter_end_date,
-    'user_id'    => ($role === 'super_admin' && !empty($filter_user)) ? (int)$filter_user : null,
-    'branch'     => ($role === 'super_admin' && !empty($filter_branch)) ? $filter_branch : ($role === 'manager' ? $user_branch : null)
 ];
 
-// ---------- fetchAllSales function (unchanged – same as sales_logs.php) ----------
+if ($role === 'cashier') {
+    // Cashier: force branch to user's branch
+    $filters['branch'] = $user_branch;
+    $filters['user_id'] = !empty($filter_user) ? (int)$filter_user : null;
+} else {
+    // Super_admin and manager: use selected branch and user filters if provided
+    if (!empty($filter_branch)) {
+        $filters['branch'] = $filter_branch;
+    }
+    $filters['user_id'] = !empty($filter_user) ? (int)$filter_user : null;
+}
+
+// ---------- fetchAllSales function (exact copy from sales_logs.php) ----------
 function fetchAllSales($conn, $filters) {
     $allSales = [];
 
@@ -64,7 +75,7 @@ function fetchAllSales($conn, $filters) {
             WHERE d.status = 'Sold'";
     $allSales = array_merge($allSales, $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));
 
-    // Monitors
+    // 2. Monitors
     $sql = "SELECT m.model_name AS item_name, 'Monitor' AS category, 
                    m.serial_number AS id, m.selling_price AS price, 
                    m.sold_at, m.branch, m.sold_by, u.full_name AS sold_by_name,
@@ -74,7 +85,7 @@ function fetchAllSales($conn, $filters) {
             WHERE m.status = 'Sold'";
     $allSales = array_merge($allSales, $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));
 
-    // Printers
+    // 3. Printers
     $sql = "SELECT p.model_name AS item_name, 'Printer' AS category, 
                    p.serial_number AS id, p.selling_price AS price, 
                    p.date_sold AS sold_at, p.branch, p.sold_by, u.full_name AS sold_by_name,
@@ -84,7 +95,7 @@ function fetchAllSales($conn, $filters) {
             WHERE p.status = 'Sold'";
     $allSales = array_merge($allSales, $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));
 
-    // Smartboards
+    // 4. Smartboards
     $sql = "SELECT s.model AS item_name, 'Smartboard' AS category, 
                    s.serial_number AS id, s.selling_price AS price, 
                    s.sold_at, s.branch, s.sold_by, u.full_name AS sold_by_name,
@@ -94,7 +105,7 @@ function fetchAllSales($conn, $filters) {
             WHERE s.status = 'sold'";
     $allSales = array_merge($allSales, $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));
 
-    // UPS
+    // 5. UPS
     $sql = "SELECT ups.model AS item_name, 'UPS' AS category, 
                    ups.serial_number AS id, ups.selling_price AS price, 
                    ups.date_sold AS sold_at, ups.branch, ups.sold_by, u.full_name AS sold_by_name,
@@ -104,7 +115,7 @@ function fetchAllSales($conn, $filters) {
             WHERE ups.status = 'sold'";
     $allSales = array_merge($allSales, $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));
 
-    // Phones
+    // 6. Phones
     $sql = "SELECT CONCAT(COALESCE(p.brand,''), ' ', COALESCE(p.model,'')) AS item_name, 'Phone' AS category, 
                    p.serial_number AS id, p.selling_price AS price, 
                    p.date_sold AS sold_at, p.branch, p.sold_by, u.full_name AS sold_by_name,
@@ -114,7 +125,7 @@ function fetchAllSales($conn, $filters) {
             WHERE p.status = 'sold'";
     $allSales = array_merge($allSales, $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));
 
-    // Sold Accessories
+    // 7. Sold Accessories
     $sql = "SELECT sa.accessory_name AS item_name, 'Accessory' AS category, 
                    NULL AS id, sa.total_price AS price, 
                    sa.date_sold AS sold_at, sa.branch, sa.sold_by, u.full_name AS sold_by_name,
@@ -123,7 +134,7 @@ function fetchAllSales($conn, $filters) {
             LEFT JOIN users u ON sa.sold_by = u.id";
     $allSales = array_merge($allSales, $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));
 
-    // Sold Chargers
+    // 8. Sold Chargers
     $sql = "SELECT sc.charger_type AS item_name, 'Charger' AS category, 
                    NULL AS id, sc.total_price AS price, 
                    sc.date_sold AS sold_at, sc.branch, sc.sold_by, u.full_name AS sold_by_name,
@@ -132,7 +143,7 @@ function fetchAllSales($conn, $filters) {
             LEFT JOIN users u ON sc.sold_by = u.id";
     $allSales = array_merge($allSales, $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));
 
-    // Sold Graphics Cards
+    // 9. Sold Graphics Cards
     $sql = "SELECT CONCAT(COALESCE(sgc.type,''), ' ', COALESCE(sgc.storage_capacity,''), 'GB') AS item_name, 'Graphics Card' AS category, 
                    NULL AS id, sgc.total_price AS price, 
                    sgc.date_sold AS sold_at, sgc.branch, sgc.sold_by, u.full_name AS sold_by_name,
@@ -141,7 +152,7 @@ function fetchAllSales($conn, $filters) {
             LEFT JOIN users u ON sgc.sold_by = u.id";
     $allSales = array_merge($allSales, $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));
 
-    // Sold HDDs
+    // 10. Sold HDDs
     $sql = "SELECT CONCAT(COALESCE(sh.type,''), ' ', COALESCE(sh.storage,'')) AS item_name, 'HDD' AS category, 
                    NULL AS id, sh.total_price AS price, 
                    sh.date_sold AS sold_at, sh.branch, sh.sold_by, u.full_name AS sold_by_name,
@@ -150,7 +161,7 @@ function fetchAllSales($conn, $filters) {
             LEFT JOIN users u ON sh.sold_by = u.id";
     $allSales = array_merge($allSales, $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));
 
-    // Sold RAM/SSD
+    // 11. Sold RAM/SSD
     $sql = "SELECT CONCAT(COALESCE(srs.type,''), ' ', COALESCE(srs.storage,''), 'GB') AS item_name, srs.category AS category, 
                    NULL AS id, srs.total_price AS price, 
                    srs.date_sold AS sold_at, srs.branch, srs.sold_by, u.full_name AS sold_by_name,
@@ -215,56 +226,54 @@ if (empty($sales)) {
     die("No sales data to export.");
 }
 
-// --------------------------------------------------------------
-// Create spreadsheet and set up layout
-// --------------------------------------------------------------
+// ============================================================
+// Create spreadsheet – same clean format as export_sales_excel.php
+// ============================================================
 $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 $sheet->setTitle('Sales Logs');
 
-// --- Set up header rows (logo, title, filter note) ---
+// ---- Set column widths ----
+$sheet->getColumnDimension('A')->setWidth(6);   // #
+$sheet->getColumnDimension('B')->setWidth(30);  // Item Name
+$sheet->getColumnDimension('C')->setWidth(15);  // Category
+$sheet->getColumnDimension('D')->setWidth(18);  // ID / Serial
+$sheet->getColumnDimension('E')->setAutoSize(true); // Specifications
+$sheet->getColumnDimension('F')->setWidth(15);  // Price (KES)
+$sheet->getColumnDimension('G')->setWidth(20);  // Sold By
+$sheet->getColumnDimension('H')->setWidth(12);  // Branch
+$sheet->getColumnDimension('I')->setWidth(20);  // Date Sold
+// Enable wrap text for specs
+$sheet->getStyle('E')->getAlignment()->setWrapText(true);
+
 $row = 1;
 
-// 1. Logo (merged across A:I, centered)
-$logoPath = __DIR__ . '/../assets/MC-LOGO.png';
-if (file_exists($logoPath)) {
-    $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
-    $drawing->setName('Company Logo');
-    $drawing->setDescription('Mombasa Computers Logo');
-    $drawing->setPath($logoPath);
-    $drawing->setHeight(80);
-    // Place in cell A1
-    $drawing->setCoordinates('A' . $row);
-    $drawing->setWorksheet($sheet);
-    // Merge cells A:I for the logo row to center it visually
-    $sheet->mergeCells('A' . $row . ':I' . $row);
-    $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-    $sheet->getStyle('A' . $row)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-    $sheet->getRowDimension($row)->setRowHeight(90); // make room for logo
-    $row++;
-}
-
-// 2. Title: "Sales Logs"
+// ---- Title ----
 $sheet->setCellValue('A' . $row, 'Sales Logs');
 $sheet->mergeCells('A' . $row . ':I' . $row);
-$sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(16);
+$sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(14);
 $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 $row++;
 
-// 3. Filter criteria note
+// ---- Filter Criteria Note ----
 $filterNote = "Filters applied: ";
 $criteria = [];
 if (!empty($filter_category)) $criteria[] = "Category: " . $filter_category;
 if (!empty($filter_search)) $criteria[] = "Search: '" . $filter_search . "'";
 if (!empty($filter_start_date) && !empty($filter_end_date)) $criteria[] = "Date: " . $filter_start_date . " to " . $filter_end_date;
-if (!empty($filter_user) && $role === 'super_admin') {
+if (!empty($filter_user)) {
+    // Get user name
     $userStmt = $conn->prepare("SELECT full_name FROM users WHERE id = ?");
     $userStmt->execute([$filter_user]);
     $userName = $userStmt->fetchColumn();
     if ($userName) $criteria[] = "Salesperson: " . $userName;
 }
-if (!empty($filter_branch) && $role === 'super_admin') $criteria[] = "Branch: " . $filter_branch;
-if ($role === 'manager' && !empty($user_branch)) $criteria[] = "Branch: " . $user_branch;
+if (!empty($filter_branch) && $role !== 'cashier') {
+    $criteria[] = "Branch: " . $filter_branch;
+}
+if ($role === 'cashier' && !empty($user_branch)) {
+    $criteria[] = "Branch: " . $user_branch . " (cashier's branch)";
+}
 $filterNote .= !empty($criteria) ? implode(', ', $criteria) : "None (All data)";
 
 $sheet->setCellValue('A' . $row, $filterNote);
@@ -273,20 +282,26 @@ $sheet->getStyle('A' . $row)->getFont()->setItalic(true)->setSize(10);
 $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
 $row++;
 
-// Add a blank row for spacing
+// Blank row
 $row++;
 
-// Now $row points to the first row of the header (for table)
-$headerRow = $row;
-
-// --- Headers ---
+// ---- Headers ----
 $headers = ['#', 'Item Name', 'Category', 'ID / Serial', 'Specifications', 'Price (KES)', 'Sold By', 'Branch', 'Date Sold'];
-$col = 'A';
+$headerRow = $row;
 foreach ($headers as $idx => $header) {
     $sheet->setCellValue(chr(65 + $idx) . $headerRow, $header);
 }
 
-// --- Data rows ---
+// Style header row
+$headerStyle = [
+    'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1A4B2A']],
+    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+];
+$sheet->getStyle('A' . $headerRow . ':I' . $headerRow)->applyFromArray($headerStyle);
+
+// ---- Data rows ----
 $dataRow = $headerRow + 1;
 $i = 1;
 foreach ($sales as $sale) {
@@ -302,32 +317,18 @@ foreach ($sales as $sale) {
     $dataRow++;
 }
 
-// --- Style header row ---
-$headerStyle = [
-    'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1A4B2A']],
-    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
-];
-$sheet->getStyle('A' . $headerRow . ':I' . $headerRow)->applyFromArray($headerStyle);
+// ---- Borders for data ----
+$sheet->getStyle('A' . ($headerRow+1) . ':I' . ($dataRow-1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
-// --- Auto-size columns ---
-foreach (range('A', 'I') as $col) {
-    $sheet->getColumnDimension($col)->setAutoSize(true);
-}
-
-// --- Number format for price column (F) ---
+// ---- Number format for Price ----
 $sheet->getStyle('F' . ($headerRow+1) . ':F' . ($dataRow-1))->getNumberFormat()->setFormatCode('#,##0.00');
 
-// --- Alignment ---
+// ---- Alignment ----
 $sheet->getStyle('A' . ($headerRow+1) . ':A' . ($dataRow-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 $sheet->getStyle('C' . ($headerRow+1) . ':C' . ($dataRow-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 $sheet->getStyle('F' . ($headerRow+1) . ':F' . ($dataRow-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
-// --- Borders for data ---
-$sheet->getStyle('A' . ($headerRow+1) . ':I' . ($dataRow-1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-
-// --- Summary row ---
+// ---- Summary row ----
 $summaryRow = $dataRow;
 $sheet->setCellValue('A' . $summaryRow, '');
 $sheet->setCellValue('B' . $summaryRow, '');
@@ -340,17 +341,21 @@ $sheet->setCellValue('H' . $summaryRow, '');
 $sheet->setCellValue('I' . $summaryRow, '');
 $sheet->getStyle('E' . $summaryRow . ':F' . $summaryRow)->getFont()->setBold(true);
 $sheet->getStyle('F' . $summaryRow)->getNumberFormat()->setFormatCode('#,##0.00');
-// Merge cells for alignment
+// Merge empty cells for alignment
 $sheet->mergeCells('A' . $summaryRow . ':A' . $summaryRow);
 $sheet->mergeCells('B' . $summaryRow . ':B' . $summaryRow);
 $sheet->mergeCells('C' . $summaryRow . ':C' . $summaryRow);
 $sheet->mergeCells('D' . $summaryRow . ':D' . $summaryRow);
-$sheet->mergeCells('G' . $summaryRow . ':G' . $summaryRow);
-$sheet->mergeCells('H' . $summaryRow . ':H' . $summaryRow);
-$sheet->mergeCells('I' . $summaryRow . ':I' . $summaryRow);
+$sheet->mergeCells('G' . $summaryRow . ':I' . $summaryRow);
 
-// --- Output file ---
+// ---- Output ----
 $filename = 'Sales_Logs_' . date('Y-m-d') . '.xlsx';
+
+// Clear output buffers
+if (ob_get_level()) {
+    ob_end_clean();
+}
+
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Cache-Control: max-age=0');

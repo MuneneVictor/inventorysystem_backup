@@ -3,8 +3,10 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
+// No header – sidebar will be included in HTML
+
 if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin'])) {
-    die("ACCESS DENIED. Only Inventory Admin or Super Admin can give out chargers.");
+    die("ACCESS DENIED. Only Inventory Admin or Super Admin can give out accessories.");
 }
 
 $user_id = (int) $_SESSION['user_id'];
@@ -21,7 +23,7 @@ if ($user_role !== 'super_admin') {
 // For super_admin: fetch all branches
 $all_branches = [];
 if ($user_role === 'super_admin') {
-    $branch_stmt = $conn->prepare("SELECT DISTINCT branch FROM chargers WHERE branch IS NOT NULL ORDER BY branch");
+    $branch_stmt = $conn->prepare("SELECT DISTINCT branch FROM users WHERE branch IS NOT NULL ORDER BY branch");
     $branch_stmt->execute();
     $all_branches = $branch_stmt->fetchAll(PDO::FETCH_COLUMN);
 }
@@ -39,8 +41,8 @@ $stocks = [];
 $sales_users = [];
 
 if ($selected_branch) {
-    // Fetch available charger stock (quantity > 0)
-    $stockStmt = $conn->prepare("SELECT * FROM chargers WHERE branch = ? AND quantity > 0 ORDER BY charger_type, charger_condition");
+    // Fetch available accessories from STORE only (place = 'store')
+    $stockStmt = $conn->prepare("SELECT * FROM accessories WHERE branch = ? AND quantity > 0 AND place = 'store' AND status = 'instock' ORDER BY name");
     $stockStmt->execute([$selected_branch]);
     $stocks = $stockStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -51,46 +53,42 @@ if ($selected_branch) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $charger_id = (int) ($_POST['charger_id'] ?? 0);
+    $accessory_id = (int) ($_POST['accessory_id'] ?? 0);
     $quantity_given = (int) ($_POST['quantity'] ?? 0);
     $given_to = (int) ($_POST['given_to'] ?? 0);
     $branch = trim($_POST['branch'] ?? '');
 
-    if (!$charger_id || $quantity_given <= 0 || !$given_to || !$branch) {
+    if (!$accessory_id || $quantity_given <= 0 || !$given_to || !$branch) {
         $error = "All fields are required.";
     } else {
         try {
             $conn->beginTransaction();
 
-            // Get current charger item with FOR UPDATE to lock the row
-            $itemStmt = $conn->prepare("SELECT * FROM chargers WHERE id = ? AND branch = ? FOR UPDATE");
-            $itemStmt->execute([$charger_id, $branch]);
+            // Get current accessory with FOR UPDATE to lock the row
+            $itemStmt = $conn->prepare("SELECT * FROM accessories WHERE id = ? AND branch = ? AND place = 'store' FOR UPDATE");
+            $itemStmt->execute([$accessory_id, $branch]);
             $item = $itemStmt->fetch(PDO::FETCH_ASSOC);
             if (!$item) {
-                throw new Exception("Charger item not found.");
+                throw new Exception("Accessory item not found or not in store.");
             }
             if ($item['quantity'] < $quantity_given) {
                 throw new Exception("Insufficient quantity. Available: {$item['quantity']}");
             }
 
-            // Update charger quantity
+            // Update accessory quantity
             $new_qty = $item['quantity'] - $quantity_given;
-            $update = $conn->prepare("UPDATE chargers SET quantity = ?, updated_by = ?, date_updated = NOW() WHERE id = ?");
-            $update->execute([$new_qty, $user_id, $charger_id]);
+            $new_status = ($new_qty == 0) ? 'sold' : 'instock';
+            $update = $conn->prepare("UPDATE accessories SET quantity = ?, status = ?, updated_by = ?, updated_at = NOW() WHERE id = ?");
+            $update->execute([$new_qty, $new_status, $user_id, $accessory_id]);
 
-            // Insert into charger_logs
-            $log = $conn->prepare("
-                INSERT INTO charger_logs 
-                (charger_id, charger_type, charger_condition, quantity, given_by, given_to, branch, status) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_sale')
-            ");
+            // Insert into accessories_logs
+            $log = $conn->prepare("INSERT INTO accessories_logs (accessory_id, accessory_name, quantity, given_to, given_by, branch, status) VALUES (?, ?, ?, ?, ?, ?, 'pending_sale')");
             $log->execute([
                 $item['id'],
-                $item['charger_type'],
-                $item['charger_condition'],
+                $item['name'],
                 $quantity_given,
-                $user_id,
                 $given_to,
+                $user_id,
                 $branch
             ]);
 
@@ -100,17 +98,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $salesStmt->execute([$given_to]);
             if ($salesStmt->rowCount()) $sales_name = $salesStmt->fetchColumn();
 
-            $activity = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Give out Charger', ?)");
+            $activity = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Give out Accessory', ?)");
             $activity->execute([
                 $user_id,
-                "Gave {$quantity_given} charger(s) ({$item['charger_type']}, {$item['charger_condition']}) to {$sales_name} in {$branch} branch"
+                "Gave {$quantity_given} accessory unit(s) ({$item['name']}) to {$sales_name} in {$branch} branch (Store)"
             ]);
 
             $conn->commit();
-            $success = "Successfully gave out {$quantity_given} charger unit(s).";
+            $success = "Successfully gave out {$quantity_given} accessory unit(s).";
 
             // Refresh stock list
-            $stockStmt = $conn->prepare("SELECT * FROM chargers WHERE branch = ? AND quantity > 0 ORDER BY charger_type, charger_condition");
+            $stockStmt = $conn->prepare("SELECT * FROM accessories WHERE branch = ? AND quantity > 0 AND place = 'store' AND status = 'instock' ORDER BY name");
             $stockStmt->execute([$selected_branch]);
             $stocks = $stockStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -134,11 +132,11 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Give Out Charger | Mombasa Computers</title>
+    <title>Give Out Accessory | Mombasa Computers</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Same base styles as give_hdd.php – consistent with inventory system */
+        /* Same base styles as give_hdd.php */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -183,19 +181,23 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         .alert-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
         .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
+        .note { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; color: #065f46; display: flex; align-items: center; gap: 0.5rem; }
         @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
         @media (max-width: 768px) { .btn { width: 100%; justify-content: center; } .card-body { padding: 1rem; } }
     </style>
 </head>
 <body>
-    <?php include "../includes/sidebar.php"; ?>
+
+<!-- Sidebar included here (no header) -->
+<?php require_once "../includes/sidebar.php"; ?>
+
 <div class="main-content">
     <div class="page-header">
-        <h1><i class="fas fa-bolt"></i> Give Out Charger</h1>
+        <h1><i class="fas fa-plug"></i> Give Out Accessory (Store)</h1>
         <div class="breadcrumb">
             <a href="/inventory_system/dashboard/<?= $user_role === 'super_admin' ? 'superadmindashboard.php' : 'inventorydashboard.php' ?>">Dashboard</a>
             <span> / </span>
-            <a href="chargers_instock.php">Charger Stock</a>
+            <a href="accessory_instock.php">Accessory Stock</a>
             <span> / </span>
             <span>Give Out</span>
         </div>
@@ -203,7 +205,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 
     <div class="form-container">
         <div class="card">
-            <div class="card-header"><h2><i class="fas fa-exchange-alt"></i> Select Branch & Charger</h2></div>
+            <div class="card-header"><h2><i class="fas fa-exchange-alt"></i> Select Branch & Accessory</h2></div>
             <div class="card-body">
                 <?php if ($error): ?>
                     <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
@@ -211,6 +213,11 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                 <?php if ($success): ?>
                     <div class="alert alert-success"><i class="fas fa-check-circle"></i> <?= htmlspecialchars($success) ?></div>
                 <?php endif; ?>
+
+                <div class="note">
+                    <i class="fas fa-info-circle"></i>
+                    Only <strong>Store</strong> accessories can be given out to salespeople.
+                </div>
 
                 <?php if ($user_role === 'super_admin'): ?>
                 <div class="info-box">
@@ -230,26 +237,26 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                 <?php if (!$selected_branch): ?>
                     <div class="alert alert-error">No branch selected or available.</div>
                 <?php elseif (empty($stocks)): ?>
-                    <div class="alert alert-error">No charger items available in stock for <?= htmlspecialchars($selected_branch) ?> branch.</div>
+                    <div class="alert alert-error">No store accessories available in stock for <?= htmlspecialchars($selected_branch) ?> branch.</div>
                 <?php elseif (empty($sales_users)): ?>
                     <div class="alert alert-error">No sales users found in <?= htmlspecialchars($selected_branch) ?> branch.</div>
                 <?php else: ?>
                     <form method="POST">
                         <input type="hidden" name="branch" value="<?= htmlspecialchars($selected_branch) ?>">
                         <div class="form-group">
-                            <label>Select Charger Item</label>
-                            <select name="charger_id" required>
-                                <option value="">-- Choose Charger --</option>
+                            <label>Select Accessory (Store items only)</label>
+                            <select name="accessory_id" required>
+                                <option value="">-- Choose Accessory --</option>
                                 <?php foreach ($stocks as $s): ?>
                                     <option value="<?= $s['id'] ?>">
-                                        <?= htmlspecialchars($s['charger_type']) ?> (<?= htmlspecialchars($s['charger_condition']) ?>) - Available: <?= $s['quantity'] ?>
+                                        <?= htmlspecialchars($s['name']) ?> (Available: <?= $s['quantity'] ?>)
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Quantity</label>
-                            <input type="number" name="quantity" min="1" required placeholder="Number of charger units to give">
+                            <input type="number" name="quantity" min="1" required placeholder="Number of units to give">
                         </div>
                         <div class="form-group">
                             <label>Give To (Salesperson)</label>
@@ -284,6 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', adjustMainContent);
 });
 </script>
+
 <?php require_once "../includes/footer.php"; ?>
 </body>
 </html>

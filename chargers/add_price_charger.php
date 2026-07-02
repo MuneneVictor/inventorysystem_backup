@@ -48,8 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 ?>
 
 <!DOCTYPE html>
@@ -257,7 +256,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
-
+<?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-plus-circle"></i> Add Charger Price</h1>

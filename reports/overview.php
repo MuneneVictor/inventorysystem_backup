@@ -2,7 +2,6 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
 require_once "../includes/sidebar.php";
 
 // Fetch all inventory items with added_by, specs, and status
@@ -299,6 +298,7 @@ $users = getAddedByUsers($conn);
 
 $total_count = count($items);
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
+require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>
@@ -366,6 +366,8 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     </style>
 </head>
 <body>
+   
+
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-list-ul"></i> Inventory Overview</h1>

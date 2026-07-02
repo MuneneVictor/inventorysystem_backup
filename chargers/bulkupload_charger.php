@@ -3,7 +3,7 @@ session_start();
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../config/db.php';
 require __DIR__ . '/../includes/auth_check.php';
-require_once "../includes/header.php";
+
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -183,7 +183,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
         }
     }
 }
-require_once "../includes/sidebar.php";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -393,6 +392,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
+    <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-bolt"></i> Bulk Upload Chargers</h1>

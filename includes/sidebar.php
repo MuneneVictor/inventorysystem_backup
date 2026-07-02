@@ -360,6 +360,8 @@ body {
                     ['Add Accessory', '/inventory_system/accessories/add_accessory.php', 'fas fa-plus'],
                     ['Bulk upload', '/inventory_system/accessories/bulkupload.php', 'fas fa-file-upload'],
                     ['View stock', '/inventory_system/accessories/accessory_instock.php', 'fas fa-box'],
+                    ['Give Out Accessory', '/inventory_system/accessories/give_accessory.php', 'fas fa-gift'],
+                    ['Accessory Logs', '/inventory_system/accessories/accessory_logs.php', 'fas fa-clipboard-list'],
                     ['Sold', '/inventory_system/accessories/sold_accessories.php', 'fas fa-money-bill-wave'],
                 ];
                 $sections['ACCESSORIES'] = ['icon' => 'fas fa-headphones', 'items' => $items];

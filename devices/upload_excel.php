@@ -3,8 +3,6 @@ session_start();
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../config/db.php';
 require __DIR__ . '/../includes/auth_check.php';
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -581,7 +579,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
     </style>
 </head>
 <body>
-
+<?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1>

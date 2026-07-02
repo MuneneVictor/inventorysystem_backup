@@ -2,7 +2,7 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
+
 
 $role = $_SESSION['role'];
 $user_id = $_SESSION['user_id'];
@@ -87,7 +87,6 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
     $stmt = $conn->query("SELECT id, full_name FROM users WHERE role IN ('sales') ORDER BY full_name");
     $sales_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>
@@ -357,7 +356,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
-
+<?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-bolt"></i> Sold Chargers</h1>

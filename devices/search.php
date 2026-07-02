@@ -2,7 +2,7 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
+
 
 
 $serial = $_GET['serial'] ?? '';
@@ -53,7 +53,7 @@ if($serial){
         $maintenance_logs = $maintenanceStmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
-require_once "../includes/sidebar.php";
+
 ?>
 
 <!DOCTYPE html>
@@ -564,7 +564,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
-
+<?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <!-- Page Header -->
     <div class="page-header">

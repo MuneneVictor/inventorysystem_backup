@@ -6,6 +6,9 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
+// Include header and sidebar after processing (moved down)
+// We'll include them after POST handling and redirect.
+
 $role = $_SESSION['role'];
 $user_id = $_SESSION['user_id'];
 
@@ -26,7 +29,7 @@ if ($role === 'manager') {
 // --- Handle Return Action with File Upload (REQUIRED) ---
 $return_error = '';
 $return_success = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_charger'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_accessory'])) {
     $log_id = (int) $_POST['log_id'];
     $return_qty = (int) $_POST['return_qty'];
 
@@ -41,19 +44,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_charger'])) {
             $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
             if (!in_array($file['type'], $allowed_types)) {
                 $return_error = "Invalid file type. Please upload an image (JPEG, PNG, GIF, WEBP).";
-            } elseif ($file['size'] > 5 * 1024 * 1024) { // 5MB max
+            } elseif ($file['size'] > 5 * 1024 * 1024) {
                 $return_error = "File size exceeds 5MB limit.";
             } else {
                 // Create uploads directory if not exists
-                $upload_dir = __DIR__ . '/../uploads/charger_returns/';
+                $upload_dir = __DIR__ . '/../uploads/accessory_returns/';
                 if (!is_dir($upload_dir)) {
                     mkdir($upload_dir, 0777, true);
                 }
                 $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-                $filename = 'charger_return_' . $log_id . '_' . time() . '.' . $extension;
+                $filename = 'accessory_return_' . $log_id . '_' . time() . '.' . $extension;
                 $destination = $upload_dir . $filename;
                 if (move_uploaded_file($file['tmp_name'], $destination)) {
-                    $uploaded_file = '../uploads/charger_returns/' . $filename;
+                    $uploaded_file = '../uploads/accessory_returns/' . $filename;
                 } else {
                     $return_error = "Failed to upload file. Please try again.";
                 }
@@ -65,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_charger'])) {
                 $conn->beginTransaction();
 
                 // Lock the log row and fetch current data
-                $logStmt = $conn->prepare("SELECT * FROM charger_logs WHERE id = ? AND status = 'pending_sale' FOR UPDATE");
+                $logStmt = $conn->prepare("SELECT * FROM accessories_logs WHERE id = ? AND status = 'pending_sale' FOR UPDATE");
                 $logStmt->execute([$log_id]);
                 $log = $logStmt->fetch(PDO::FETCH_ASSOC);
                 if (!$log) {
@@ -75,46 +78,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_charger'])) {
                     throw new Exception("Return quantity exceeds the given quantity.");
                 }
 
-                // Lock the corresponding charger row
-                $chargerStmt = $conn->prepare("SELECT * FROM chargers WHERE id = ? FOR UPDATE");
-                $chargerStmt->execute([$log['charger_id']]);
-                $charger = $chargerStmt->fetch(PDO::FETCH_ASSOC);
-                if (!$charger) {
-                    throw new Exception("Charger record not found.");
+                // Lock the corresponding accessory row
+                $accStmt = $conn->prepare("SELECT * FROM accessories WHERE id = ? FOR UPDATE");
+                $accStmt->execute([$log['accessory_id']]);
+                $accessory = $accStmt->fetch(PDO::FETCH_ASSOC);
+                if (!$accessory) {
+                    throw new Exception("Accessory record not found.");
                 }
 
-                // Update charger quantity
-                $new_charger_qty = $charger['quantity'] + $return_qty;
-                $updateCharger = $conn->prepare("UPDATE chargers SET quantity = ?, updated_by = ?, date_updated = NOW() WHERE id = ?");
-                $updateCharger->execute([$new_charger_qty, $user_id, $charger['id']]);
+                // Update accessory quantity
+                $new_acc_qty = $accessory['quantity'] + $return_qty;
+                $updateAcc = $conn->prepare("UPDATE accessories SET quantity = ?, updated_by = ?, updated_at = NOW() WHERE id = ?");
+                $updateAcc->execute([$new_acc_qty, $user_id, $accessory['id']]);
 
                 // Update log: reduce quantity or change status
                 if ($return_qty == $log['quantity']) {
                     // Full return – set status to 'returned'
-                    $updateLog = $conn->prepare("UPDATE charger_logs SET status = 'returned' WHERE id = ?");
+                    $updateLog = $conn->prepare("UPDATE accessories_logs SET status = 'returned' WHERE id = ?");
                     $updateLog->execute([$log_id]);
                     $new_log_qty = $log['quantity'];
                 } else {
                     // Partial return – reduce quantity, keep status 'pending_sale'
                     $new_log_qty = $log['quantity'] - $return_qty;
-                    $updateLog = $conn->prepare("UPDATE charger_logs SET quantity = ? WHERE id = ?");
+                    $updateLog = $conn->prepare("UPDATE accessories_logs SET quantity = ? WHERE id = ?");
                     $updateLog->execute([$new_log_qty, $log_id]);
                 }
 
                 // Activity log with proof file info
-                $action = ($return_qty == $log['quantity']) ? "Returned Charger (full)" : "Returned Charger (partial)";
-                $details = "Returned {$return_qty} charger(s) ({$log['charger_type']}, {$log['charger_condition']}) from log ID {$log_id}. " .
+                $action = ($return_qty == $log['quantity']) ? "Returned Accessory (full)" : "Returned Accessory (partial)";
+                $details = "Returned {$return_qty} accessory unit(s) ({$log['accessory_name']}) from log ID {$log_id}. " .
                            ($return_qty == $log['quantity'] ? "Status set to returned." : "Remaining quantity: {$new_log_qty}.");
                 $details .= " <a href='{$uploaded_file}' target='_blank'>View Photo</a>";
                 $activity = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, ?, ?)");
                 $activity->execute([$user_id, $action, $details]);
 
                 $conn->commit();
-                $return_success = "Charger returned successfully! Photo uploaded.";
+                $return_success = "Accessory returned successfully! Photo uploaded.";
 
                 // Clear output buffer and redirect
                 ob_end_clean();
-                header("Location: charger_logs.php?success=1");
+                header("Location: accessory_logs.php?success=1");
                 exit;
 
             } catch (Exception $e) {
@@ -127,9 +130,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_charger'])) {
 
 // If success message from redirect, show it
 if (isset($_GET['success'])) {
-    $return_success = "Charger returned successfully!";
+    $return_success = "Accessory returned successfully!";
 }
 
+// Now include header and sidebar (after all processing)
+require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 
 // Get filter inputs
 $filter_branch = trim($_GET['branch'] ?? '');
@@ -142,7 +148,7 @@ $search = trim($_GET['search'] ?? '');
 $sql = "SELECT l.*, 
                u_given_to.full_name AS given_to_name,
                u_given_by.full_name AS given_by_name
-        FROM charger_logs l
+        FROM accessories_logs l
         LEFT JOIN users u_given_to ON l.given_to = u_given_to.id
         LEFT JOIN users u_given_by ON l.given_by = u_given_by.id
         WHERE 1=1";
@@ -172,7 +178,7 @@ if ($date_to) {
     $params['date_to'] = $date_to;
 }
 if ($search) {
-    $sql .= " AND (l.charger_type LIKE :search OR l.charger_condition LIKE :search OR u_given_to.full_name LIKE :search OR u_given_by.full_name LIKE :search)";
+    $sql .= " AND (l.accessory_name LIKE :search OR u_given_to.full_name LIKE :search OR u_given_by.full_name LIKE :search)";
     $params['search'] = "%$search%";
 }
 
@@ -191,7 +197,7 @@ $statuses = array_unique(array_column($logs, 'status'));
 // Get branch list for filter (only if super_admin or inventory_admin)
 $branches_list = [];
 if (in_array($role, ['super_admin', 'inventory_admin'])) {
-    $stmt = $conn->query("SELECT DISTINCT branch FROM charger_logs ORDER BY branch");
+    $stmt = $conn->query("SELECT DISTINCT branch FROM accessories_logs ORDER BY branch");
     $branches_list = $stmt->fetchAll(PDO::FETCH_COLUMN);
 }
 ?>
@@ -201,10 +207,10 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Charger Logs | Mombasa Computers</title>
+    <title>Accessory Logs | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Same CSS as hdd_logs.php – keeping consistency */
+        /* Same CSS as hdd_logs.php – reuse fully */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -544,10 +550,10 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
     </style>
 </head>
 <body>
-<?php include "../includes/sidebar.php"; ?>
+
 <div class="main-content">
     <div class="page-header">
-        <h1><i class="fas fa-history"></i> Charger Logs</h1>
+        <h1><i class="fas fa-history"></i> Accessory Logs</h1>
         <div class="breadcrumb">
             <?php if ($_SESSION['role'] === 'super_admin'): ?>
                 <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
@@ -557,7 +563,7 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
                 <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
-            <span>Charger Logs</span>
+            <span>Accessory Logs</span>
         </div>
     </div>
 
@@ -571,7 +577,7 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-cubes"></i></div>
             <div class="stat-value"><?= number_format($total_quantity) ?></div>
-            <div class="stat-label">Total Chargers Given</div>
+            <div class="stat-label">Total Accessories Given</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-store"></i></div>
@@ -599,7 +605,7 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
         <form method="GET" class="search-grid">
             <div class="search-group">
                 <label>Search</label>
-                <input type="text" name="search" placeholder="Type, condition, salesperson..." value="<?= htmlspecialchars($search) ?>">
+                <input type="text" name="search" placeholder="Accessory name, salesperson..." value="<?= htmlspecialchars($search) ?>">
             </div>
             <?php if ($role !== 'manager'): ?>
             <div class="search-group">
@@ -631,9 +637,9 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
             </div>
             <div class="search-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
-                <a href="charger_logs.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
+                <a href="accessory_logs.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
                 <?php if (!empty($logs)): ?>
-                    <a href="export_charger_logs_excel.php?<?= http_build_query(array_merge($_GET, ['export' => '1'])) ?>" class="btn btn-excel"><i class="fas fa-file-excel"></i> Export to Excel</a>
+                    <a href="export_accessory_logs_excel.php?<?= http_build_query(array_merge($_GET, ['export' => '1'])) ?>" class="btn btn-excel"><i class="fas fa-file-excel"></i> Export to Excel</a>
                 <?php endif; ?>
             </div>
         </form>
@@ -645,8 +651,8 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
             <?php if (empty($logs)): ?>
                 <div class="empty-state">
                     <i class="fas fa-history"></i>
-                    <p>No charger logs found matching your criteria.</p>
-                    <a href="charger_logs.php" class="btn btn-primary" style="margin-top: 1rem;">
+                    <p>No accessory logs found matching your criteria.</p>
+                    <a href="accessory_logs.php" class="btn btn-primary" style="margin-top: 1rem;">
                         <i class="fas fa-undo"></i> Clear Filters
                     </a>
                 </div>
@@ -655,8 +661,7 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Charger Type</th>
-                            <th>Condition</th>
+                            <th>Accessory Name</th>
                             <th>Qty</th>
                             <th>Given To</th>
                             <th>Given By</th>
@@ -677,8 +682,7 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
                             ?>
                             <tr>
                                 <td><?= $i++ ?></td>
-                                <td><strong><?= htmlspecialchars($log['charger_type']) ?></strong></td>
-                                <td><?= htmlspecialchars(ucfirst($log['charger_condition'])) ?></td>
+                                <td><strong><?= htmlspecialchars($log['accessory_name']) ?></strong></td>
                                 <td><span class="badge"><?= (int)$log['quantity'] ?></span></td>
                                 <td><?= htmlspecialchars($log['given_to_name'] ?? 'Unknown') ?></td>
                                 <td><?= htmlspecialchars($log['given_by_name'] ?? 'Unknown') ?></td>
@@ -715,7 +719,7 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
 <!-- Return Modal with File Upload and Preview -->
 <div class="modal-overlay" id="returnModal">
     <div class="modal-box">
-        <h3><i class="fas fa-undo-alt"></i> Return Charger</h3>
+        <h3><i class="fas fa-undo-alt"></i> Return Accessory</h3>
         <p style="margin-bottom:1rem; color:var(--gray-500);">Enter the quantity to return. You can return up to <strong id="maxQtyDisplay">0</strong> units.</p>
         <form method="POST" id="returnForm" enctype="multipart/form-data">
             <input type="hidden" name="log_id" id="returnLogId" value="">
@@ -733,7 +737,7 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" onclick="closeReturnModal()">Cancel</button>
-                <button type="submit" name="return_charger" class="btn btn-primary" id="returnSubmitBtn">Return</button>
+                <button type="submit" name="return_accessory" class="btn btn-primary" id="returnSubmitBtn">Return</button>
             </div>
         </form>
     </div>

@@ -2,8 +2,6 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
 // STRICT ROLE CHECK - Die immediately if not manager
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'manager') {
@@ -834,7 +832,7 @@ else $greeting = 'Good evening';
     </style>
 </head>
 <body>
-
+<?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="header-row">
         <div>

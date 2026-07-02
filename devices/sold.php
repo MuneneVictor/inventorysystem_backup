@@ -2,18 +2,33 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
 $role = $_SESSION['role'];
 $user_id = $_SESSION['user_id'];
 
-if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin','manager'])) {
+if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin', 'manager'])) {
     die("Access denied!");
 }
 
+// Helper: build device specifications string (like sales_logs)
+function buildDeviceSpecs($device) {
+    $specs = "";
+    if (!empty($device['model_name'])) $specs .= $device['model_name'];
+    if (!empty($device['processor'])) $specs .= " | " . $device['processor'];
+    if (!empty($device['ram'])) $specs .= " | " . $device['ram'] . "GB RAM";
+    if (!empty($device['storage_type']) && !empty($device['storage_capacity'])) {
+        $specs .= " | " . $device['storage_type'] . " " . $device['storage_capacity'] . "GB";
+    }
+    if (isset($device['graphics']) && $device['graphics'] !== '' && $device['graphics'] !== 'None') {
+        $specs .= " | " . $device['graphics'];
+    }
+    if (isset($device['touch']) && $device['touch'] !== 'N/A' && $device['touch'] !== '') {
+        $specs .= " | " . $device['touch'];
+    }
+    return trim($specs, " |");
+}
+
 // Get manager's branch from database
-$user_branch = '';
 if ($role === 'manager') {
     $user_stmt = $conn->prepare("SELECT branch FROM users WHERE id = ?");
     $user_stmt->execute([$user_id]);
@@ -21,116 +36,87 @@ if ($role === 'manager') {
     $user_branch = $user_data['branch'] ?? '';
 }
 
-// Handle search inputs
-$search_sn = trim($_GET['sn'] ?? '');
-$search_time = trim($_GET['time_period'] ?? '');
-$search_salesperson = trim($_GET['salesperson'] ?? '');
+// Get filter inputs
+$search_serial = trim($_GET['serial_number'] ?? '');
+$search_category = trim($_GET['category'] ?? '');
+$search_model = trim($_GET['model'] ?? '');
 $search_branch = trim($_GET['branch'] ?? '');
-$start_date = trim($_GET['start_date'] ?? '');
-$end_date = trim($_GET['end_date'] ?? '');
+$search_place = trim($_GET['place'] ?? '');
+$date_from = trim($_GET['date_from'] ?? '');
+$date_to = trim($_GET['date_to'] ?? '');
 
-// Fetch salespersons for dropdown - using prepared statements
-if ($role === 'manager' && !empty($user_branch)) {
-    $users_stmt = $conn->prepare("SELECT id, full_name, branch FROM users WHERE role='sales' AND branch = ? ORDER BY full_name ASC");
-    $users_stmt->execute([$user_branch]);
-} else {
-    $users_stmt = $conn->prepare("SELECT id, full_name, branch FROM users WHERE role='sales' ORDER BY full_name ASC");
-    $users_stmt->execute();
-}
-$salespersons = $users_stmt->fetchAll(PDO::FETCH_ASSOC);
+// Fetch categories for dropdown
+$cat_stmt = $conn->prepare("SELECT * FROM categories ORDER BY category_name ASC");
+$cat_stmt->execute();
+$all_categories = $cat_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get unique branches from salespersons
-$branches = [];
-foreach($salespersons as $sp) {
-    if($sp['branch'] && !in_array($sp['branch'], $branches)) {
-        $branches[] = $sp['branch'];
-    }
-}
-sort($branches);
-
-// Base query with prepared statements
-$sql = "SELECT sd.*, c.category_name, u.full_name AS sold_by_name, u.branch
-        FROM devices sd
-        JOIN categories c ON sd.category_id = c.id
-        JOIN users u ON sd.sold_by = u.id
-        WHERE 1";
-
+// Base query – only Sold devices, plus join for added_by and sold_by
+$sql = "SELECT d.*, c.category_name, 
+               u_added.full_name AS added_by_name,
+               u_sold.full_name AS sold_by_name
+        FROM devices d
+        JOIN categories c ON d.category_id = c.id
+        LEFT JOIN users u_added ON d.added_by = u_added.id
+        LEFT JOIN users u_sold ON d.sold_by = u_sold.id
+        WHERE d.status = 'Sold'";
 $params = [];
 
 // Manager restriction
 if ($role === 'manager' && !empty($user_branch)) {
-    $sql .= " AND u.branch = :user_branch";
+    $sql .= " AND d.branch = :user_branch";
     $params['user_branch'] = $user_branch;
 }
 
-// Sales role: only show devices they sold
-if($role === 'sales'){
-    $sql .= " AND sd.sold_by = :uid";
-    $params['uid'] = $user_id;
+// Category filter
+if ($search_category !== '') {
+    $sql .= " AND d.category_id = :cat";
+    $params['cat'] = $search_category;
 }
 
-// Search by serial number
-if($search_sn){
-    $sql .= " AND sd.serial_number LIKE :sn";
-    $params['sn'] = "%$search_sn%";
-}
-
-// Filter by salesperson
-if($search_salesperson){
-    $sql .= " AND sd.sold_by = :salesperson";
-    $params['salesperson'] = $search_salesperson;
-}
-
-// Filter by branch - only for non-managers
-if($search_branch && $role !== 'manager'){
-    $sql .= " AND u.branch = :branch";
+// Branch filter
+if ($search_branch !== '' && $role !== 'manager') {
+    $sql .= " AND d.branch = :branch";
     $params['branch'] = $search_branch;
 }
 
-// Filter by time period
-if($search_time){
-    switch($search_time){
-        case 'today':
-            $sql .= " AND DATE(sd.sold_at) = CURDATE()";
-            break;
-        case 'this_week':
-            $sql .= " AND YEARWEEK(sd.sold_at, 1) = YEARWEEK(CURDATE(), 1)";
-            break;
-        case 'this_month':
-            $sql .= " AND YEAR(sd.sold_at) = YEAR(CURDATE()) AND MONTH(sd.sold_at) = MONTH(CURDATE())";
-            break;
-        case 'last_month':
-            $sql .= " AND YEAR(sd.sold_at) = YEAR(CURDATE() - INTERVAL 1 MONTH) 
-                      AND MONTH(sd.sold_at) = MONTH(CURDATE() - INTERVAL 1 MONTH)";
-            break;
-        case 'this_year':
-            $sql .= " AND YEAR(sd.sold_at) = YEAR(CURDATE())";
-            break;
-        case 'custom':
-            if ($start_date && $end_date) {
-                $sql .= " AND DATE(sd.sold_at) BETWEEN :start_date AND :end_date";
-                $params['start_date'] = $start_date;
-                $params['end_date'] = $end_date;
-            }
-            break;
-    }
+// Place filter
+if ($search_place !== '') {
+    $sql .= " AND d.place = :place";
+    $params['place'] = $search_place;
 }
 
-$sql .= " ORDER BY sd.sold_at DESC";
+// Model filter
+if ($search_model !== '') {
+    $sql .= " AND d.model_name LIKE :model";
+    $params['model'] = "%$search_model%";
+}
+
+// Serial filter
+if ($search_serial !== '') {
+    $sql .= " AND d.serial_number LIKE :sn";
+    $params['sn'] = "%$search_serial%";
+}
+
+// Date range filter (sold_at)
+if ($date_from !== '') {
+    $sql .= " AND DATE(d.sold_at) >= :date_from";
+    $params['date_from'] = $date_from;
+}
+if ($date_to !== '') {
+    $sql .= " AND DATE(d.sold_at) <= :date_to";
+    $params['date_to'] = $date_to;
+}
+
+$sql .= " ORDER BY d.sold_at DESC";
 
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
 $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Calculate totals
-$total_sales = count($devices);
-$total_revenue = array_sum(array_column($devices, 'price'));
-$avg_price = $total_sales > 0 ? $total_revenue / $total_sales : 0;
-
-// Determine if download button should be shown
-$showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch && !$search_salesperson);
+// Stats
+$total_sold = count($devices);
+$total_revenue = array_sum(array_column($devices, 'selling_price'));
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -139,6 +125,7 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
     <title>Sold Devices | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* Same styles as device_list.php – reused fully */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -152,6 +139,7 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             --gray-600: #4b5563;
             --gray-700: #374151;
             --gray-800: #1f2937;
+            --gray-900: #111827;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
             --radius-sm: 0.375rem;
@@ -163,21 +151,9 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
 
         @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font-sans); background: var(--gray-100); color: var(--gray-800); line-height: 1.5; overflow-x: hidden; }
 
-        body {
-            font-family: var(--font-sans);
-            background: var(--gray-100);
-            color: var(--gray-800);
-            line-height: 1.5;
-            overflow-x: hidden;
-        }
-
-        /* Main Content Area */
         .main-content {
             padding: 2rem 2rem 1rem;
             margin-left: 260px;
@@ -189,7 +165,6 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             max-width: 100%;
         }
 
-        /* Page Header */
         .page-header {
             background: white;
             padding: 1.5rem 2rem;
@@ -209,29 +184,18 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             gap: 0.75rem;
         }
 
-        .page-header h1 i {
-            color: var(--primary);
-            font-size: 1.75rem;
-        }
+        .page-header h1 i { color: var(--primary); font-size: 1.75rem; }
 
         .breadcrumb {
             color: var(--gray-500);
             font-size: 0.9rem;
         }
+        .breadcrumb a { color: var(--primary); text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
 
-        .breadcrumb a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
-
-        /* Stats Cards */
         .stats-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-bottom: 1.5rem;
         }
@@ -244,31 +208,11 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             box-shadow: var(--shadow-sm);
             transition: all 0.2s ease;
         }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .stat-card .stat-icon { font-size: 1.75rem; color: var(--primary); margin-bottom: 0.5rem; }
+        .stat-card .stat-value { font-size: 1.75rem; font-weight: 600; color: var(--gray-800); }
+        .stat-card .stat-label { font-size: 0.85rem; color: var(--gray-500); margin-top: 0.25rem; }
 
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .stat-card .stat-icon {
-            font-size: 1.5rem;
-            color: var(--primary);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-card .stat-value {
-            font-size: 1.75rem;
-            font-weight: 600;
-            color: var(--gray-800);
-        }
-
-        .stat-card .stat-label {
-            font-size: 0.85rem;
-            color: var(--gray-500);
-            margin-top: 0.25rem;
-        }
-
-        /* Search Section */
         .search-section {
             background: white;
             padding: 1.5rem;
@@ -299,13 +243,7 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             flex-direction: column;
             gap: 0.5rem;
         }
-
-        .search-group label {
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--gray-600);
-        }
-
+        .search-group label { font-size: 0.85rem; font-weight: 500; color: var(--gray-600); }
         .search-group input,
         .search-group select {
             padding: 0.625rem 0.875rem;
@@ -316,23 +254,11 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             font-family: var(--font-sans);
             background: white;
         }
-
         .search-group input:focus,
         .search-group select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(26, 75, 42, 0.1);
-        }
-
-        .date-range-group {
-            grid-column: span 2;
-            display: flex;
-            gap: 1rem;
-            align-items: flex-end;
-        }
-
-        .date-range-group .search-group {
-            flex: 1;
+            box-shadow: 0 0 0 3px rgba(26,75,42,0.1);
         }
 
         .search-actions {
@@ -341,7 +267,6 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             align-items: flex-end;
         }
 
-        /* Buttons */
         .btn {
             padding: 0.625rem 1.25rem;
             border: none;
@@ -357,35 +282,11 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             font-family: var(--font-sans);
         }
 
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-light); }
+        .btn-secondary { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
+        .btn-secondary:hover { background: var(--gray-200); }
 
-        .btn-primary:hover {
-            background: var(--primary-light);
-        }
-
-        .btn-secondary {
-            background: var(--gray-100);
-            color: var(--gray-700);
-            border: 1px solid var(--gray-300);
-        }
-
-        .btn-secondary:hover {
-            background: var(--gray-200);
-        }
-
-        .btn-download {
-            background: #2563eb;
-            color: white;
-        }
-
-        .btn-download:hover {
-            background: #1d4ed8;
-        }
-
-        /* Table Styles */
         .table-wrapper {
             background: white;
             border-radius: var(--radius-xl);
@@ -394,10 +295,7 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             box-shadow: var(--shadow-sm);
         }
 
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
         table {
             width: 100%;
@@ -414,7 +312,6 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             color: var(--gray-600);
             font-size: 0.85rem;
             border-bottom: 1px solid var(--gray-200);
-            white-space: nowrap;
         }
 
         td {
@@ -424,15 +321,9 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             vertical-align: middle;
         }
 
-        tr:hover {
-            background: var(--gray-50);
-        }
+        tr:hover { background: var(--gray-50); }
+        tr:last-child td { border-bottom: none; }
 
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        /* Badge */
         .badge {
             display: inline-block;
             padding: 0.25rem 0.625rem;
@@ -443,7 +334,12 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             color: var(--gray-600);
         }
 
-        /* Serial number */
+        .badge-place-display { background: #dbeafe; color: #1e40af; }
+        .badge-place-store { background: #d1fae5; color: #065f46; }
+        .badge-place-warehouse { background: #fed7aa; color: #92400e; }
+
+        .status-sold { color: var(--gray-500); }
+
         .serial-code {
             font-family: 'Courier New', monospace;
             font-size: 0.85rem;
@@ -453,62 +349,41 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             display: inline-block;
         }
 
-        /* Price */
-        .price {
-            font-weight: 600;
-            color: #059669;
+        .branch-kimathi { color: #059669; }
+        .branch-moi { color: #3b82f6; }
+
+        .specs-text {
+            font-size: 0.8rem;
+            color: var(--gray-600);
+            word-wrap: break-word;
+            max-width: 350px;
+            display: inline-block;
         }
 
-        /* Branch colors */
-        .branch-kimathi {
-            color: #059669;
-            font-weight: 500;
-        }
+        .action-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-        .branch-moi {
-            color: #3b82f6;
-            font-weight: 500;
-        }
-
-        /* Action links */
-        .action-link {
-            color: var(--primary);
+        .btn-view {
+            padding: 0.375rem 0.875rem;
+            font-size: 0.8rem;
+            background: white;
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-sm);
             text-decoration: none;
-            font-size: 0.85rem;
             display: inline-flex;
             align-items: center;
-            gap: 0.25rem;
+            gap: 0.375rem;
+            transition: all 0.2s ease;
         }
+        .btn-view:hover { background: var(--gray-50); border-color: var(--gray-400); }
 
-        .action-link:hover {
-            text-decoration: underline;
-        }
-
-        /* Empty state */
         .empty-state {
             text-align: center;
             padding: 3rem;
             color: var(--gray-500);
         }
+        .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
 
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        /* Download bar */
-        .download-bar {
-            background: var(--gray-50);
-            padding: 1rem 1.5rem;
-            border-radius: var(--radius-lg);
-            margin-bottom: 1.5rem;
-            display: flex;
-            justify-content: flex-end;
-            border: 1px solid var(--gray-200);
-        }
-
-        /* Footer */
         .footer {
             text-align: center;
             padding: 1.5rem 0 0.5rem;
@@ -518,123 +393,42 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             border-top: 1px solid var(--gray-200);
         }
 
-        /* Hide date range initially */
-        .date-range-group {
-            display: none;
-        }
-
-        .date-range-group.active {
-            display: flex;
-        }
-
-        /* Responsive */
         @media (max-width: 1200px) {
-            .main-content {
-                margin-left: 0 !important;
-                width: 100% !important;
-                padding: 1.5rem 1rem 1rem !important;
-                padding-top: 5rem !important;
-            }
+            .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
         }
 
         @media (max-width: 768px) {
-            .main-content {
-                padding: 1rem 0.75rem 0.75rem !important;
-                padding-top: 4.5rem !important;
-            }
-
-            .page-header h1 {
-                font-size: 1.25rem;
-            }
-
-            .page-header {
-                padding: 1rem 1.25rem;
-            }
-
-            .stats-row {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 0.75rem;
-            }
-
-            .stat-card {
-                padding: 1rem;
-            }
-
-            .stat-card .stat-value {
-                font-size: 1.5rem;
-            }
-
-            .search-section {
-                padding: 1rem;
-            }
-
-            .search-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .date-range-group {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .download-bar {
-                flex-direction: column;
-                gap: 0.75rem;
-            }
+            .main-content { padding: 1rem 0.75rem 0.75rem !important; padding-top: 4.5rem !important; }
+            .page-header h1 { font-size: 1.25rem; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+            .stat-card { padding: 1rem; }
+            .stat-card .stat-value { font-size: 1.5rem; }
+            .search-section { padding: 1rem; }
+            .search-grid { grid-template-columns: 1fr; }
+            .btn { width: 100%; justify-content: center; }
+            .action-btns { flex-direction: column; }
+            .btn-view { width: 100%; justify-content: center; }
+            .specs-text { max-width: 150px; }
         }
 
         @media (max-width: 480px) {
-            .main-content {
-                padding: 0.75rem 0.5rem 0.5rem !important;
-                padding-top: 4rem !important;
-            }
-
-            .stats-row {
-                grid-template-columns: 1fr;
-            }
-
-            .page-header h1 {
-                font-size: 1.1rem;
-            }
+            .main-content { padding: 0.75rem 0.5rem 0.5rem !important; padding-top: 4rem !important; }
+            .stats-row { grid-template-columns: 1fr; }
+            .page-header h1 { font-size: 1.1rem; }
         }
     </style>
-    <script>
-        function autoApplyFilter() {
-            document.getElementById('filterForm').submit();
-        }
-
-        function toggleDateRange() {
-            const timePeriod = document.getElementById('time_period').value;
-            const dateRangeDiv = document.getElementById('dateRangeGroup');
-            
-            if (timePeriod === 'custom') {
-                dateRangeDiv.classList.add('active');
-            } else {
-                dateRangeDiv.classList.remove('active');
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            toggleDateRange();
-        });
-    </script>
 </head>
 <body>
-
+<?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <!-- Page Header -->
     <div class="page-header">
         <h1>
-            <i class="fas fa-money-bill-wave"></i>
+            <i class="fas fa-check-circle"></i>
             Sold Devices
         </h1>
         <div class="breadcrumb">
-              <?php if($_SESSION['role'] === 'super_admin'): ?>
+            <?php if($_SESSION['role'] === 'super_admin'): ?>
                 <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>       
             <?php endif; ?>
             <?php if($_SESSION['role'] === 'manager'): ?>
@@ -642,6 +436,9 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             <?php endif; ?>
             <?php if($_SESSION['role'] === 'inventory_admin'): ?>
                 <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+            <?php endif; ?>
+            <?php if($_SESSION['role'] === 'sales'): ?>
+                <a href="/inventory_system/dashboard/salesdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <span>Sold Devices</span>
@@ -651,70 +448,35 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
     <!-- Stats Cards -->
     <div class="stats-row">
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
-            <div class="stat-value"><?= number_format($total_sales) ?></div>
-            <div class="stat-label">Total Sales</div>
+            <div class="stat-icon"><i class="fas fa-check-double"></i></div>
+            <div class="stat-value"><?= number_format($total_sold) ?></div>
+            <div class="stat-label">Total Sold</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-coins"></i></div>
-            <div class="stat-value">KES <?= number_format($total_revenue, 0) ?></div>
+            <div class="stat-value">Ksh <?= number_format($total_revenue, 0) ?></div>
             <div class="stat-label">Total Revenue</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-chart-simple"></i></div>
-            <div class="stat-value">KES <?= number_format($avg_price, 0) ?></div>
-            <div class="stat-label">Average Price</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-users"></i></div>
-            <div class="stat-value"><?= number_format(count($salespersons)) ?></div>
-            <div class="stat-label">Sales Staff</div>
+            <div class="stat-icon"><i class="fas fa-tag"></i></div>
+            <div class="stat-value"><?= number_format(count($all_categories)) ?></div>
+            <div class="stat-label">Categories</div>
         </div>
     </div>
 
     <!-- Search Section -->
     <div class="search-section">
         <div class="search-title">
-            <i class="fas fa-filter"></i> Filter Sales
+            <i class="fas fa-filter"></i> Filter Sold Devices
         </div>
-        <form method="GET" id="filterForm" class="search-grid">
+        <form method="GET" class="search-grid">
             <div class="search-group">
-                <label>Serial Number</label>
-                <input type="text" name="sn" placeholder="Scan or type serial number" 
-                       value="<?= htmlspecialchars($search_sn) ?>" autofocus>
-            </div>
-
-            <div class="search-group">
-                <label>Time Period</label>
-                <select name="time_period" id="time_period" onchange="toggleDateRange(); autoApplyFilter();">
-                    <option value="">-- All Periods --</option>
-                    <option value="today" <?= $search_time==='today'?'selected':'' ?>>Today</option>
-                    <option value="this_week" <?= $search_time==='this_week'?'selected':'' ?>>This Week</option>
-                    <option value="this_month" <?= $search_time==='this_month'?'selected':'' ?>>This Month</option>
-                    <option value="last_month" <?= $search_time==='last_month'?'selected':'' ?>>Last Month</option>
-                    <option value="this_year" <?= $search_time==='this_year'?'selected':'' ?>>This Year</option>
-                    <option value="custom" <?= $search_time==='custom'?'selected':'' ?>>Custom Range</option>
-                </select>
-            </div>
-
-            <div id="dateRangeGroup" class="date-range-group <?= $search_time==='custom'?'active':'' ?>">
-                <div class="search-group">
-                    <label>Start Date</label>
-                    <input type="date" name="start_date" value="<?= htmlspecialchars($start_date) ?>" onchange="autoApplyFilter()">
-                </div>
-                <div class="search-group">
-                    <label>End Date</label>
-                    <input type="date" name="end_date" value="<?= htmlspecialchars($end_date) ?>" onchange="autoApplyFilter()">
-                </div>
-            </div>
-
-            <div class="search-group">
-                <label>Salesperson</label>
-                <select name="salesperson" onchange="autoApplyFilter()">
-                    <option value="">-- All Salespersons --</option>
-                    <?php foreach($salespersons as $sp): ?>
-                        <option value="<?= $sp['id'] ?>" <?= $search_salesperson==$sp['id']?'selected':'' ?>>
-                            <?= htmlspecialchars($sp['full_name']) ?>
+                <label>Category</label>
+                <select name="category">
+                    <option value="">-- All Categories --</option>
+                    <?php foreach($all_categories as $cat): ?>
+                        <option value="<?= $cat['id'] ?>" <?= $search_category == $cat['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($cat['category_name']) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -723,16 +485,43 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
             <?php if ($role !== 'manager'): ?>
             <div class="search-group">
                 <label>Branch</label>
-                <select name="branch" onchange="autoApplyFilter()">
+                <select name="branch">
                     <option value="">-- All Branches --</option>
-                    <?php foreach($branches as $branch): ?>
-                        <option value="<?= htmlspecialchars($branch) ?>" <?= $search_branch==$branch?'selected':'' ?>>
-                            <?= htmlspecialchars($branch) ?>
-                        </option>
-                    <?php endforeach; ?>
+                    <option value="KIMATHI" <?= $search_branch == 'KIMATHI' ? 'selected' : '' ?>>KIMATHI</option>
+                    <option value="MOI" <?= $search_branch == 'MOI' ? 'selected' : '' ?>>MOI</option>
                 </select>
             </div>
             <?php endif; ?>
+
+            <div class="search-group">
+                <label>Place</label>
+                <select name="place">
+                    <option value="">-- All Places --</option>
+                    <option value="display" <?= $search_place == 'display' ? 'selected' : '' ?>>Display</option>
+                    <option value="store" <?= $search_place == 'store' ? 'selected' : '' ?>>Store</option>
+                    <option value="warehouse" <?= $search_place == 'warehouse' ? 'selected' : '' ?>>Warehouse</option>
+                </select>
+            </div>
+
+            <div class="search-group">
+                <label>Model</label>
+                <input type="text" name="model" placeholder="Search by model..." value="<?= htmlspecialchars($search_model) ?>">
+            </div>
+
+            <div class="search-group">
+                <label>Serial Number</label>
+                <input type="text" name="serial_number" placeholder="Scan or type serial number" value="<?= htmlspecialchars($search_serial) ?>" autofocus>
+            </div>
+
+            <div class="search-group">
+                <label>Sold Date From</label>
+                <input type="date" name="date_from" value="<?= htmlspecialchars($date_from) ?>" max="<?= date('Y-m-d') ?>">
+            </div>
+
+            <div class="search-group">
+                <label>Sold Date To</label>
+                <input type="date" name="date_to" value="<?= htmlspecialchars($date_to) ?>" max="<?= date('Y-m-d') ?>">
+            </div>
 
             <div class="search-actions">
                 <button type="submit" class="btn btn-primary">
@@ -745,29 +534,12 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
         </form>
     </div>
 
-    <!-- Download Button -->
-    <?php if($showDownloadButton && !empty($devices)): ?>
-    <div class="download-bar">
-        <form method="POST" action="download_sales_report.php" style="margin:0">
-            <input type="hidden" name="time_period" value="<?= htmlspecialchars($search_time) ?>">
-            <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date) ?>">
-            <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
-            <input type="hidden" name="salesperson" value="<?= htmlspecialchars($search_salesperson) ?>">
-            <input type="hidden" name="branch" value="<?= htmlspecialchars($search_branch) ?>">
-            <input type="hidden" name="sn" value="<?= htmlspecialchars($search_sn) ?>">
-            <button type="submit" class="btn btn-download">
-                <i class="fas fa-download"></i> Download PDF Report
-            </button>
-        </form>
-    </div>
-    <?php endif; ?>
-
-    <!-- Sales Table -->
+    <!-- Table -->
     <div class="table-wrapper">
         <div class="table-responsive">
             <?php if(empty($devices)): ?>
                 <div class="empty-state">
-                    <i class="fas fa-chart-line"></i>
+                    <i class="fas fa-search"></i>
                     <p>No sold devices found matching your criteria.</p>
                     <a href="sold_devices.php" class="btn btn-primary" style="margin-top: 1rem;">
                         <i class="fas fa-undo"></i> Clear Filters
@@ -781,38 +553,56 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
                             <th>Serial Number</th>
                             <th>Category</th>
                             <th>Model</th>
-                            <th>Processor</th>
-                            <th>RAM</th>
-                            <th>Storage</th>
-                            <th>Price</th>
+                            <th>Specifications</th>
+                            <th>Place</th>
+                            <th>Added By</th>
+                            <th>Price (KES)</th>
+                            <th>Selling Price (KES)</th>
                             <th>Sold By</th>
+                            <th>Sold At</th>
                             <th>Branch</th>
-                            <th>Date Sold</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                    <?php $i = 1; foreach($devices as $d): ?>
+                    <?php $i = 1; foreach ($devices as $d): 
+                        $specs = buildDeviceSpecs($d);
+                        $placeClass = '';
+                        if ($d['place'] == 'display') $placeClass = 'badge-place-display';
+                        elseif ($d['place'] == 'store') $placeClass = 'badge-place-store';
+                        elseif ($d['place'] == 'warehouse') $placeClass = 'badge-place-warehouse';
+                    ?>
                         <tr>
                             <td><?= $i++ ?></td>
                             <td><span class="serial-code"><?= htmlspecialchars($d['serial_number']) ?></span></td>
                             <td><span class="badge"><?= htmlspecialchars($d['category_name']) ?></span></td>
                             <td><strong><?= htmlspecialchars($d['model_name']) ?></strong></td>
-                            <td><small><?= htmlspecialchars($d['processor']) ?></small></td>
-                            <td><span class="badge"><?= htmlspecialchars($d['ram']) ?>GB</span></td>
-                            <td><span class="badge"><?= htmlspecialchars($d['storage_type']) ?> <?= htmlspecialchars($d['storage_capacity']) ?>GB</span></td>
-                            <td><span class="price"><?= !empty($d['selling_price']) ? 'KES ' . number_format($d['selling_price'], 0) : '-' ?></span></td>
-                            <td><i class="fas fa-user" style="color: var(--gray-400); width: 14px;"></i> <?= htmlspecialchars($d['sold_by_name']) ?></td>
+                            <td>
+                                <span class="specs-text" title="<?= htmlspecialchars($specs) ?>">
+                                    <?= htmlspecialchars($specs ?: '-') ?>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge <?= $placeClass ?>">
+                                    <?= ucfirst($d['place'] ?? 'N/A') ?>
+                                </span>
+                            </td>
+                            <td><?= htmlspecialchars($d['added_by_name'] ?? 'System') ?></td>
+                            <td><?= $d['price'] !== null ? number_format($d['price'], 2) : '—' ?></td>
+                            <td><?= $d['selling_price'] !== null ? number_format($d['selling_price'], 2) : '—' ?></td>
+                            <td><?= htmlspecialchars($d['sold_by_name'] ?? 'Unknown') ?></td>
+                            <td><small><?= $d['sold_at'] ? date('M j, Y g:i A', strtotime($d['sold_at'])) : '—' ?></small></td>
                             <td>
                                 <span class="<?= $d['branch'] == 'KIMATHI' ? 'branch-kimathi' : 'branch-moi' ?>">
                                     <?= htmlspecialchars($d['branch']) ?>
                                 </span>
                             </td>
-                            <td><small><?= date('M j, Y H:i', strtotime($d['sold_at'])) ?></small></td>
                             <td>
-                                <a href="view_device.php?sn=<?= urlencode($d['serial_number']) ?>" class="action-link">
-                                    <i class="fas fa-eye"></i> View
-                                </a>
+                                <div class="action-btns">
+                                    <a class="btn-view" href="view_device.php?sn=<?= urlencode($d['serial_number']) ?>">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -828,7 +618,6 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
 </div>
 
 <script>
-// Mobile responsive adjustments
 document.addEventListener('DOMContentLoaded', function() {
     function adjustMainContent() {
         const mainContent = document.querySelector('.main-content');
@@ -852,15 +641,6 @@ document.addEventListener('DOMContentLoaded', function() {
     adjustMainContent();
     window.addEventListener('resize', adjustMainContent);
     window.addEventListener('orientationchange', adjustMainContent);
-});
-
-// Auto-submit on input changes
-document.querySelectorAll('#filterForm input, #filterForm select').forEach(el => {
-    el.addEventListener('change', function() {
-        if (this.name !== 'start_date' && this.name !== 'end_date') {
-            document.getElementById('filterForm').submit();
-        }
-    });
 });
 </script>
 

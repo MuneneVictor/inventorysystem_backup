@@ -2,14 +2,30 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
-
 
 $role = $_SESSION['role'];
 $user_id = $_SESSION['user_id'];
 
-if(!in_array($_SESSION['role'], ['super_admin', 'inventory_admin','manager'])){
+if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin', 'manager'])) {
     die("Access denied!");
+}
+
+// Helper: build device specifications string (like sales_logs)
+function buildDeviceSpecs($device) {
+    $specs = "";
+    if (!empty($device['model_name'])) $specs .= $device['model_name'];
+    if (!empty($device['processor'])) $specs .= " | " . $device['processor'];
+    if (!empty($device['ram'])) $specs .= " | " . $device['ram'] . "GB RAM";
+    if (!empty($device['storage_type']) && !empty($device['storage_capacity'])) {
+        $specs .= " | " . $device['storage_type'] . " " . $device['storage_capacity'] . "GB";
+    }
+    if (isset($device['graphics']) && $device['graphics'] !== '' && $device['graphics'] !== 'None') {
+        $specs .= " | " . $device['graphics'];
+    }
+    if (isset($device['touch']) && $device['touch'] !== 'N/A' && $device['touch'] !== '') {
+        $specs .= " | " . $device['touch'];
+    }
+    return trim($specs, " |");
 }
 
 // Get manager's branch from database
@@ -24,16 +40,18 @@ $search_serial = trim($_GET['serial_number'] ?? '');
 $search_category = trim($_GET['category'] ?? '');
 $search_model = trim($_GET['model'] ?? '');
 $search_branch = trim($_GET['branch'] ?? '');
+$search_place = trim($_GET['place'] ?? '');
 
 // Fetch categories for dropdown
 $cat_stmt = $conn->prepare("SELECT * FROM categories ORDER BY category_name ASC");
 $cat_stmt->execute();
 $all_categories = $cat_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Base query - Added branch column
-$sql = "SELECT d.*, c.category_name, d.branch 
+// Base query - now selecting place, added_by_name, and price
+$sql = "SELECT d.*, c.category_name, u.full_name AS added_by_name
         FROM devices d
         JOIN categories c ON d.category_id = c.id
+        LEFT JOIN users u ON d.added_by = u.id
         WHERE 1";
 $params = [];
 
@@ -41,14 +59,6 @@ $params = [];
 if ($role === 'manager' && !empty($user_branch)) {
     $sql .= " AND d.branch = :user_branch";
     $params['user_branch'] = $user_branch;
-}
-
-// Technician / Maintenance restriction
-if (in_array($role, ['technician','maintenance'])) {
-    $sql .= " AND d.serial_number IN (
-                SELECT device_serial FROM maintenance WHERE performed_by = :uid
-              )";
-    $params['uid'] = $user_id;
 }
 
 // Category filter
@@ -63,13 +73,19 @@ if ($search_branch !== '' && $role !== 'manager') {
     $params['branch'] = $search_branch;
 }
 
-// Model filter (search by model name)
+// Place filter
+if ($search_place !== '') {
+    $sql .= " AND d.place = :place";
+    $params['place'] = $search_place;
+}
+
+// Model filter
 if ($search_model !== '') {
     $sql .= " AND d.model_name LIKE :model";
     $params['model'] = "%$search_model%";
 }
 
-// Serial filter (scan-friendly)
+// Serial filter
 if ($search_serial !== '') {
     $sql .= " AND d.serial_number LIKE :sn";
     $params['sn'] = "%$search_serial%";
@@ -80,7 +96,11 @@ $sql .= " ORDER BY d.date_added DESC";
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
 $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
-require_once "../includes/sidebar.php";
+
+// Stats
+$total_devices = count($devices);
+$in_stock = count(array_filter($devices, fn($d) => $d['status'] == 'In Stock'));
+$sold = count(array_filter($devices, fn($d) => $d['status'] == 'Sold'));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -129,7 +149,6 @@ require_once "../includes/sidebar.php";
             overflow-x: hidden;
         }
 
-        /* Main Content Area */
         .main-content {
             padding: 2rem 2rem 1rem;
             margin-left: 260px;
@@ -141,7 +160,6 @@ require_once "../includes/sidebar.php";
             max-width: 100%;
         }
 
-        /* Page Header */
         .page-header {
             background: white;
             padding: 1.5rem 2rem;
@@ -180,7 +198,6 @@ require_once "../includes/sidebar.php";
             text-decoration: underline;
         }
 
-        /* Stats Cards */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -220,7 +237,6 @@ require_once "../includes/sidebar.php";
             margin-top: 0.25rem;
         }
 
-        /* Search Section */
         .search-section {
             background: white;
             padding: 1.5rem;
@@ -316,7 +332,6 @@ require_once "../includes/sidebar.php";
             background: var(--gray-200);
         }
 
-        /* Table Styles - Clean & Minimal */
         .table-wrapper {
             background: white;
             border-radius: var(--radius-xl);
@@ -334,7 +349,7 @@ require_once "../includes/sidebar.php";
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
-            min-width: 800px;
+            min-width: 900px;
         }
 
         th {
@@ -362,7 +377,6 @@ require_once "../includes/sidebar.php";
             border-bottom: none;
         }
 
-        /* Simple badge - just gray */
         .badge {
             display: inline-block;
             padding: 0.25rem 0.625rem;
@@ -373,7 +387,10 @@ require_once "../includes/sidebar.php";
             color: var(--gray-600);
         }
 
-        /* Status with minimal styling */
+        .badge-place-display { background: #dbeafe; color: #1e40af; }
+        .badge-place-store { background: #d1fae5; color: #065f46; }
+        .badge-place-warehouse { background: #fed7aa; color: #92400e; }
+
         .status-instock {
             color: #059669;
         }
@@ -382,7 +399,6 @@ require_once "../includes/sidebar.php";
             color: var(--gray-500);
         }
 
-        /* Serial number styling */
         .serial-code {
             font-family: 'Courier New', monospace;
             font-size: 0.85rem;
@@ -392,7 +408,6 @@ require_once "../includes/sidebar.php";
             display: inline-block;
         }
 
-        /* Branch text - just color, no background */
         .branch-kimathi {
             color: #059669;
         }
@@ -401,7 +416,14 @@ require_once "../includes/sidebar.php";
             color: #3b82f6;
         }
 
-        /* Action buttons */
+        .specs-text {
+            font-size: 0.8rem;
+            color: var(--gray-600);
+            word-wrap: break-word;
+            max-width: 350px;
+            display: inline-block;
+        }
+
         .action-btns {
             display: flex;
             gap: 0.5rem;
@@ -427,7 +449,6 @@ require_once "../includes/sidebar.php";
             border-color: var(--gray-400);
         }
 
-        /* Empty State */
         .empty-state {
             text-align: center;
             padding: 3rem;
@@ -440,7 +461,6 @@ require_once "../includes/sidebar.php";
             opacity: 0.5;
         }
 
-        /* Footer */
         .footer {
             text-align: center;
             padding: 1.5rem 0 0.5rem;
@@ -450,7 +470,6 @@ require_once "../includes/sidebar.php";
             border-top: 1px solid var(--gray-200);
         }
 
-        /* Responsive */
         @media (max-width: 1200px) {
             .main-content {
                 margin-left: 0 !important;
@@ -504,6 +523,10 @@ require_once "../includes/sidebar.php";
                 width: 100%;
                 justify-content: center;
             }
+
+            .specs-text {
+                max-width: 150px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -523,7 +546,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
-
+<?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <!-- Page Header -->
     <div class="page-header">
@@ -553,17 +576,17 @@ require_once "../includes/sidebar.php";
     <div class="stats-row">
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-laptop"></i></div>
-            <div class="stat-value"><?= number_format(count($devices)) ?></div>
+            <div class="stat-value"><?= number_format($total_devices) ?></div>
             <div class="stat-label">Total Devices</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-box"></i></div>
-            <div class="stat-value"><?= number_format(count(array_filter($devices, fn($d) => $d['status'] == 'In Stock'))) ?></div>
+            <div class="stat-value"><?= number_format($in_stock) ?></div>
             <div class="stat-label">In Stock</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-tag"></i></div>
-            <div class="stat-value"><?= number_format(count(array_filter($devices, fn($d) => $d['status'] == 'Sold'))) ?></div>
+            <div class="stat-value"><?= number_format($sold) ?></div>
             <div class="stat-label">Sold</div>
         </div>
         <div class="stat-card">
@@ -601,6 +624,16 @@ require_once "../includes/sidebar.php";
                 </select>
             </div>
             <?php endif; ?>
+
+            <div class="search-group">
+                <label>Place</label>
+                <select name="place">
+                    <option value="">-- All Places --</option>
+                    <option value="display" <?= $search_place == 'display' ? 'selected' : '' ?>>Display</option>
+                    <option value="store" <?= $search_place == 'store' ? 'selected' : '' ?>>Store</option>
+                    <option value="warehouse" <?= $search_place == 'warehouse' ? 'selected' : '' ?>>Warehouse</option>
+                </select>
+            </div>
 
             <div class="search-group">
                 <label>Model</label>
@@ -642,30 +675,46 @@ require_once "../includes/sidebar.php";
                             <th>Serial Number</th>
                             <th>Category</th>
                             <th>Model</th>
+                            <th>Specifications</th>
+                            <th>Place</th>
+                            <th>Added By</th>
+                            <th>Price (KES)</th>
                             <th>Branch</th>
-                            <th>Processor</th>
-                            <th>RAM</th>
-                            <th>Storage</th>
                             <th>Status</th>
                             <th>Date Added</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                    <?php $i = 1; foreach ($devices as $d): ?>
+                    <?php $i = 1; foreach ($devices as $d): 
+                        $specs = buildDeviceSpecs($d);
+                        $placeClass = '';
+                        if ($d['place'] == 'display') $placeClass = 'badge-place-display';
+                        elseif ($d['place'] == 'store') $placeClass = 'badge-place-store';
+                        elseif ($d['place'] == 'warehouse') $placeClass = 'badge-place-warehouse';
+                    ?>
                         <tr>
                             <td><?= $i++ ?></td>
                             <td><span class="serial-code"><?= htmlspecialchars($d['serial_number']) ?></span></td>
                             <td><span class="badge"><?= htmlspecialchars($d['category_name']) ?></span></td>
                             <td><strong><?= htmlspecialchars($d['model_name']) ?></strong></td>
                             <td>
+                                <span class="specs-text" title="<?= htmlspecialchars($specs) ?>">
+                                    <?= htmlspecialchars($specs ?: '-') ?>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge <?= $placeClass ?>">
+                                    <?= ucfirst($d['place'] ?? 'N/A') ?>
+                                </span>
+                            </td>
+                            <td><?= htmlspecialchars($d['added_by_name'] ?? 'System') ?></td>
+                            <td><?= $d['price'] !== null ? number_format($d['price'], 2) : '—' ?></td>
+                            <td>
                                 <span class="<?= $d['branch'] == 'KIMATHI' ? 'branch-kimathi' : 'branch-moi' ?>">
                                     <?= htmlspecialchars($d['branch']) ?>
                                 </span>
                             </td>
-                            <td><small><?= htmlspecialchars($d['processor']) ?></small></td>
-                            <td><span class="badge"><?= htmlspecialchars($d['ram']) ?>GB</span></td>
-                            <td><span class="badge"><?= htmlspecialchars($d['storage_type']) ?> <?= htmlspecialchars($d['storage_capacity']) ?>GB</span></td>
                             <td>
                                 <span class="<?= $d['status'] == 'In Stock' ? 'status-instock' : 'status-sold' ?>">
                                     <?= htmlspecialchars($d['status']) ?>
@@ -693,7 +742,6 @@ require_once "../includes/sidebar.php";
 </div>
 
 <script>
-// Mobile responsive adjustments
 document.addEventListener('DOMContentLoaded', function() {
     function adjustMainContent() {
         const mainContent = document.querySelector('.main-content');

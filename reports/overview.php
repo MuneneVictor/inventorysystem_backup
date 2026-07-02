@@ -2,7 +2,6 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/sidebar.php";
 
 // Fetch all inventory items with added_by, specs, and status
 function fetchAllInventory($conn, $filters) {
@@ -291,14 +290,14 @@ $filters = [
     'status'     => $filter_status
 ];
 
-$items = fetchAllInventory($conn, $filters);
+// Renamed variable to avoid conflict with sidebar's $items
+$inventoryItems = fetchAllInventory($conn, $filters);
 $categories = getCategories($conn);
 $branches = getBranches($conn);
 $users = getAddedByUsers($conn);
 
-$total_count = count($items);
+$total_count = count($inventoryItems);
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
-require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>
@@ -366,8 +365,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
-   
-
+    <?php require_once "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-list-ul"></i> Inventory Overview</h1>
@@ -392,8 +390,8 @@ require_once "../includes/sidebar.php";
         <div class="stat-card"><div class="stat-value"><?= number_format($total_count) ?></div><div class="stat-label">Total Items</div></div>
         <div class="stat-card"><div class="stat-value"><?= number_format(count($categories)) ?></div><div class="stat-label">Categories</div></div>
         <div class="stat-card"><div class="stat-value"><?= number_format(count($branches)) ?></div><div class="stat-label">Branches</div></div>
-        <?php if (!empty($items)): ?>
-            <div class="stat-card"><div class="stat-value"><?= date('Y-m-d', strtotime($items[0]['date_added'])) ?></div><div class="stat-label">Newest Added</div></div>
+        <?php if (!empty($inventoryItems)): ?>
+            <div class="stat-card"><div class="stat-value"><?= date('Y-m-d', strtotime($inventoryItems[0]['date_added'])) ?></div><div class="stat-label">Newest Added</div></div>
         <?php endif; ?>
     </div>
 
@@ -451,7 +449,7 @@ require_once "../includes/sidebar.php";
             <div class="filter-actions">
                 <button type="submit" class="btn"><i class="fas fa-search"></i> Filter</button>
                 <a href="overview.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
-                <?php if (!empty($items)): ?>
+                <?php if (!empty($inventoryItems)): ?>
                     <a href="export_inventory_excel.php?<?= http_build_query(array_merge($_GET, ['export' => '1'])) ?>" class="btn btn-excel"><i class="fas fa-file-excel"></i> Export to Excel</a>
                 <?php endif; ?>
             </div>
@@ -459,7 +457,7 @@ require_once "../includes/sidebar.php";
     </div>
 
     <div class="table-wrapper">
-        <?php if (empty($items)): ?>
+        <?php if (empty($inventoryItems)): ?>
             <div class="empty-state"><i class="fas fa-box-open" style="font-size:2rem; display:block; margin-bottom:1rem;"></i><p>No items found matching your criteria.</p></div>
         <?php else: ?>
             <table>
@@ -477,7 +475,7 @@ require_once "../includes/sidebar.php";
                     </tr>
                 </thead>
                 <tbody>
-                    <?php $i = 1; foreach ($items as $item): ?>
+                    <?php $i = 1; foreach ($inventoryItems as $item): ?>
                     <tr>
                         <td><?= $i++ ?></td>
                         <td><strong><?= htmlspecialchars($item['item_name']) ?></strong></td>

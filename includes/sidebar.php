@@ -304,7 +304,7 @@ body {
 
             // Devices section
             if (in_array($role, ['super_admin','manager','inventory_admin'])) {
-                $items = [
+                $deviceItems = [
                     ['Add Device', '/inventory_system/devices/add_device.php', 'fas fa-plus'],
                     ['Bulk Upload', '/inventory_system/devices/upload_excel.php', 'fas fa-file-upload'],
                     ['Device List', '/inventory_system/devices/device_list.php', 'fas fa-list'],
@@ -313,21 +313,21 @@ body {
                     ['Search Device', '/inventory_system/devices/search.php', 'fas fa-search'],
                 ];
                 if ($role === 'super_admin') {
-                    $items[] = ['Price list', '/inventory_system/devices/price_list.php', 'fas fa-dollar-sign'];
+                    $deviceItems[] = ['Price list', '/inventory_system/devices/price_list.php', 'fas fa-dollar-sign'];
                 }
-                $sections['DEVICES'] = ['icon' => 'fas fa-laptop', 'items' => $items];
+                $sections['DEVICES'] = ['icon' => 'fas fa-laptop', 'items' => $deviceItems];
             }
             if (in_array($role, ['super_admin', 'inventory_admin'])){
-                $items = [
+                $smartboardItems = [
                     ['Add Smartboard', '/inventory_system/smartboards/add_smartboard.php', 'fas fa-plus'],
                     ['Bulk upload', '/inventory_system/smartboards/bulk_upload.php', 'fas fa-file-upload'],
                     ['View stock', '/inventory_system/smartboards/smartboard_list.php', 'fas fa-box'],
                     ['Sold', '/inventory_system/smartboards/sold_smartboards.php', 'fas fa-money-bill-wave'],                      
                 ];
                 if ($role === 'super_admin') {
-                    $items[] = ['Price list', '/inventory_system/smartboards/pricelist.php', 'fas fa-dollar-sign'];
+                    $smartboardItems[] = ['Price list', '/inventory_system/smartboards/pricelist.php', 'fas fa-dollar-sign'];
                 }
-                $sections['SMARTBOARDS'] = ['icon' => 'fas fa-chalkboard','items' => $items];
+                $sections['SMARTBOARDS'] = ['icon' => 'fas fa-chalkboard','items' => $smartboardItems];
             }
 
             // Monitors
@@ -356,7 +356,7 @@ body {
                 ];
             }
             if (in_array($role, ['super_admin','manager','inventory_admin'])){
-                $items = [
+                $accessoryItems = [
                     ['Add Accessory', '/inventory_system/accessories/add_accessory.php', 'fas fa-plus'],
                     ['Bulk upload', '/inventory_system/accessories/bulkupload.php', 'fas fa-file-upload'],
                     ['View stock', '/inventory_system/accessories/accessory_instock.php', 'fas fa-box'],
@@ -364,7 +364,7 @@ body {
                     ['Accessory Logs', '/inventory_system/accessories/accessory_logs.php', 'fas fa-clipboard-list'],
                     ['Sold', '/inventory_system/accessories/sold_accessories.php', 'fas fa-money-bill-wave'],
                 ];
-                $sections['ACCESSORIES'] = ['icon' => 'fas fa-headphones', 'items' => $items];
+                $sections['ACCESSORIES'] = ['icon' => 'fas fa-headphones', 'items' => $accessoryItems];
             }
 
             // RAMs & SSDs

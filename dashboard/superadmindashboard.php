@@ -1263,7 +1263,7 @@ else $greeting = 'Good evening';
         <div class="section" style="margin-bottom:0">
             <h4><i class="fas fa-store"></i> Branch Sales (This Month)</h4>
             <div class="table-responsive"><table class="table"><thead><tr><th>Branch</th><th>Sales</th><th>Revenue</th></tr></thead>
-            <tbody><?php if(!empty($branchSales)): foreach($branchSales as $branch): ?><tr><td><strong><?= htmlspecialchars($branch['branch']) ?></strong></td><td class="badge badge-info" style="text-align:center"><?= number_format($branch['sales_count']) ?></td><td class="text-success">Ksh <?= number_format($branch['total_revenue'], 0) ?></td></tr><?php endforeach; else: ?><tr><td colspan="3" class="text-muted">No branch data</td></tr><?php endif; ?></tbody></table></div>
+            <tbody><?php if(!empty($branchSales)): foreach($branchSales as $branch): ?><tr><td><strong><?= !empty($branch['branch']) ? htmlspecialchars($branch['branch']) : '-' ?></strong></td><td class="badge badge-info" style="text-align:center"><?= number_format($branch['sales_count']) ?></td><td class="text-success">Ksh <?= number_format($branch['total_revenue'], 0) ?></td></tr><?php endforeach; else: ?><tr><td colspan="3" class="text-muted">No branch data</td></tr><?php endif; ?></tbody></table></div>
         </div>
        <div class="section" style="margin-bottom: 0;">
     <div class="flex-between">

@@ -123,9 +123,6 @@ foreach ($lowStockItems as $item) {
 }
 sort($branches);
 
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
-
 date_default_timezone_set('Africa/Nairobi');
 ?>
 <!DOCTYPE html>
@@ -196,6 +193,7 @@ date_default_timezone_set('Africa/Nairobi');
     </style>
 </head>
 <body>
+    <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Low Stock Items</h1>

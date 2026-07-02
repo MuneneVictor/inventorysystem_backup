@@ -70,8 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
 date_default_timezone_set('Africa/Nairobi');
 ?>
@@ -138,6 +136,7 @@ date_default_timezone_set('Africa/Nairobi');
     </style>
 </head>
 <body>
+     <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-user-plus"></i> Add Client</h1>

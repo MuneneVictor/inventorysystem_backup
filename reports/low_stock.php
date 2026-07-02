@@ -29,7 +29,7 @@ $filter_table = $_GET['filter_table'] ?? '';
 
 // Fetch low stock items from each table
 $lowStockItems = [];
-$threshold = 5;
+$threshold = 10;
 
 // 1. Accessories
 $sql = "SELECT id, name AS item_name, quantity, branch, 'accessories' AS source_table FROM accessories WHERE quantity <= ? AND status = 'instock'";
@@ -219,9 +219,9 @@ date_default_timezone_set('Africa/Nairobi');
                 </select>
             </div>
             <div class="filter-group">
-                <label for="filter_table">Table</label>
+                <label for="filter_table">Categories</label>
                 <select name="filter_table" id="filter_table">
-                    <option value="">All Tables</option>
+                    <option value="">All Categories</option>
                     <option value="accessories" <?= $filter_table == 'accessories' ? 'selected' : '' ?>>Accessories</option>
                     <option value="chargers" <?= $filter_table == 'chargers' ? 'selected' : '' ?>>Chargers</option>
                     <option value="graphic_cards" <?= $filter_table == 'graphic_cards' ? 'selected' : '' ?>>Graphics Cards</option>
@@ -230,7 +230,7 @@ date_default_timezone_set('Africa/Nairobi');
                 </select>
             </div>
             <div class="filter-group" style="flex-direction: row; align-items: flex-end; gap: 0.5rem;">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
                 <a href="low_stock_items.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
             </div>
         </form>

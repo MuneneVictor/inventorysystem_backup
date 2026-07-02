@@ -91,10 +91,24 @@ function returnItemToStock($conn, $item_type, $item_id, $sale_item_id, $quantity
             break;
 
         case 'accessory':
-            $stmt = $conn->prepare("UPDATE accessories SET quantity = quantity + ? WHERE id = ?");
-            $stmt->execute([$quantity, $item_id]);
-            $stmt = $conn->prepare("DELETE FROM sold_accessories WHERE accessory_id = ? AND sale_item_id = ?");
-            $stmt->execute([$item_id, $sale_item_id]);
+            // Check if this accessory was sold from store (logs) or display (stock)
+            $stmt = $conn->prepare("SELECT id FROM accessories_logs WHERE sale_item_id = ?");
+            $stmt->execute([$sale_item_id]);
+            $log = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($log) {
+                // Store accessory: return to pending sale in logs
+                $stmt = $conn->prepare("DELETE FROM sold_accessories WHERE accessory_id = ? AND sale_item_id = ?");
+                $stmt->execute([$item_id, $sale_item_id]);
+                $stmt = $conn->prepare("UPDATE accessories_logs SET status = 'pending_sale', sale_item_id = NULL WHERE sale_item_id = ?");
+                $stmt->execute([$sale_item_id]);
+            } else {
+                // Display accessory: return quantity to stock
+                $stmt = $conn->prepare("UPDATE accessories SET quantity = quantity + ? WHERE id = ?");
+                $stmt->execute([$quantity, $item_id]);
+                $stmt = $conn->prepare("DELETE FROM sold_accessories WHERE accessory_id = ? AND sale_item_id = ?");
+                $stmt->execute([$item_id, $sale_item_id]);
+            }
             break;
 
         case 'hdd':
@@ -204,25 +218,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// If we need to redirect, we'll do it via JavaScript after showing the message.
-// But we also keep the session success as fallback.
+// If redirect needed, store success message in session and we'll display it on the target page.
 if ($redirect_after) {
     $_SESSION['success'] = $success_message;
-    // We will still display the message on this page and auto-redirect.
-    // The HTML will include a meta refresh or JS redirect.
+    // We will still display the message on this page, but auto-redirect will happen.
 }
 
 // Handle success/error messages from session (for remove_item)
 if (isset($_SESSION['success']) && !$success_message) {
     $success_message = $_SESSION['success'];
-    unset($_SESSION['success']);
+    unset($_SESSION['success']); // Clear so it doesn't show again
 }
 
 // ============================================================
 // NOW INCLUDE HEADER AND SIDEBAR (HTML OUTPUT)
 // ============================================================
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 
 date_default_timezone_set('Africa/Nairobi');
 ?>
@@ -309,6 +320,8 @@ date_default_timezone_set('Africa/Nairobi');
         .message { padding: 0.75rem 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
         .message-success { background: #d1fae5; color: #065f46; }
         .message-error { background: #fee2e2; color: #991b1b; }
+        .sales-note { background: #dbeafe; border: 1px solid #93c5fd; padding: 0.75rem 1.25rem; border-radius: var(--radius-md); margin: 1.25rem 0; color: #1e40af; text-align: center; font-size: 0.95rem; }
+        .sales-note i { margin-right: 0.5rem; }
         footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
         @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
         @media (max-width: 768px) {
@@ -324,6 +337,7 @@ date_default_timezone_set('Africa/Nairobi');
     </style>
 </head>
 <body>
+     <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-cash-register"></i> Checkout</h1>
@@ -454,6 +468,14 @@ date_default_timezone_set('Africa/Nairobi');
                     </select>
                 </div>
             </form>
+        </div>
+    <?php endif; ?>
+
+    <!-- Friendly note for sales role -->
+    <?php if ($user_role === 'sales'): ?>
+        <div class="sales-note">
+            <i class="fas fa-info-circle"></i>
+            <strong>Please contact the cashier to complete your sale.</strong> They will process the payment and finalise the transaction.
         </div>
     <?php endif; ?>
 

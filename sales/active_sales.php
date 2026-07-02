@@ -2,7 +2,7 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
+
 
 
 $role = $_SESSION['role'];
@@ -53,7 +53,7 @@ $stmt->execute($params);
 $activeSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 date_default_timezone_set('Africa/Nairobi');
-require_once "../includes/sidebar.php";
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -122,6 +122,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
+     <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1>

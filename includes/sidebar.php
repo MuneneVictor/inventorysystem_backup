@@ -517,7 +517,7 @@ body {
 
        
             // Transfers
-            if (in_array($role, ['super_admin','manager','inventory_admin'])) {
+            if (in_array($role, ['super_admin','manager','inventory_admin', 'cashier'])) {
                 $sections['TRANSFERS'] = [
                     'icon' => 'fas fa-exchange-alt',
                     'items' => [

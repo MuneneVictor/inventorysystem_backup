@@ -1055,14 +1055,14 @@ require_once "../includes/sidebar.php";
 
     <!-- Quick Action Buttons -->
     <div class="actions-row">
-        <a href="/inventory_system/sales/process_sale.php" class="link-btn">
+        <a href="/inventory_system/sales/make_sale.php" class="link-btn">
             <i class="fas fa-cash-register"></i> Process New Sale
         </a>
-        <a href="/inventory_system/search.php" class="link-btn btn-outline">
-            <i class="fas fa-search"></i> Find Customer
+        <a href="/inventory_system/sales/view_clients.php?search=" class="link-btn btn-outline">
+            <i class="fas fa-search"></i> Find Client
         </a>
         <a href="/inventory_system/reports/daily_report.php" class="link-btn btn-outline">
-            <i class="fas fa-print"></i> Print Daily Report
+            <i class="fas fa-chart-bar"></i> View Daily Report
         </a>
         <a href="/inventory_system/sales/sales_logs.php" class="link-btn btn-outline">
             <i class="fas fa-chart-line"></i> Sales Logs

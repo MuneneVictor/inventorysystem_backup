@@ -2,8 +2,6 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 $user_id = $_SESSION['user_id'];
 if (!isset($user_id)){
     header("Location: ../login.php");
@@ -176,6 +174,143 @@ function getUnifiedSales($conn, $whereClause = '', $params = [], $orderBy = '') 
     return $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 }
 
+// ========== RECENT SALES FETCHER – ALL BRANCHES (for super admin) ==========
+function fetchRecentSalesAllBranches($conn, $limit = 10) {
+    $allSales = [];
+
+    // 1. Devices
+    $sql = "SELECT d.model_name AS item_name, 'Device' AS category,
+                d.serial_number AS id, d.selling_price AS price,
+                d.sold_at, d.branch, d.sold_by, u.full_name AS sold_by_name,
+                CONCAT(
+                    d.processor, ' | ',
+                    d.ram, 'GB RAM | ',
+                    d.storage_type, ' ', d.storage_capacity, 'GB',
+                    IFNULL(CONCAT(' | ', d.graphics), ''),
+                    IF(c.category_name IN ('Laptop', 'AIO', 'POS'), CONCAT(' | ', d.touch), '')
+                ) AS specs
+            FROM devices d
+            LEFT JOIN users u ON d.sold_by = u.id
+            LEFT JOIN categories c ON d.category_id = c.id
+            WHERE d.status = 'Sold'";
+    $stmt = secureQuery($conn, $sql);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 2. Monitors
+    $sql = "SELECT m.model_name AS item_name, 'Monitor' AS category, 
+                   m.serial_number AS id, m.selling_price AS price, 
+                   m.sold_at, m.branch, m.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(m.size_inches, ' inch') AS specs
+            FROM monitors m
+            LEFT JOIN users u ON m.sold_by = u.id
+            WHERE m.status = 'Sold'";
+    $stmt = secureQuery($conn, $sql);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 3. Printers
+    $sql = "SELECT p.model_name AS item_name, 'Printer' AS category, 
+                   p.serial_number AS id, p.selling_price AS price, 
+                   p.date_sold AS sold_at, p.branch, p.sold_by, u.full_name AS sold_by_name,
+                   'N/A' AS specs
+            FROM printers p
+            LEFT JOIN users u ON p.sold_by = u.id
+            WHERE p.status = 'Sold'";
+    $stmt = secureQuery($conn, $sql);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 4. Smartboards
+    $sql = "SELECT s.model AS item_name, 'Smartboard' AS category, 
+                   s.serial_number AS id, s.selling_price AS price, 
+                   s.sold_at, s.branch, s.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(s.model, ' | ', s.size_inches, ' inch') AS specs
+            FROM smartboards s
+            LEFT JOIN users u ON s.sold_by = u.id
+            WHERE s.status = 'sold'";
+    $stmt = secureQuery($conn, $sql);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 5. UPS
+    $sql = "SELECT ups.model AS item_name, 'UPS' AS category, 
+                   ups.serial_number AS id, ups.selling_price AS price, 
+                   ups.date_sold AS sold_at, ups.branch, ups.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(ups.model, ' | ', ups.capacity, ' VA') AS specs
+            FROM ups
+            LEFT JOIN users u ON ups.sold_by = u.id
+            WHERE ups.status = 'sold'";
+    $stmt = secureQuery($conn, $sql);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 6. Phones
+    $sql = "SELECT CONCAT(COALESCE(p.brand,''), ' ', COALESCE(p.model,'')) AS item_name, 'Phone' AS category, 
+                   p.serial_number AS id, p.selling_price AS price, 
+                   p.date_sold AS sold_at, p.branch, p.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(COALESCE(p.brand,''), ' ', COALESCE(p.model,''), ' | ', p.ram, 'GB RAM | ', p.storage_capacity, 'GB') AS specs
+            FROM phones p
+            LEFT JOIN users u ON p.sold_by = u.id
+            WHERE p.status = 'sold'";
+    $stmt = secureQuery($conn, $sql);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 7. Sold Accessories
+    $sql = "SELECT sa.accessory_name AS item_name, 'Accessory' AS category, 
+                   NULL AS id, sa.total_price AS price, 
+                   sa.date_sold AS sold_at, sa.branch, sa.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(sa.quantity, ' x ', sa.selling_price, ' = ', sa.total_price) AS specs
+            FROM sold_accessories sa
+            LEFT JOIN users u ON sa.sold_by = u.id";
+    $stmt = secureQuery($conn, $sql);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 8. Sold Chargers
+    $sql = "SELECT sc.charger_type AS item_name, 'Charger' AS category, 
+                   NULL AS id, sc.total_price AS price, 
+                   sc.date_sold AS sold_at, sc.branch, sc.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(sc.quantity, ' x ', sc.charger_condition, ' | ', sc.selling_price, ' each') AS specs
+            FROM sold_chargers sc
+            LEFT JOIN users u ON sc.sold_by = u.id";
+    $stmt = secureQuery($conn, $sql);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 9. Sold Graphics Cards
+    $sql = "SELECT CONCAT(COALESCE(sgc.type,''), ' ', COALESCE(sgc.storage_capacity,''), 'GB') AS item_name, 'Graphics Card' AS category, 
+                   NULL AS id, sgc.total_price AS price, 
+                   sgc.date_sold AS sold_at, sgc.branch, sgc.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(sgc.quantity, ' x ', sgc.type, ' ', sgc.storage_capacity, 'GB') AS specs
+            FROM sold_graphics_cards sgc
+            LEFT JOIN users u ON sgc.sold_by = u.id";
+    $stmt = secureQuery($conn, $sql);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 10. Sold HDDs
+    $sql = "SELECT CONCAT(COALESCE(sh.type,''), ' ', COALESCE(sh.storage,'')) AS item_name, 'HDD' AS category, 
+                   NULL AS id, sh.total_price AS price, 
+                   sh.date_sold AS sold_at, sh.branch, sh.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(sh.quantity, ' x ', sh.type, ' ', sh.storage) AS specs
+            FROM sold_hdds sh
+            LEFT JOIN users u ON sh.sold_by = u.id";
+    $stmt = secureQuery($conn, $sql);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // 11. Sold RAM/SSD
+    $sql = "SELECT CONCAT(COALESCE(srs.type,''), ' ', COALESCE(srs.storage,''), 'GB') AS item_name, srs.category AS category, 
+                   NULL AS id, srs.total_price AS price, 
+                   srs.date_sold AS sold_at, srs.branch, srs.sold_by, u.full_name AS sold_by_name,
+                   CONCAT(srs.quantity, ' x ', srs.type, ' ', srs.storage, 'GB') AS specs
+            FROM sold_rams_ssds srs
+            LEFT JOIN users u ON srs.sold_by = u.id";
+    $stmt = secureQuery($conn, $sql);
+    if ($stmt) $allSales = array_merge($allSales, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // Sort by sold_at descending
+    usort($allSales, function($a, $b) {
+        $ta = $a['sold_at'] ? strtotime($a['sold_at']) : 0;
+        $tb = $b['sold_at'] ? strtotime($b['sold_at']) : 0;
+        return $tb - $ta;
+    });
+
+    return array_slice($allSales, 0, $limit);
+}
+
 // ========== DEVICE STATISTICS (stock counts) ==========
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices");
 $totalDevices = $stmt ? (int)$stmt->fetchColumn() : 0;
@@ -299,6 +434,11 @@ $stmt = secureQuery($conn, "
     ) AS monthly_sales
 ");
 if ($stmt) $monthlySales = (int)$stmt->fetchColumn();
+
+// ========== TODAY'S EXPENSES ==========
+$todaysExpenses = 0;
+$stmt = secureQuery($conn, "SELECT COALESCE(SUM(total_amount), 0) FROM expenses WHERE DATE(expense_date) = CURDATE()");
+if ($stmt) $todaysExpenses = (float)$stmt->fetchColumn();
 
 // ========== INVENTORY SUMMARY (NEW TABLES ADDED) ==========
 $stmt = secureQuery($conn, "SELECT COUNT(*) FROM devices WHERE status = 'In Stock'");
@@ -648,28 +788,8 @@ if ($stmt) {
     $recentAddedItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// ========== RECENTLY SOLD ITEMS (ONLY DEVICES) ==========
-$recentSoldItems = [];
-$stmt = secureQuery($conn, "
-    SELECT 
-        d.serial_number AS id,
-        d.model_name AS item_name,
-        COALESCE(c.category_name, 'Device') AS category,
-        d.selling_price AS price,
-        d.sold_at,
-        d.branch,
-        d.ram,
-        d.storage_type,
-        d.storage_capacity
-    FROM devices d
-    LEFT JOIN categories c ON d.category_id = c.id
-    WHERE d.status = 'Sold'
-    ORDER BY d.sold_at DESC
-    LIMIT 6
-");
-if ($stmt) {
-    $recentSoldItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+// ========== RECENTLY SOLD ITEMS (UNIFIED – ALL BRANCHES) ==========
+$recentSoldItems = fetchRecentSalesAllBranches($conn, 10);
 
 // ========== BRANCH SALES (UNIFIED) ==========
 $branchSales = [];
@@ -807,6 +927,7 @@ if ($stmt) {
 // Store values for JavaScript toggle
 $todaysRevenueFormatted = number_format($todaysRevenue, 0);
 $monthlyRevenueFormatted = number_format($monthlyRevenue, 0);
+$todaysExpensesFormatted = number_format($todaysExpenses, 0);
 
 // Get current time greeting
 date_default_timezone_set('Africa/Nairobi');
@@ -862,13 +983,14 @@ else $greeting = 'Good evening';
         .page-title { font-size: 2rem; color: var(--primary-dark); font-weight: 700; }
         .welcome-text { font-size: 0.95rem; color: var(--gray-500); margin-top: 0.25rem; }
         .logo img { height: 48px; width: auto; max-width: 100%; }
-        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+        .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
         .stat-card { background: white; border-radius: var(--radius-xl); padding: 1.25rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); transition: all 0.3s ease; position: relative; overflow: hidden; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
         .stat-card:nth-child(1)::before { background: linear-gradient(90deg, var(--success), #34d399); }
         .stat-card:nth-child(2)::before { background: linear-gradient(90deg, var(--info), #60a5fa); }
         .stat-card:nth-child(3)::before { background: linear-gradient(90deg, var(--accent), #fbbf24); }
         .stat-card:nth-child(4)::before { background: linear-gradient(90deg, var(--purple), #a78bfa); }
+        .stat-card:nth-child(5)::before { background: linear-gradient(90deg, #f43f5e, #fb7185); }
         .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
         .stat-card .stat-icon { font-size: 2rem; margin-bottom: 0.75rem; }
         .stat-card .stat-value { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.25rem; }
@@ -878,6 +1000,7 @@ else $greeting = 'Good evening';
         .stat-card:nth-child(2) .stat-icon, .stat-card:nth-child(2) .stat-value { color: var(--info); }
         .stat-card:nth-child(3) .stat-icon, .stat-card:nth-child(3) .stat-value { color: var(--accent); }
         .stat-card:nth-child(4) .stat-icon, .stat-card:nth-child(4) .stat-value { color: var(--purple); }
+        .stat-card:nth-child(5) .stat-icon, .stat-card:nth-child(5) .stat-value { color: #f43f5e; }
         .toggle-btn { background: none; border: 1px solid var(--gray-300); padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.7rem; color: var(--gray-500); margin-top: 0.5rem; transition: all 0.2s; }
         .toggle-btn:hover { background: var(--gray-100); border-color: var(--primary); color: var(--primary); }
         .section { margin-bottom: 2rem; background: white; padding: 1.5rem; border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); overflow-x: auto; }
@@ -977,7 +1100,7 @@ else $greeting = 'Good evening';
     </style>
 </head>
 <body>
-
+ <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="header-row">
         <div>
@@ -988,7 +1111,7 @@ else $greeting = 'Good evening';
         <div><a href="/inventory_system/dashboard/superadmindashboard.php" class="link-btn"><i class="fas fa-sync-alt"></i> Refresh</a></div>
     </div>
 
-    <!-- Stats Cards Row - 4 Cards -->
+    <!-- Stats Cards Row - 5 Cards -->
     <div class="stats-row">
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-box"></i></div>
@@ -1014,6 +1137,12 @@ else $greeting = 'Good evening';
             <div class="stat-label">Monthly Revenue</div>
             <button class="toggle-btn" onclick="toggleMonthRevenue()"><i class="fas fa-eye"></i> Show</button>
         </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+            <div class="stat-value" id="expensesValue">••••••</div>
+            <div class="stat-label">Today's Expenses</div>
+            <button class="toggle-btn" onclick="toggleExpenses()"><i class="fas fa-eye"></i> Show</button>
+        </div>
     </div>
 
     <!-- Sales Trend Chart -->
@@ -1037,7 +1166,10 @@ else $greeting = 'Good evening';
 
     <!-- Inventory Summary (includes new tables) -->
     <div class="section">
-        <h4><i class="fas fa-warehouse"></i> Inventory Summary (Instock)</h4>
+        <div class="flex-between">
+            <h4><i class="fas fa-warehouse"></i> Inventory Summary (Instock)</h4>
+            <a href="/inventory_system/reports/overview.php" class="link-btn"><i class="fas fa-boxes"></i> Inventory Overview</a>
+        </div>
         <div class="stats-grid">
             <div class="stat-item devices"><div class="stat-number"><?= number_format($inventoryDevices) ?></div><div class="stat-label"><i class="fas fa-laptop"></i> Devices</div></div>
             <div class="stat-item monitors"><div class="stat-number"><?= number_format($inventoryMonitors) ?></div><div class="stat-label"><i class="fas fa-desktop"></i> Monitors</div></div>
@@ -1058,16 +1190,16 @@ else $greeting = 'Good evening';
     <!-- Top Selling Items & Categories -->
     <div class="three-column">
         <div class="section" style="margin-bottom:0">
-            <div class="flex-between"><h4><i class="fas fa-fire" style="color: var(--accent);"></i> Top Selling Items</h4><a href="/inventory_system/reports/top_items.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
+            <div class="flex-between"><h4><i class="fas fa-fire" style="color: var(--accent);"></i> Top Selling Items</h4></div>
             <div class="table-responsive"><table class="table"><thead><tr><th>#</th><th>Item Name</th><th>Category</th><th>Qty</th><th>Revenue</th></tr></thead>
             <tbody><?php if(!empty($topSellingItems)): $i=1; foreach($topSellingItems as $item): ?><tr><td class="badge badge-primary" style="text-align:center; width:35px"><?= $i++ ?></td><td><?= htmlspecialchars(substr($item['item_name'], 0, 30)) ?></td><td><?= htmlspecialchars($item['category']) ?></td><td class="badge badge-info" style="text-align:center"><?= number_format($item['quantity_sold']) ?></td><td class="text-success">Ksh <?= number_format($item['revenue'], 0) ?></td></tr><?php endforeach; else: ?><tr><td colspan="5" class="text-muted">No sales data this month</td></tr><?php endif; ?></tbody></table></div>
         </div>
         <div class="section" style="margin-bottom:0">
-            <div class="flex-between"><h4><i class="fas fa-chart-pie"></i> Top Categories</h4><a href="/inventory_system/reports/category_report.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
+            <div class="flex-between"><h4><i class="fas fa-chart-pie"></i> Top Categories</h4><a href="/inventory_system/reports/categories_report.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
             <div class="categories-grid"><?php if(!empty($topCategories)): foreach($topCategories as $cat): ?><div class="category-card"><div class="category-count"><?= number_format($cat['count']) ?></div><div class="category-name"><?= htmlspecialchars($cat['category_name']) ?></div><div class="category-revenue">Ksh <?= number_format($cat['revenue'], 0) ?></div></div><?php endforeach; else: ?><div class="text-muted" style="text-align:center; padding:1rem;">No category data</div><?php endif; ?></div>
         </div>
         <div class="section" style="margin-bottom:0">
-            <div class="flex-between"><h4><i class="fas fa-trophy" style="color: var(--accent);"></i> Top Sales People</h4><a href="/inventory_system/users/sales_team.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
+            <div class="flex-between"><h4><i class="fas fa-trophy" style="color: var(--accent);"></i> Top Sales People</h4><a href="/inventory_system/reports/sales_team.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
             <div class="table-responsive"><table class="table"><thead><tr><th>#</th><th>Sales Person</th><th>Branch</th><th>Revenue</th></tr></thead>
             <tbody><?php if(!empty($topSalesPeople)): $i=1; foreach($topSalesPeople as $p): ?><tr><td class="badge badge-primary" style="text-align:center; width:35px"><?= $i++ ?></td><td><i class="fas fa-user"></i> <?= htmlspecialchars(substr($p['full_name'], 0, 15)) ?></td><td><?= htmlspecialchars($p['branch']) ?></td><td class="text-success">Ksh <?= number_format($p['total_revenue'], 0) ?></td></tr><?php endforeach; else: ?><tr><td colspan="4" class="text-muted">No sales data</td></tr><?php endif; ?></tbody></table></div>
         </div>
@@ -1088,39 +1220,37 @@ else $greeting = 'Good evening';
         </div>
     </div>
 
-    <!-- Recently Sold Devices (only devices) -->
+    <!-- Recently Sold Items (Unified - all branches) -->
     <div class="full-width">
         <div class="section">
             <div class="flex-between">
-                <h4><i class="fas fa-tags"></i> Recently Sold Devices</h4>
+                <h4><i class="fas fa-tags"></i> Recently Sold Items</h4>
                 <a href="/inventory_system/sales/sales_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Serial</th>
-                            <th>Model</th>
-                            <th>Specs (RAM + Storage)</th>
+                            <th>Item</th>
+                            <th>Category</th>
+                            <th>Sold By</th>
                             <th>Price</th>
-                            <th>Action</th>
+                            <th>Branch</th>
+                            <th>Date</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if(!empty($recentSoldItems)): ?>
-                            <?php foreach($recentSoldItems as $sold): ?>
-                                <tr>
-                                    <td><code><?= htmlspecialchars(substr($sold['id'], 0, 12)) ?></code></td>
-                                    <td><?= htmlspecialchars($sold['item_name'] ?? '-') ?></td>
-                                    <td><?= htmlspecialchars($sold['ram'] ?? '-') ?>GB RAM, <?= htmlspecialchars($sold['storage_type'] ?? '') ?> <?= htmlspecialchars($sold['storage_capacity'] ?? '-') ?>GB</td>
-                                    <td><span class="badge badge-success">Ksh <?= number_format($sold['price'] ?? 0, 0) ?></span></td>
-                                    <td><a href="/inventory_system/devices/view_device.php?sn=<?= urlencode($sold['id']) ?>" class="btn-view"><i class="fas fa-eye"></i> View</a></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="5" class="text-muted" style="text-align:center; padding: 2rem;">No recent sales</td>
-                            </tr>
+                        <?php if(!empty($recentSoldItems)): foreach($recentSoldItems as $sold): ?>
+                        <tr>
+                            <td><strong><?= htmlspecialchars($sold['item_name'] ?? '-') ?></strong></td>
+                            <td><span class="badge badge-info"><?= htmlspecialchars($sold['category'] ?? '-') ?></span></td>
+                            <td><i class="fas fa-user"></i> <?= htmlspecialchars($sold['sold_by_name'] ?? '-') ?></td>
+                            <td class="text-success">Ksh <?= number_format($sold['price'] ?? 0, 0) ?></td>
+                            <td><?= htmlspecialchars($sold['branch'] ?? '-') ?></td>
+                            <td><?= date('M j, Y H:i', strtotime($sold['sold_at'] ?? '')) ?></td>
+                        </tr>
+                        <?php endforeach; else: ?>
+                        <tr><td colspan="6" class="text-muted" style="text-align:center; padding:2rem;">No recent sales found</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -1213,9 +1343,10 @@ else $greeting = 'Good evening';
 </div>
 
 <script>
-let todayShown = false, monthShown = false;
+let todayShown = false, monthShown = false, expensesShown = false;
 const todayRevenueActual = <?= $todaysRevenue ?>;
 const monthRevenueActual = <?= $monthlyRevenue ?>;
+const expensesActual = <?= $todaysExpenses ?>;
 
 function toggleTodayRevenue() {
     const span = document.getElementById('todayRevenueValue');
@@ -1242,6 +1373,20 @@ function toggleMonthRevenue() {
         span.innerHTML = '••••••';
         btn.innerHTML = '<i class="fas fa-eye"></i> Show';
         monthShown = false;
+    }
+}
+
+function toggleExpenses() {
+    const span = document.getElementById('expensesValue');
+    const btn = document.querySelector('.stat-card:nth-child(5) .toggle-btn');
+    if (!expensesShown) {
+        span.innerHTML = 'Ksh ' + expensesActual.toLocaleString();
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i> Hide';
+        expensesShown = true;
+    } else {
+        span.innerHTML = '••••••';
+        btn.innerHTML = '<i class="fas fa-eye"></i> Show';
+        expensesShown = false;
     }
 }
 

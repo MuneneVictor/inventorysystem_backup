@@ -110,7 +110,7 @@ function fetchUnifiedSales($conn, $user_id, $start_date, $end_date, $search = ''
     $sql = "SELECT 
                 accessory_name AS item_name,
                 'Accessory' AS category,
-                CAST(accessory_id AS CHAR) AS id,
+                CONCAT('-') AS id,
                 total_price AS price,
                 date_sold AS sold_at,
                 branch,
@@ -126,7 +126,7 @@ function fetchUnifiedSales($conn, $user_id, $start_date, $end_date, $search = ''
     $sql = "SELECT 
                 charger_type AS item_name,
                 'Charger' AS category,
-                CAST(charger_id AS CHAR) AS id,
+                CONCAT('-') AS id,
                 total_price AS price,
                 date_sold AS sold_at,
                 branch,
@@ -182,7 +182,7 @@ function fetchUnifiedSales($conn, $user_id, $start_date, $end_date, $search = ''
     $sql = "SELECT 
                 CONCAT(COALESCE(type,''), ' ', COALESCE(storage,''), 'GB') AS item_name,
                 category AS category,
-                CONCAT('ID:', ram_ssd_id) AS id,
+                CONCAT('-') AS id,
                 total_price AS price,
                 date_sold AS sold_at,
                 branch,
@@ -198,7 +198,7 @@ function fetchUnifiedSales($conn, $user_id, $start_date, $end_date, $search = ''
     $sql = "SELECT 
                 CONCAT(COALESCE(type,''), ' ', COALESCE(storage,'')) AS item_name,
                 'HDD' AS category,
-                CONCAT('ID:', hdd_id) AS id,
+                CONCAT('-') AS id,
                 total_price AS price,
                 date_sold AS sold_at,
                 branch,
@@ -214,7 +214,7 @@ function fetchUnifiedSales($conn, $user_id, $start_date, $end_date, $search = ''
     $sql = "SELECT 
                 CONCAT(COALESCE(type,''), ' ', COALESCE(storage_capacity,''), 'GB') AS item_name,
                 'Graphics Card' AS category,
-                CONCAT('ID:', graphic_card_id) AS id,
+                CONCAT('-') AS id,
                 total_price AS price,
                 date_sold AS sold_at,
                 branch,
@@ -387,7 +387,7 @@ else $greeting = 'Good evening';
                         <th>#</th>
                         <th>Item Name</th>
                         <th>Category</th>
-                        <th>ID / Serial</th>
+                        <th>Serial</th>
                         <th>Specifications</th>
                         <th>Price (KES)</th>
                         <th>Branch</th>

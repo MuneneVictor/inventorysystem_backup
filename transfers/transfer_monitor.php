@@ -3,9 +3,9 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
-if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin', 'manager'])) die("ACCESS DENIED.");
+
+if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin', 'manager', 'cashier'])) die("ACCESS DENIED.");
 
 $user_id = (int) $_SESSION['user_id'];
 $user_role = $_SESSION['role'];
@@ -124,9 +124,8 @@ if (isset($_POST['transfer_bulk_monitors'])) {
         } else $error = "No monitors could be transferred.";
     }
 }
+require_once "../includes/sidebar.php";
 
-// Greeting and HTML header same as transfer_device.php – reuse the same layout.
-// (I'll output the HTML part – identical to transfer_device.php but with "Monitor" labels)
 ?>
 <!DOCTYPE html>
 <html lang="en">

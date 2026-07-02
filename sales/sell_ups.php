@@ -240,11 +240,6 @@ if (isset($_POST['sell_bulk_ups'])) {
     }
 }
 
-// ============================================================
-// NOW WE INCLUDE HEADER AND SIDEBAR (HTML OUTPUT STARTS)
-// ============================================================
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
 date_default_timezone_set('Africa/Nairobi');
 $hour = date('G');
@@ -391,6 +386,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     </style>
 </head>
 <body>
+     <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-bolt"></i> Sell UPS</h1>

@@ -760,7 +760,9 @@ else $greeting = 'Good evening';
         flex-wrap: wrap;
         gap: 0.5rem;
     }
-
+    .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    .link-btn { padding: 0.5rem 1rem; background: var(--info); color: white !important; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 500; font-size: 0.85rem; transition: all 0.2s ease; }
+    .link-btn:hover { background: #2563eb; transform: translateY(-2px); }
     .view-all-link {
         color: var(--primary);
         text-decoration: none;
@@ -927,7 +929,10 @@ else $greeting = 'Good evening';
 
     <!-- Inventory Summary Cards -->
     <div class="section">
-        <h4><i class="fas fa-warehouse"></i> Inventory Summary (instock)</h4>
+         <div class="flex-between">
+            <h4><i class="fas fa-warehouse"></i> Inventory Summary (Instock)</h4>
+            <a href="/inventory_system/reports/overview.php" class="link-btn"><i class="fas fa-boxes"></i> Inventory Overview</a>
+        </div>
         <div class="stats-grid">
             <div class="stat-item devices"><div class="stat-number"><?= number_format($summary['devices']) ?></div><div class="stat-label"><i class="fas fa-laptop"></i> Devices</div></div>
             <div class="stat-item monitors"><div class="stat-number"><?= number_format($summary['monitors']) ?></div><div class="stat-label"><i class="fas fa-desktop"></i> Monitors</div></div>

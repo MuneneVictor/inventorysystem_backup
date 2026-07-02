@@ -93,7 +93,7 @@ function fetchAllInventory($conn, $filters) {
                    c.branch, c.date_updated AS date_added, CAST(c.id AS CHAR) AS ref_id,
                    'charger' AS source, c.updated_by AS added_by, u.full_name AS added_by_name,
                    IF(c.quantity > 0, 'In Stock', 'Out of Stock') AS status,
-                   CONCAT(c.watts, 'W | ', c.charger_condition, ' | Qty: ', c.quantity) AS specs
+                   CONCAT(c.charger_condition, ' | Qty: ', c.quantity) AS specs
             FROM chargers c
             LEFT JOIN users u ON c.updated_by = u.id";
     $allItems = array_merge($allItems, $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));

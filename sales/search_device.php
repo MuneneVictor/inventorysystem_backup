@@ -2,7 +2,6 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
 
 
 $user_role = $_SESSION['role'];
@@ -205,7 +204,7 @@ if ($searched) {
     }
 
     // 11. Chargers
-    $sql = "SELECT c.id, c.charger_type, c.watts, c.branch, c.quantity
+    $sql = "SELECT c.id, c.charger_type, c.branch, c.quantity
             FROM chargers c WHERE c.quantity > 0";
     $params = [];
     if ($search_sn) { $sql .= " AND c.id LIKE ?"; $params[] = "%$search_sn%"; }
@@ -214,9 +213,9 @@ if ($searched) {
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as $row) {
-        $name = trim(($row['charger_type'] ?? '') . ' ' . ($row['watts'] ?? '') . 'W');
+        $name = trim(($row['charger_type'] ?? ''));
         if (empty($name)) $name = 'Charger';
-        $specs = ($row['watts'] ?? '') ? $row['watts'] . 'W' : '-';
+        $specs = '-';
         $viewLink = null;
         addResult($allResults, 'Charger', $row['id'], $name, $row['branch'], $row['quantity'], null, $specs, $viewLink);
     }
@@ -230,7 +229,6 @@ if ($searched) {
 
 date_default_timezone_set('Africa/Nairobi');
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
-require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>
@@ -312,6 +310,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
+    <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-search"></i> Search Inventory (In Stock)</h1>

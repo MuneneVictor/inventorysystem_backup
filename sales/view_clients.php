@@ -82,8 +82,7 @@ if ($user_role === 'manager' || $user_role === 'super_admin') {
     $salespersons = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -156,6 +155,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
+     <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-users"></i> View Clients</h1>

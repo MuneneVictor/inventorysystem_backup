@@ -145,8 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sell_ram_ssd'])) {
     }
 }
 
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 
 date_default_timezone_set('Africa/Nairobi');
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
@@ -225,6 +224,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     </style>
 </head>
 <body>
+     <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-memory"></i> Sell RAM / SSD</h1>

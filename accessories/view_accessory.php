@@ -2,7 +2,6 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
 
 // Check if ID is provided
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -34,7 +33,6 @@ $total_price = $accessory['price'] !== null ? $accessory['quantity'] * $accessor
 
 // Determine back URL (use referer or fallback)
 $back_url = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : 'accessory_instock.php';
-require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>
@@ -350,7 +348,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
-
+ <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <!-- Page Header -->
     <div class="page-header">

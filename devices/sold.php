@@ -801,7 +801,7 @@ $showDownloadButton = ($search_time && !$search_salesperson) || ($search_branch 
                             <td><small><?= htmlspecialchars($d['processor']) ?></small></td>
                             <td><span class="badge"><?= htmlspecialchars($d['ram']) ?>GB</span></td>
                             <td><span class="badge"><?= htmlspecialchars($d['storage_type']) ?> <?= htmlspecialchars($d['storage_capacity']) ?>GB</span></td>
-                            <td><span class="price">KES <?= number_format($d['price'], 0) ?></span></td>
+                            <td><span class="price"><?= !empty($d['selling_price']) ? 'KES ' . number_format($d['selling_price'], 0) : '-' ?></span></td>
                             <td><i class="fas fa-user" style="color: var(--gray-400); width: 14px;"></i> <?= htmlspecialchars($d['sold_by_name']) ?></td>
                             <td>
                                 <span class="<?= $d['branch'] == 'KIMATHI' ? 'branch-kimathi' : 'branch-moi' ?>">

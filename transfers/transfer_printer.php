@@ -3,9 +3,9 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
-if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin', 'manager'])) die("ACCESS DENIED.");
+
+if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin', 'manager', 'cashier'])) die("ACCESS DENIED.");
 
 $user_id = (int) $_SESSION['user_id'];
 $user_role = $_SESSION['role'];
@@ -127,6 +127,7 @@ if (isset($_POST['transfer_bulk_printers'])) {
 date_default_timezone_set('Africa/Nairobi');
 $hour = date('G');
 $greeting = ($hour < 12) ? 'Good morning' : (($hour < 17) ? 'Good afternoon' : 'Good evening');
+require_once "../includes/sidebar.php";
 ?>
 <!DOCTYPE html>
 <html lang="en">

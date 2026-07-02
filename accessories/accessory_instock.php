@@ -2,7 +2,7 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
+
 
 
 $role = $_SESSION['role'];
@@ -75,7 +75,7 @@ $total_value = array_sum(array_map(function($a) {
 // Unique branches and places for filters
 $branches = array_unique(array_column($accessories, 'branch'));
 $places = array_unique(array_column($accessories, 'place'));
-require_once "../includes/sidebar.php";
+
 ?>
 
 <!DOCTYPE html>
@@ -369,7 +369,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
-
+ <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-plug"></i> In‑Stock Accessories</h1>

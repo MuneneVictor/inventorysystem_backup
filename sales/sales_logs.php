@@ -2,7 +2,7 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
+
 
 $role = $_SESSION['role'];
 $user_id = (int) $_SESSION['user_id'];
@@ -205,7 +205,7 @@ function fetchAllSales($conn, $filters) {
     // 5. Branch filter
     if (!empty($filters['branch'])) {
         $allSales = array_filter($allSales, function($s) use ($filters) {
-            return strcasecmp($s['branch'], $filters['branch']) === 0;
+            return strcasecmp(trim($s['branch'] ?? ''), trim($filters['branch'] ?? '')) === 0;
         });
     }
 
@@ -255,7 +255,7 @@ $total_revenue = array_sum(array_column($sales, 'price'));
 
 date_default_timezone_set('Africa/Nairobi');
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
-require_once "../includes/sidebar.php";
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -317,6 +317,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
+    <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-chart-line"></i> Sales Logs</h1>
@@ -442,7 +443,7 @@ require_once "../includes/sidebar.php";
                         <td><span class="specs-text" title="<?= htmlspecialchars($sale['specs'] ?? '') ?>"><?= htmlspecialchars($sale['specs'] ?? '-') ?></span></td>
                         <td><span class="text-muted">KES <?= number_format($sale['price'] ?? 0, 0) ?></span></td>
                         <td><?= htmlspecialchars($sale['sold_by_name'] ?? 'Unknown') ?></td>
-                        <td><?= htmlspecialchars($sale['branch'] ?? '-') ?></td>
+                        <td><?=!empty($sale['branch']) ? htmlspecialchars($sale['branch']) : '-' ?></td>
                         <td><?= $sale['sold_at'] ? date('M j, Y g:i A', strtotime($sale['sold_at'])) : '-' ?></td>
                     </tr>
                     <?php endforeach; ?>

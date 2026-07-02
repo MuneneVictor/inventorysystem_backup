@@ -2,7 +2,7 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
+
 
 $role = $_SESSION['role'];
 $user_id = (int) $_SESSION['user_id'];
@@ -44,14 +44,24 @@ if (isset($_GET['sale_id']) && is_numeric($_GET['sale_id'])) {
 // --- Check if we have a valid sale in session ---
 $current_sale_id = $_SESSION['current_sale_id'] ?? 0;
 $sale_valid = false;
+$salesperson_name_for_sale = 'Unknown'; // will hold name for display
+
 if ($current_sale_id) {
-    $stmt = $conn->prepare("SELECT id, sale_status, sold_by FROM sales WHERE id = ?");
+    // Fetch sale details including salesperson name
+    $stmt = $conn->prepare("
+        SELECT s.id, s.sale_status, s.sold_by, u.full_name AS salesperson_name 
+        FROM sales s 
+        LEFT JOIN users u ON s.sold_by = u.id 
+        WHERE s.id = ?
+    ");
     $stmt->execute([$current_sale_id]);
     $sale = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($sale && $sale['sale_status'] === 'active') {
         $sale_valid = true;
         if ($role !== 'cashier' && $sale['sold_by'] != $user_id) {
             $sale_valid = false;
+        } else {
+            $salesperson_name_for_sale = $sale['salesperson_name'] ?? 'Unknown';
         }
     }
     if (!$sale_valid) {
@@ -106,7 +116,7 @@ if ($role === 'cashier') {
 }
 
 $show_cards = $sale_valid && $current_sale_id > 0;
-require_once "../includes/sidebar.php";
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -442,6 +452,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
+    <?php include "../includes/sidebar.php"; ?>
 
 <div class="main-content">
     <div class="page-header">
@@ -541,11 +552,11 @@ require_once "../includes/sidebar.php";
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="client_name">Client Name / Organization</label>
+                        <label for="client_name">Client Name / Organization (Optional)</label>
                         <input type="text" name="client_name" id="client_name" placeholder="e.g., John Doe or ABC Ltd">
                     </div>
                     <div class="form-group">
-                        <label for="client_phone">Phone Number</label>
+                        <label for="client_phone">Phone Number (Optional)</label>
                         <input type="text" name="client_phone" id="client_phone" placeholder="e.g., 0712345678">
                     </div>
                 </div>
@@ -562,6 +573,10 @@ require_once "../includes/sidebar.php";
         <div style="margin-bottom:1rem;">
             <a href="make_sale.php?reset_sale=1" class="btn"><i class="fas fa-undo"></i> Change Sale</a>
             <span style="margin-left:1rem; font-weight:500;">Current Sale ID: <?= $current_sale_id ?></span>
+            <!-- Display salesperson name for cashier (and for all roles, actually) -->
+            <span style="margin-left:1.5rem; font-weight:500; color:var(--gray-700);">
+                <i class="fas fa-user"></i> Salesperson: <?= htmlspecialchars($salesperson_name_for_sale) ?>
+            </span>
         </div>
 
         <div class="card-grid">

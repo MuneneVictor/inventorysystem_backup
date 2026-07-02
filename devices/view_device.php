@@ -753,15 +753,10 @@ if (($role == 'technician' || $role == 'maintenance') && isset($_POST['update_ac
             <i class="fas fa-arrow-left"></i> Back to Device List
         </a>
     <?php endif; ?>
-        <?php if($role == 'super_admin' || $role == 'inventory_admin' || $role == 'manager'): ?>
+        <?php if($role == 'super_admin' || $role == 'inventory_admin'): ?>
             <a href="edit_device.php?sn=<?= urlencode($device['serial_number']) ?>" class="btn btn-primary">
                 <i class="fas fa-edit"></i> Edit Device
             </a>
-        <?php endif; ?>
-        <?php if($role == 'super_admin'): ?>
-            <button type="button" class="btn btn-secondary" onclick="window.print()">
-                <i class="fas fa-print"></i> Print Details
-            </button>
         <?php endif; ?>
     </div>
 

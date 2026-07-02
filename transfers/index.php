@@ -3,10 +3,10 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
-// Only super_admin, inventory_admin, manager can access
-if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin', 'manager'])) {
+
+// Only super_admin, inventory_admin, manager, and cashier can access
+if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin', 'manager', 'cashier'])) {
     die("ACCESS DENIED.");
 }
 
@@ -28,6 +28,7 @@ $hour = date('G');
 if ($hour < 12) $greeting = 'Good morning';
 elseif ($hour < 17) $greeting = 'Good afternoon';
 else $greeting = 'Good evening';
+require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>

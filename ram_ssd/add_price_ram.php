@@ -7,21 +7,21 @@ if (!in_array($_SESSION['role'], ['super_admin', 'manager', 'inventory_admin']))
     die("Access denied.");
 }
 
-$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($id <= 0) {
-    die("Invalid or missing RAM/SSD ID. <a href='rams_instock.php'>Go back</a>");
+$id = (int)($_GET['id'] ?? 0);
+if (!$id) {
+    die("RAM/SSD ID not provided.");
 }
 
 $stmt = $conn->prepare("SELECT id, category, type, storage, quantity, branch, price FROM rams_ssds WHERE id = :id");
 $stmt->execute(['id' => $id]);
-$item = $stmt->fetch(PDO::FETCH_ASSOC);
+$ramitem = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$item) {
-    die("Item not found. <a href='rams_instock.php'>Go back</a>");
+if (!$ramitem) {
+    die("RAM/SSD item not found.");
 }
 
-if ($item['price'] !== null) {
-    die("This item already has a price. <a href='update_price_ram.php?id=$id'>Update Price</a> instead.");
+if ($ramitem['price'] !== null) {
+    die("This item already has a price. Use Update Price instead.");
 }
 
 $error = "";
@@ -39,26 +39,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (:uid, 'Added RAM/SSD price', :details)");
         $log->execute([
             'uid' => $_SESSION['user_id'],
-            'details' => "Added price for RAM/SSD ID: $id ({$item['category']} {$item['type']} {$item['storage']}GB) to KES $price"
+            'details' => "Added price for RAM/SSD ID: $id ({$ramitem['category']} {$ramitem['type']} {$ramitem['storage']}GB) to KES $price"
         ]);
 
-        header("Location: rams_instock.php?success=price_added");
+        $success = "Price added successfully!";
+        header("Location: rams_instocks.php");
         exit();
     }
 }
-
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Add RAM/SSD Price | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Copy the exact same CSS from smartboard add_price.php */
+        /* Same CSS as add_price_hdd.php */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -81,6 +80,7 @@ require_once "../includes/sidebar.php";
             --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: var(--font-sans); background: var(--gray-100); color: var(--gray-800); line-height: 1.5; overflow-x: hidden; }
 
@@ -94,6 +94,7 @@ require_once "../includes/sidebar.php";
             overflow-x: hidden;
             max-width: 100%;
         }
+
         .page-header {
             background: white;
             padding: 1.5rem 2rem;
@@ -102,6 +103,7 @@ require_once "../includes/sidebar.php";
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--gray-200);
         }
+
         .page-header h1 {
             font-size: 1.75rem;
             color: var(--gray-800);
@@ -111,13 +113,16 @@ require_once "../includes/sidebar.php";
             align-items: center;
             gap: 0.75rem;
         }
+
         .page-header h1 i { color: var(--primary); font-size: 1.75rem; }
+
         .breadcrumb {
             color: var(--gray-500);
             font-size: 0.9rem;
         }
         .breadcrumb a { color: var(--primary); text-decoration: none; }
         .breadcrumb a:hover { text-decoration: underline; }
+
         .form-container { max-width: 700px; margin: 0 auto; }
         .card {
             background: white;
@@ -141,6 +146,7 @@ require_once "../includes/sidebar.php";
         }
         .card-header h2 i { color: var(--primary); }
         .card-body { padding: 1.5rem; }
+
         .specs-box {
             background: var(--gray-50);
             border-radius: var(--radius-lg);
@@ -148,7 +154,10 @@ require_once "../includes/sidebar.php";
             margin-bottom: 1.5rem;
             border-left: 4px solid var(--primary);
         }
-        .specs-box p { margin: 0.5rem 0; font-size: 0.9rem; }
+        .specs-box p {
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
         .specs-box p:first-child { margin-top: 0; }
         .specs-box p:last-child { margin-bottom: 0; }
         .specs-box strong {
@@ -156,6 +165,7 @@ require_once "../includes/sidebar.php";
             width: 100px;
             display: inline-block;
         }
+
         .alert-error {
             background: #fef2f2;
             border: 1px solid #fecaca;
@@ -167,8 +177,17 @@ require_once "../includes/sidebar.php";
             align-items: center;
             gap: 0.5rem;
         }
-        .form-group { margin-bottom: 1.5rem; }
-        .form-group label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--gray-700); margin-bottom: 0.5rem; }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+        }
         .form-group input {
             width: 100%;
             padding: 0.75rem 1rem;
@@ -184,6 +203,7 @@ require_once "../includes/sidebar.php";
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(26,75,42,0.1);
         }
+
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
@@ -205,6 +225,7 @@ require_once "../includes/sidebar.php";
             justify-content: center;
         }
         .btn-primary:hover { background: var(--primary-light); }
+
         .footer {
             text-align: center;
             padding: 1.5rem 0 0.5rem;
@@ -213,6 +234,7 @@ require_once "../includes/sidebar.php";
             color: var(--gray-400);
             border-top: 1px solid var(--gray-200);
         }
+
         @media (max-width: 1200px) {
             .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
         }
@@ -232,7 +254,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
-
+<?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-plus-circle"></i> Add RAM/SSD Price</h1>
@@ -245,7 +267,7 @@ require_once "../includes/sidebar.php";
                 <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
-            <a href="rams_instock.php">In‑Stock RAM/SSD</a>
+            <a href="rams_instocks.php">In‑Stock RAM/SSD</a>
             <span> / </span>
             <span>Add Price</span>
         </div>
@@ -265,12 +287,12 @@ require_once "../includes/sidebar.php";
                 <?php endif; ?>
 
                 <div class="specs-box">
-                    <p><strong>ID:</strong> <?= (int)($item['id'] ?? 0) ?></p>
-                    <p><strong>Category:</strong> <?= htmlspecialchars($item['category'] ?? '') ?></p>
-                    <p><strong>Type:</strong> <?= htmlspecialchars($item['type'] ?? '') ?></p>
-                    <p><strong>Storage:</strong> <?= (int)($item['storage'] ?? 0) ?> GB</p>
-                    <p><strong>Quantity:</strong> <?= (int)($item['quantity'] ?? 0) ?></p>
-                    <p><strong>Branch:</strong> <?= htmlspecialchars($item['branch'] ?? '') ?></p>
+                    <p><strong>ID:</strong> <?= (int)$ramitem['id'] ?></p>
+                    <p><strong>Category:</strong> <?= htmlspecialchars($ramitem['category']) ?></p>
+                    <p><strong>Type:</strong> <?= htmlspecialchars($ramitem['type']) ?></p>
+                    <p><strong>Storage:</strong> <?= (int)$ramitem['storage'] ?> GB</p>
+                    <p><strong>Quantity:</strong> <?= (int)$ramitem['quantity'] ?></p>
+                    <p><strong>Branch:</strong> <?= htmlspecialchars($ramitem['branch']) ?></p>
                 </div>
 
                 <form method="POST">
@@ -314,6 +336,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php require_once "../includes/footer.php"; ?>
 </body>
 </html>

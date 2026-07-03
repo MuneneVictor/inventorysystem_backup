@@ -151,7 +151,6 @@ $hour = date('G');
 if ($hour < 12) $greeting = 'Good morning';
 elseif ($hour < 17) $greeting = 'Good afternoon';
 else $greeting = 'Good evening';
-require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>
@@ -200,6 +199,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
+    <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-exchange-alt"></i> Transfer Device</h1>

@@ -2,8 +2,6 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
 $role = $_SESSION['role'];
 $user_id = $_SESSION['user_id'];
@@ -338,7 +336,7 @@ $total_revenue = array_sum(array_column($smartboards, 'selling_price'));
     </style>
 </head>
 <body>
-
+    <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-chalkboard"></i> Sold Smartboards</h1>

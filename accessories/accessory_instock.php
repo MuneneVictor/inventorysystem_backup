@@ -495,12 +495,21 @@ $places = array_unique(array_column($accessories, 'place'));
                                 <td><?= htmlspecialchars($a['added_by_name'] ?? 'N/A') ?></td>
                                 <td><?= htmlspecialchars($a['updated_by_name'] ?? '-') ?></td>   <!-- NEW CELL -->
                                 <td>
-                                    <div class="action-links">
-                                        <a href="view_accessory.php?id=<?= urlencode($a['id']) ?>" class="action-link">
-                                            <i class="fas fa-eye"></i> View
-                                        </a>
-                                        
-                                    </div>
+                                    <?php if (in_array($role, ['super_admin', 'manager'])): ?>
+                                                
+                                        <div class="action-links">
+                                            <?php if ($a['price'] === null): ?>
+                                                <a href="add_price_accessory.php?id=<?= urlencode($a['id']) ?>" class="action-link">
+                                                    <i class="fas fa-tag"></i> Add Price
+                                                </a>
+                                            <?php else: ?>
+                                                <a href="update_price_accessory.php?id=<?= urlencode($a['id']) ?>" class="action-link">
+                                                    <i class="fas fa-edit"></i> Update Price
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                    
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

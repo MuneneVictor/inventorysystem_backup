@@ -1,18 +1,42 @@
 <?php
-require_once "header.php";
+require_once "../includes/header.php";
 if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'httponly' => true,
+        'secure' => isset($_SERVER['HTTPS']),
+        'samesite' => 'Strict'
+    ]);
     session_start();
 }
 
+
+$timeout_duration = 10800; // 15 minutes
+$current_url = $_SERVER['REQUEST_URI'];
+
+
 if (!isset($_SESSION['user_id'])) {
-    header("Location: /inventory_system/auth/login.php");
+    $_SESSION['redirect_after_login'] = $current_url;
+    header("Location: ../auth/login.php"); 
     exit();
 }
 
-// Role-based protection (simple but effective)
-function allow($roles = []) {
-    if (!in_array($_SESSION['role'], $roles)) {
-        die("<h3 style='color:red;text-align:center;margin-top:50px;'>ACCESS DENIED</h3>");
-    }
+// ----------------------
+// SESSION TIMEOUT CHECK
+// ----------------------
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout_duration)) {
+    session_unset();
+    session_destroy();
+    session_start();
+    $_SESSION['redirect_after_login'] = $current_url;
+    $_SESSION['show_expired_popup'] = true;
+    header("Location: /auth/login");  
+    exit();
 }
+
+
+$_SESSION['last_activity'] = time();
+
+
+$user_id = $_SESSION['user_id'];
+$role = $_SESSION['role'];
 ?>

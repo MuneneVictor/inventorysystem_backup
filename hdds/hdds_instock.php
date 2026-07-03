@@ -474,13 +474,22 @@ $branches = array_unique(array_column($hdds, 'branch'));
                                 <td><?= htmlspecialchars($h['updated_by_name'] ?? 'Not updated yet') ?></td>
                                 <td><small><?= date('M j, Y g:i A', strtotime($h['date_added'])) ?></small></td>
                                 <td>
-                                    <div class="action-links">
-                                        <?php if (in_array($role, ['super_admin', 'inventory_admin', 'manager'])): ?>
-                                            <a href="edit_hdd.php?id=<?= urlencode($h['id']) ?>" class="action-link">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
+                                    
+                                    <?php if (in_array($role, ['super_admin', 'manager'])): ?>
+                                                
+                                        <div class="action-links">
+                                            <?php if ($h['price'] === null): ?>
+                                                <a href="add_price_hdd.php?id=<?= urlencode($h['id']) ?>" class="action-link">
+                                                    <i class="fas fa-tag"></i> Add Price
+                                                </a>
+                                            <?php else: ?>
+                                                <a href="update_price_hdd.php?id=<?= urlencode($h['id']) ?>" class="action-link">
+                                                    <i class="fas fa-edit"></i> Update Price
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                    
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

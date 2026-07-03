@@ -38,24 +38,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_charger'])) {
             $return_error = "Please take or upload a photo as proof of return.";
         } else {
             $file = $_FILES['return_proof'];
-            $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!in_array($file['type'], $allowed_types)) {
-                $return_error = "Invalid file type. Please upload an image (JPEG, PNG, GIF, WEBP).";
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'heic'];
+
+            if (!in_array($ext, $allowed_exts)) {
+                $return_error = "Invalid file type. Please upload an image (JPEG, PNG, GIF, WEBP, HEIF/HEIC).";
             } elseif ($file['size'] > 5 * 1024 * 1024) { // 5MB max
                 $return_error = "File size exceeds 5MB limit.";
             } else {
-                // Create uploads directory if not exists
-                $upload_dir = __DIR__ . '/../uploads/charger_returns/';
-                if (!is_dir($upload_dir)) {
-                    mkdir($upload_dir, 0777, true);
+                // For standard image types, verify MIME type (skip for HEIC/HEIF)
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mime_type = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+                $allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+                // If it's HEIC/HEIF, we skip MIME check (some servers don't recognise them)
+                if (!in_array($ext, ['heif', 'heic'])) {
+                    if (!in_array($mime_type, $allowed_mimes)) {
+                        $return_error = "Invalid image MIME type. Please upload a valid image.";
+                    }
                 }
-                $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-                $filename = 'charger_return_' . $log_id . '_' . time() . '.' . $extension;
-                $destination = $upload_dir . $filename;
-                if (move_uploaded_file($file['tmp_name'], $destination)) {
-                    $uploaded_file = '../uploads/charger_returns/' . $filename;
-                } else {
-                    $return_error = "Failed to upload file. Please try again.";
+                // For HEIC/HEIF, we trust the extension
+
+                if (!$return_error) {
+                    // Create uploads directory if not exists (with full permissions)
+                    $upload_dir = __DIR__ . '/../uploads/charger_returns/';
+                    if (!is_dir($upload_dir)) {
+                        if (!mkdir($upload_dir, 0777, true)) {
+                            $return_error = "Failed to create upload directory. Please check permissions.";
+                        }
+                    }
+                    // Also ensure the directory is writable
+                    if (!$return_error && !is_writable($upload_dir)) {
+                        $return_error = "Upload directory is not writable. Please set permissions to 0777.";
+                    }
+
+                    if (!$return_error) {
+                        $filename = 'charger_return_' . $log_id . '_' . time() . '.' . $ext;
+                        $destination = $upload_dir . $filename;
+                        // Try to move the uploaded file
+                        if (move_uploaded_file($file['tmp_name'], $destination)) {
+                            // Set file permissions (optional)
+                            chmod($destination, 0644);
+                            $uploaded_file = '../uploads/charger_returns/' . $filename;
+                        } else {
+                            // Capture detailed error
+                            $error = error_get_last();
+                            $return_error = "Failed to upload file: " . ($error ? $error['message'] : 'Unknown error. Please try again.');
+                        }
+                    }
                 }
             }
         }
@@ -130,6 +161,9 @@ if (isset($_GET['success'])) {
     $return_success = "Charger returned successfully!";
 }
 
+// Now include header and sidebar (after all processing)
+require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 
 // Get filter inputs
 $filter_branch = trim($_GET['branch'] ?? '');
@@ -725,8 +759,8 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
             </div>
             <div class="form-group">
                 <label for="returnProof">Proof of Return (Photo) <span style="color:#dc2626;">*</span></label>
-                <input type="file" name="return_proof" id="returnProof" accept="image/*" required>
-                <div class="file-hint"><i class="fas fa-camera"></i> Take a photo (mobile) or upload an image (JPEG, PNG, GIF, WEBP, max 5MB).</div>
+                <input type="file" name="return_proof" id="returnProof" accept="image/*,.heif,.heic" required>
+                <div class="file-hint"><i class="fas fa-camera"></i> Take a photo (mobile) or upload an image (JPEG, PNG, GIF, WEBP, HEIF/HEIC, max 5MB).</div>
                 <div class="preview-container">
                     <img id="imagePreview" src="#" alt="Preview">
                 </div>

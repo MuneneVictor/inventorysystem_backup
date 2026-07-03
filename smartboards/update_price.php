@@ -3,54 +3,124 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
-if (!in_array($_SESSION['role'], ['super_admin', 'manager', 'inventory_admin'])) {
+if (!in_array($_SESSION['role'], ['super_admin', 'manager'])) {
     die("Access denied.");
 }
 
-$serial_number = trim($_GET['sn'] ?? '');
-if (!$serial_number) {
-    die("Serial number not provided.");
+// Get group parameters from GET
+$model = trim($_GET['model'] ?? '');
+$size = (int) ($_GET['size'] ?? 0);
+$current_price = isset($_GET['price']) ? (float) $_GET['price'] : null;
+
+if (empty($model) || $size <= 0 || $current_price === null) {
+    die("Invalid group parameters.");
 }
 
-$stmt = $conn->prepare("SELECT serial_number, model, size_inches, branch, price FROM smartboards WHERE serial_number = :sn");
-$stmt->execute(['sn' => $serial_number]);
-$smartboard = $stmt->fetch(PDO::FETCH_ASSOC);
+// Count smartboards in this group that have this price
+$countStmt = $conn->prepare("
+    SELECT COUNT(*) 
+    FROM smartboards 
+    WHERE model = :model 
+      AND size_inches = :size
+      AND price = :price
+      AND status = 'instock'
+");
+$countStmt->execute([
+    'model' => $model,
+    'size' => $size,
+    'price' => $current_price
+]);
+$total_count = $countStmt->fetchColumn();
 
-if (!$smartboard) {
-    die("Smartboard not found.");
-}
+// Fetch one sample smartboard to display specs
+$sampleStmt = $conn->prepare("
+    SELECT * FROM smartboards 
+    WHERE model = :model 
+      AND size_inches = :size
+      AND price = :price
+      AND status = 'instock'
+    LIMIT 1
+");
+$sampleStmt->execute([
+    'model' => $model,
+    'size' => $size,
+    'price' => $current_price
+]);
+$sample = $sampleStmt->fetch(PDO::FETCH_ASSOC);
 
-if ($smartboard['price'] === null) {
-    die("This smartboard does not have a price. Use Add Price instead.");
+if (!$sample) {
+    die("No smartboards found matching this group with the current price.");
 }
 
 $error = "";
-$success = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $price = trim($_POST['price']);
+    $new_price = trim($_POST['price']);
+    $apply_to_all = isset($_POST['apply_to_all']) ? 1 : 0;
 
-    if (!is_numeric($price) || $price <= 0) {
-        $error = "Please enter a valid price (greater than 0).";
+    if (!is_numeric($new_price) || $new_price <= 0) {
+        $error = "Enter a valid price";
     } else {
-        $update = $conn->prepare("UPDATE smartboards SET price = :price WHERE serial_number = :sn");
-        $update->execute(['price' => $price, 'sn' => $serial_number]);
+        if ($apply_to_all) {
+            // Update all smartboards in this group that have the current price
+            $update = $conn->prepare("
+                UPDATE smartboards
+                SET price = :new_price
+                WHERE model = :model
+                  AND size_inches = :size
+                  AND price = :old_price
+                  AND status = 'instock'
+            ");
+            $update->execute([
+                'new_price' => $new_price,
+                'model' => $model,
+                'size' => $size,
+                'old_price' => $current_price
+            ]);
+            $affected = $update->rowCount();
+        } else {
+            // Update only the first smartboard in this group
+            $firstStmt = $conn->prepare("
+                SELECT serial_number 
+                FROM smartboards
+                WHERE model = :model
+                  AND size_inches = :size
+                  AND price = :price
+                  AND status = 'instock'
+                LIMIT 1
+            ");
+            $firstStmt->execute([
+                'model' => $model,
+                'size' => $size,
+                'price' => $current_price
+            ]);
+            $serial = $firstStmt->fetchColumn();
 
-        $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (:uid, 'Updated smartboard price', :details)");
+            if ($serial) {
+                $update = $conn->prepare("
+                    UPDATE smartboards
+                    SET price = :new_price
+                    WHERE serial_number = :serial
+                ");
+                $update->execute(['new_price' => $new_price, 'serial' => $serial]);
+                $affected = 1;
+            } else {
+                $affected = 0;
+            }
+        }
+
+        // Log activity
+        $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (:uid, 'Updated smartboard group price', :details)");
         $log->execute([
             'uid' => $_SESSION['user_id'],
-            'details' => "Updated price for smartboard SN: $serial_number to KES $price"
+            'details' => "Updated price from KES $current_price to KES $new_price for smartboard group: $model ($size inch) – $affected smartboards updated"
         ]);
 
-        $success = "Price updated successfully!";
-        $smartboard['price'] = $price;
         header("Location: pricelist.php");
         exit();
     }
 }
 
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>
@@ -58,10 +128,10 @@ require_once "../includes/sidebar.php";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Update Price | Mombasa Computers</title>
+    <title>Update Smartboard Group Price | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* ===== EXACT SAME CSS AS DEVICE UPDATE_PRICE.PHP ===== */
+        /* ===== SAME CSS AS update_price_printer_group.php ===== */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -83,23 +153,12 @@ require_once "../includes/sidebar.php";
             --radius-xl: 1rem;
             --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-         @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
 
-        body {
-            font-family: var(--font-sans);
-            background: var(--gray-100);
-            color: var(--gray-800);
-            line-height: 1.5;
-            overflow-x: hidden;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font-sans); background: var(--gray-100); color: var(--gray-800); line-height: 1.5; overflow-x: hidden; }
 
-        /* Main Content Area */
         .main-content {
             padding: 2rem 2rem 1rem;
             margin-left: 260px;
@@ -111,7 +170,6 @@ require_once "../includes/sidebar.php";
             max-width: 100%;
         }
 
-        /* Page Header */
         .page-header {
             background: white;
             padding: 1.5rem 2rem;
@@ -131,31 +189,15 @@ require_once "../includes/sidebar.php";
             gap: 0.75rem;
         }
 
-        .page-header h1 i {
-            color: var(--primary);
-            font-size: 1.75rem;
-        }
+        .page-header h1 i { color: var(--primary); font-size: 1.75rem; }
 
         .breadcrumb {
             color: var(--gray-500);
             font-size: 0.9rem;
         }
+        .breadcrumb a { color: var(--primary); text-decoration: none; }
 
-        .breadcrumb a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
-
-        /* Form Container */
-        .form-container {
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
+        .form-container { max-width: 700px; margin: 0 auto; }
         .card {
             background: white;
             border-radius: var(--radius-xl);
@@ -163,13 +205,11 @@ require_once "../includes/sidebar.php";
             overflow: hidden;
             box-shadow: var(--shadow-sm);
         }
-
         .card-header {
             background: var(--gray-50);
             padding: 1.25rem 1.5rem;
             border-bottom: 1px solid var(--gray-200);
         }
-
         .card-header h2 {
             font-size: 1.25rem;
             font-weight: 600;
@@ -178,16 +218,9 @@ require_once "../includes/sidebar.php";
             align-items: center;
             gap: 0.5rem;
         }
+        .card-header h2 i { color: var(--primary); }
+        .card-body { padding: 1.5rem; }
 
-        .card-header h2 i {
-            color: var(--primary);
-        }
-
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        /* Specs Box */
         .specs-box {
             background: var(--gray-50);
             border-radius: var(--radius-lg);
@@ -195,27 +228,18 @@ require_once "../includes/sidebar.php";
             margin-bottom: 1.5rem;
             border-left: 4px solid var(--primary);
         }
-
         .specs-box p {
             margin: 0.5rem 0;
             font-size: 0.9rem;
         }
-
-        .specs-box p:first-child {
-            margin-top: 0;
-        }
-
-        .specs-box p:last-child {
-            margin-bottom: 0;
-        }
-
+        .specs-box p:first-child { margin-top: 0; }
+        .specs-box p:last-child { margin-bottom: 0; }
         .specs-box strong {
             color: var(--primary);
-            width: 100px;
+            width: 120px;
             display: inline-block;
         }
 
-        /* Info Note */
         .info-note {
             background: #eff6ff;
             border-left: 4px solid #3b82f6;
@@ -225,16 +249,9 @@ require_once "../includes/sidebar.php";
             font-size: 0.9rem;
             color: #1e40af;
         }
+        .info-note i { margin-right: 0.5rem; }
+        .info-note strong { color: #1e40af; }
 
-        .info-note i {
-            margin-right: 0.5rem;
-        }
-
-        .info-note strong {
-            color: #1e40af;
-        }
-
-        /* Checkbox Group */
         .checkbox-group {
             margin-bottom: 1.5rem;
             padding: 0.75rem;
@@ -244,14 +261,12 @@ require_once "../includes/sidebar.php";
             align-items: center;
             gap: 0.75rem;
         }
-
         .checkbox-group input[type="checkbox"] {
             width: 18px;
             height: 18px;
             cursor: pointer;
             accent-color: var(--primary);
         }
-
         .checkbox-group label {
             font-size: 0.9rem;
             color: var(--gray-700);
@@ -259,11 +274,9 @@ require_once "../includes/sidebar.php";
             margin: 0;
         }
 
-        /* Form Group */
         .form-group {
             margin-bottom: 1.5rem;
         }
-
         .form-group label {
             display: block;
             font-size: 0.875rem;
@@ -271,7 +284,6 @@ require_once "../includes/sidebar.php";
             color: var(--gray-700);
             margin-bottom: 0.5rem;
         }
-
         .form-group input {
             width: 100%;
             padding: 0.75rem 1rem;
@@ -282,14 +294,12 @@ require_once "../includes/sidebar.php";
             font-family: var(--font-sans);
             background: white;
         }
-
         .form-group input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(26, 75, 42, 0.1);
+            box-shadow: 0 0 0 3px rgba(26,75,42,0.1);
         }
 
-        /* Buttons */
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
@@ -304,35 +314,14 @@ require_once "../includes/sidebar.php";
             gap: 0.5rem;
             font-family: var(--font-sans);
         }
-
         .btn-primary {
             background: var(--primary);
             color: white;
             width: 100%;
             justify-content: center;
         }
+        .btn-primary:hover { background: var(--primary-light); }
 
-        .btn-primary:hover {
-            background: var(--primary-light);
-        }
-
-        .btn-secondary {
-            background: var(--gray-100);
-            color: var(--gray-700);
-            border: 1px solid var(--gray-300);
-        }
-
-        .btn-secondary:hover {
-            background: var(--gray-200);
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        /* Error Message */
         .alert-error {
             background: #fef2f2;
             border: 1px solid #fecaca;
@@ -344,12 +333,8 @@ require_once "../includes/sidebar.php";
             align-items: center;
             gap: 0.5rem;
         }
+        .alert-error i { font-size: 1.1rem; }
 
-        .alert-error i {
-            font-size: 1.1rem;
-        }
-
-        /* Footer */
         .footer {
             text-align: center;
             padding: 1.5rem 0 0.5rem;
@@ -359,85 +344,35 @@ require_once "../includes/sidebar.php";
             border-top: 1px solid var(--gray-200);
         }
 
-        /* Responsive */
         @media (max-width: 1200px) {
-            .main-content {
-                margin-left: 0 !important;
-                width: 100% !important;
-                padding: 1.5rem 1rem 1rem !important;
-                padding-top: 5rem !important;
-            }
+            .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
         }
-
         @media (max-width: 768px) {
-            .main-content {
-                padding: 1rem 0.75rem 0.75rem !important;
-                padding-top: 4.5rem !important;
-            }
-
-            .page-header h1 {
-                font-size: 1.25rem;
-            }
-
-            .page-header {
-                padding: 1rem 1.25rem;
-            }
-
-            .card-header {
-                padding: 1rem 1.25rem;
-            }
-
-            .card-body {
-                padding: 1.25rem;
-            }
-
-            .specs-box strong {
-                width: auto;
-                display: block;
-                margin-bottom: 0.25rem;
-            }
-
-            .action-buttons {
-                flex-direction: column;
-            }
-
-            .btn-secondary {
-                width: 100%;
-                justify-content: center;
-            }
+            .main-content { padding: 1rem 0.75rem 0.75rem !important; padding-top: 4.5rem !important; }
+            .page-header h1 { font-size: 1.25rem; }
+            .card-header { padding: 1rem 1.25rem; }
+            .card-body { padding: 1.25rem; }
+            .specs-box strong { width: auto; display: block; margin-bottom: 0.25rem; }
         }
-
         @media (max-width: 480px) {
-            .main-content {
-                padding: 0.75rem 0.5rem 0.5rem !important;
-                padding-top: 4rem !important;
-            }
-
-            .page-header h1 {
-                font-size: 1.1rem;
-            }
-
-            .card-body {
-                padding: 1rem;
-            }
-        }/* (copy the full CSS from device update_price.php) */
+            .main-content { padding: 0.75rem 0.5rem 0.5rem !important; padding-top: 4rem !important; }
+            .page-header h1 { font-size: 1.1rem; }
+        }
     </style>
 </head>
 <body>
-
+    <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
-        <h1><i class="fas fa-edit"></i> Update Price</h1>
+        <h1><i class="fas fa-edit"></i> Update Smartboard Group Price</h1>
         <div class="breadcrumb">
             <?php if ($_SESSION['role'] === 'super_admin'): ?>
                 <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'manager'): ?>
                 <a href="/inventory_system/dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
-            <?php elseif ($_SESSION['role'] === 'inventory_admin'): ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
-            <a href="pricelist.php">Price List</a>
+            <a href="pricelist.php">Smartboard Price List</a>
             <span> / </span>
             <span>Update Price</span>
         </div>
@@ -446,7 +381,7 @@ require_once "../includes/sidebar.php";
     <div class="form-container">
         <div class="card">
             <div class="card-header">
-                <h2><i class="fas fa-dollar-sign"></i> Update Smartboard Price</h2>
+                <h2><i class="fas fa-dollar-sign"></i> Update Smartboard Group Price</h2>
             </div>
             <div class="card-body">
                 <?php if ($error): ?>
@@ -455,27 +390,34 @@ require_once "../includes/sidebar.php";
                         <span><?= htmlspecialchars($error) ?></span>
                     </div>
                 <?php endif; ?>
-                <?php if ($success): ?>
-                    <div class="alert-success">
-                        <i class="fas fa-check-circle"></i>
-                        <span><?= htmlspecialchars($success) ?></span>
-                    </div>
-                <?php endif; ?>
-
-                <div class="specs-box">
-                    <p><strong>Serial Number:</strong> <?= htmlspecialchars($smartboard['serial_number']) ?></p>
-                    <p><strong>Model:</strong> <?= htmlspecialchars($smartboard['model']) ?></p>
-                    <p><strong>Size:</strong> <?= (int)$smartboard['size_inches'] ?> inches</p>
-                    <p><strong>Branch:</strong> <?= !empty($smartboard['branch']) ? htmlspecialchars($smartboard['branch']) : '-' ?></p>
-                    <p><strong>Current Price:</strong> KES <?= number_format($smartboard['price'], 2) ?></p>
-                </div>
 
                 <form method="POST">
+                    <div class="specs-box">
+                        <p><strong>Model:</strong> <?= htmlspecialchars($sample['model']) ?></p>
+                        <p><strong>Size:</strong> <?= (int)$sample['size_inches'] ?> inch</p>
+                        <p><strong>Current Price:</strong> KES <?= number_format($current_price, 2) ?></p>
+                    </div>
+
+                    <?php if ($total_count > 1): ?>
+                        <div class="info-note">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note:</strong> There are <strong><?= $total_count ?></strong> smartboards in this group that have this price.
+                            You can update the price for all of them or just one.
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="apply_to_all" name="apply_to_all" value="1" checked>
+                            <label for="apply_to_all">Apply this price to ALL <?= $total_count ?> smartboards with same specifications</label>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="form-group">
                         <label>New Price (KES)</label>
-                        <input type="number" name="price" step="0.01" min="0.01" required value="<?= htmlspecialchars($smartboard['price']) ?>" placeholder="Enter new price">
+                        <input type="number" name="price" step="0.01" min="0.01" required value="<?= htmlspecialchars($current_price) ?>" placeholder="Enter new price">
                     </div>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Price</button>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Price
+                    </button>
                 </form>
             </div>
         </div>
@@ -487,7 +429,6 @@ require_once "../includes/sidebar.php";
 </div>
 
 <script>
-// Mobile responsive adjustments (same as device version)
 document.addEventListener('DOMContentLoaded', function() {
     function adjustMainContent() {
         const mainContent = document.querySelector('.main-content');

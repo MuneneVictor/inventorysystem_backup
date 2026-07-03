@@ -341,6 +341,9 @@ body {
                         ['Sold', '/inventory_system/monitors/sold_monitors.php', 'fas fa-money-bill-wave'],
                     ]
                 ];
+                if ($role === 'super_admin' || $role === 'manager') {
+                    $sections['MONITORS']['items'][] = ['Price list', '/inventory_system/monitors/price_list_monitors.php', 'fas fa-dollar-sign'];
+                }
             }
 
             // Printers
@@ -354,7 +357,46 @@ body {
                         ['Sold', '/inventory_system/printers/soldprinters.php', 'fas fa-money-bill-wave'],
                     ]
                 ];
+                if ($role === 'super_admin' || $role === 'manager') {
+                    $sections['PRINTERS']['items'][] = ['Price list', '/inventory_system/printers/price_list_printers.php', 'fas fa-dollar-sign'];
+                }
             }
+
+            // UPS
+            if (in_array($role, ['super_admin','manager','inventory_admin'])) {
+                $sections['UPS'] = [
+                    'icon' => 'fas fa-battery-full',
+                    'items' => [
+                        ['Add UPS', '/inventory_system/ups/add_ups.php', 'fas fa-plus'],
+                        ['Bulk upload', '/inventory_system/ups/bulk_upload.php', 'fas fa-file-upload'],
+                        ['View Stock', '/inventory_system/ups/ups_instock.php', 'fas fa-box'],
+                        ['Sold UPS', '/inventory_system/ups/sold_ups.php', 'fas fa-money-bill-wave'],
+                    ]
+                ];
+                if ($role === 'super_admin') {
+                    $sections['UPS']['items'][] = ['Price list', '/inventory_system/ups/price_list_ups.php', 'fas fa-dollar-sign'];
+                }
+            }
+
+          // PHONES
+                if (in_array($role, ['super_admin', 'manager', 'inventory_admin'])) {
+                    $phoneItems = [
+                        ['Add Phone', '/inventory_system/phones/add_phone.php', 'fas fa-plus'],
+                        ['Bulk upload', '/inventory_system/phones/bulk_upload.php', 'fas fa-file-upload'],
+                        ['View stock', '/inventory_system/phones/phones_instock.php', 'fas fa-box'],
+                        ['Sold Phones', '/inventory_system/phones/sold_phones.php', 'fas fa-money-bill-wave'],
+                    ];
+                    // Only super_admin gets the Price list
+                    if ($role === 'super_admin') {
+                        $phoneItems[] = ['Price list', '/inventory_system/phones/price_list_phones.php', 'fas fa-dollar-sign'];
+                    }
+                    $sections['PHONES'] = [
+                        'icon' => 'fas fa-mobile-alt',
+                        'items' => $phoneItems
+                    ];
+                }
+
+            // Accessories
             if (in_array($role, ['super_admin','manager','inventory_admin'])){
                 $accessoryItems = [
                     ['Add Accessory', '/inventory_system/accessories/add_accessory.php', 'fas fa-plus'],
@@ -404,7 +446,7 @@ body {
                     $charger_items[] = ['Bulk Upload', '/inventory_system/chargers/bulkupload_charger.php', 'fas fa-file-upload'];
                     $charger_items[] = ['View Stock', '/inventory_system/chargers/chargers_instock.php', 'fas fa-box'];
                 }
-                if (in_array($role, ['inventory_admin','software'])) {
+                if (in_array($role, ['inventory_admin', 'super_admin'])) {
                     $charger_items[] = ['Give Out Charger', '/inventory_system/chargers/give_charger.php', 'fas fa-gift'];
                 }
                 $charger_items[] = ['Charger Logs', '/inventory_system/chargers/charger_logs.php', 'fas fa-clipboard-list'];
@@ -413,7 +455,20 @@ body {
                     $sections['CHARGERS'] = ['icon' => 'fas fa-bolt', 'items' => $charger_items];
                 }
             }
+            
 
+               if (in_array($role, ['super_admin','inventory_admin','manager'])) {
+                $sections['GRAPHICS CARD'] = [
+                    'icon' => 'fas fa-video',
+                    'items' => [
+                        ['Add Graphics Card', '/inventory_system/graphic_cards/add_graphic_card.php', 'fas fa-plus'],
+                        ['View Stock', '/inventory_system/graphic_cards/graphic_cards_instock.php', 'fas fa-box'],
+                        ['Give Out Graphics Card', '/inventory_system/graphic_cards/give_graphics_card.php', 'fas fa-gift'],
+                        ['Graphics Cards Logs', '/inventory_system/graphic_cards/graphics_card_logs.php', 'fas fa-clipboard-list'],
+                        ['Sold Graphics Cards', '/inventory_system/graphic_cards/sold_graphic_cards.php', 'fas fa-shopping-cart'],
+                    ]
+                ];
+            }
             // Software Dep
             if (in_array($role, ['super_admin','manager','inventory_admin','software'])) {
                 $sw_items = [];

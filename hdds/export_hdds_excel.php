@@ -75,11 +75,6 @@ $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 $sheet->setTitle('In-Stock HDDs');
 
-// Set column widths
-foreach (range('A', 'J') as $col) {
-    $sheet->getColumnDimension($col)->setWidth(15);
-}
-
 $row = 1;
 
 // ---- Title ----
@@ -145,7 +140,7 @@ $sheet->getStyle('F' . ($headerRow+1) . ':G' . ($dataRow-1))->getNumberFormat()-
 
 // ---- Alignment ----
 $sheet->getStyle('A' . ($headerRow+1) . ':A' . ($dataRow-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-$sheet->getStyle('C' . ($headerRow+1) . ':C' . ($dataRow-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+$sheet->getStyle('C' . ($headerRow+1) . ':D' . ($dataRow-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 $sheet->getStyle('F' . ($headerRow+1) . ':G' . ($dataRow-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
 // ---- Borders ----
@@ -170,6 +165,11 @@ $sheet->mergeCells('A' . $summaryRow . ':A' . $summaryRow);
 $sheet->mergeCells('B' . $summaryRow . ':B' . $summaryRow);
 $sheet->mergeCells('D' . $summaryRow . ':F' . $summaryRow);
 $sheet->mergeCells('H' . $summaryRow . ':J' . $summaryRow);
+
+// ---- Auto-size columns (A to J) ----
+foreach (range('A', 'J') as $col) {
+    $sheet->getColumnDimension($col)->setAutoSize(true);
+}
 
 // ---- Output file ----
 $filename = 'In-Stock_HDDs_' . date('Y-m-d') . '.xlsx';

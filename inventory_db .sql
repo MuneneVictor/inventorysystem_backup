@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 02, 2026 at 08:35 AM
+-- Generation Time: Jul 03, 2026 at 03:32 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.30
 
@@ -48,9 +48,9 @@ CREATE TABLE `accessories` (
 
 INSERT INTO `accessories` (`id`, `name`, `quantity`, `added_by`, `place`, `branch`, `price`, `date_added`, `status`, `updated_by`, `updated_at`) VALUES
 (1, 'DELL optical mouse', 21, 1, 'display', 'MOI', NULL, '2026-06-17 15:07:59', 'instock', 1, '2026-06-22 13:34:24'),
-(2, 'JBL essential 2 speaker', 4, 1, 'display', 'KIMATHI', 20000.00, '2026-06-22 08:38:12', 'instock', 7, '2026-07-02 11:16:37'),
+(2, 'JBL essential 2 speaker', 14, 1, 'display', 'KIMATHI', NULL, '2026-06-22 08:38:12', 'instock', 1, '2026-07-02 11:51:11'),
 (3, 'power cable', 5, 1, 'display', 'MOI', 500.00, '2026-03-17 09:51:07', 'instock', NULL, NULL),
-(4, 'power cable', 50, 1, 'store', 'MOI', 600.00, '2026-03-15 10:29:47', 'instock', NULL, NULL),
+(4, 'power cable', 32, 1, 'store', 'KIMATHI', 600.00, '2026-03-15 10:29:47', 'instock', 1, '2026-07-02 14:42:05'),
 (5, 'HP Keyboard', 5, 1, 'store', 'MOI', NULL, '2026-06-22 10:34:24', 'instock', 1, '2026-06-22 13:34:24'),
 (6, 'USB-C Adapter', 3, 1, 'warehouse', 'MOI', NULL, '2026-06-22 10:34:24', 'instock', 1, '2026-06-22 13:34:24'),
 (7, 'power cable', 6, 1, 'store', 'KIMATHI', 500.00, '2026-03-19 08:15:54', 'instock', 1, '2026-06-26 11:16:06'),
@@ -80,7 +80,8 @@ CREATE TABLE `accessories_logs` (
 --
 
 INSERT INTO `accessories_logs` (`id`, `accessory_id`, `accessory_name`, `quantity`, `given_to`, `given_by`, `branch`, `status`, `date_given`, `sale_item_id`) VALUES
-(1, 4, 'power cable', 2, 7, 8, 'KIMATHI', 'pending_sale', '2026-06-30 10:16:09', NULL);
+(1, 4, 'power cable', 2, 7, 8, 'KIMATHI', 'pending_sale', '2026-06-30 10:16:09', NULL),
+(2, 4, 'power cable', 18, 7, 1, 'KIMATHI', 'pending_sale', '2026-07-02 11:34:23', NULL);
 
 -- --------------------------------------------------------
 
@@ -483,7 +484,42 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `created_at`)
 (380, 4, 'Sold Accessory (Store)', 'Sold Accessory (power cable) - Quantity: 2 for KES 600.00 in sale #16', '2026-07-01 16:05:11'),
 (381, 1, 'Updated Charger', 'Added 3 more units to charger: HP Blue Pin 65W (new) in KIMATHI branch', '2026-07-02 06:11:29'),
 (382, 8, 'Added device', 'Added device SN: 5CG9IOK80B, Cargo: AC26.7', '2026-07-02 07:30:16'),
-(383, 7, 'Sold Accessory (Display)', 'Sold Accessory (JBL essential 2 speaker) - Quantity: 1 for KES 20,000.00 in sale #16', '2026-07-02 08:16:37');
+(383, 7, 'Sold Accessory (Display)', 'Sold Accessory (JBL essential 2 speaker) - Quantity: 1 for KES 20,000.00 in sale #16', '2026-07-02 08:16:37'),
+(384, 1, 'Updated accessory', 'Added 10 more units to accessory: jbl essential 2 speaker in KIMATHI branch (place: display)', '2026-07-02 08:51:11'),
+(385, 1, 'Give out Accessory', 'Gave 20 accessory unit(s) (power cable) to Peninah Kalundi in KIMATHI branch (Store)', '2026-07-02 11:34:23'),
+(386, 1, 'Returned Accessory (partial)', 'Returned 2 accessory unit(s) (power cable) from log ID 2. Remaining quantity: 18. <a href=\'../uploads/accessory_returns/accessory_return_2_1782992525.jpg\' target=\'_blank\'>View Photo</a>', '2026-07-02 11:42:05'),
+(387, 4, 'Sold Accessory (Store)', 'Sold Accessory (power cable) - Quantity: 18 for KES 600.00 in sale #20', '2026-07-02 11:47:02'),
+(388, 1, 'Give out RAM/SSD', 'Gave 2 SSD (SATA, 512GB) to Peninah Kalundi in KIMATHI branch', '2026-07-03 06:01:51'),
+(389, 8, 'Give out HDD', 'Gave 1 HDD(s) (SATA, 500GB) to Peninah Kalundi in KIMATHI branch', '2026-07-03 08:59:23'),
+(390, 8, 'Returned RAM/SSD (partial)', 'Returned 1 SSD(s) (SATA, 512GB) from log ID 11. Remaining quantity: 1. <a href=\'../uploads/ram_ssd_returns/ram_ssd_return_11_1783071118.png\' target=\'_blank\'>View Photo</a>', '2026-07-03 09:31:58'),
+(391, 8, 'Returned Graphic Card (full)', 'Returned 2 graphic card(s) (NVIDIA QUADRO P2000, 5GB) from log ID 1. Status set to returned. <a href=\'../uploads/graphic_returns/graphic_return_1_1783072123.jpg\' target=\'_blank\'>View Photo</a>', '2026-07-03 09:48:43'),
+(392, 8, 'Added Graphic Card', 'Added new graphic card: AMD RYZEN 2 PRO 2600 (2 GB) Qty: 20 to MOI branch', '2026-07-03 09:51:47'),
+(393, 1, 'Added charger price', 'Added price for charger ID: 10 (Type: HP Blue Pin 65W) to KES 3500', '2026-07-03 10:10:31'),
+(394, 1, 'Updated charger price', 'Updated price for charger ID: 9 (Type: HP Blue Pin 45W) to KES 2500.00', '2026-07-03 10:10:57'),
+(395, 1, 'Added Graphic Card', 'Added new graphic card: NVIDIA QUADRO P1000 (5 GB) Qty: 10 to KIMATHI branch', '2026-07-03 11:30:00'),
+(396, 1, 'Added graphic card price', 'Added price for graphic card ID: 3 (Type: NVIDIA QUADRO P1000) to KES 10000', '2026-07-03 11:30:31'),
+(397, 1, 'Added HDD price', 'Added price for HDD ID: 5 (Type: NVMe, Storage: 1TB) to KES 8000', '2026-07-03 11:43:23'),
+(398, 1, 'Added RAM/SSD price', 'Added price for RAM/SSD ID: 9 (RAM PC4 16GB) to KES 1000', '2026-07-03 12:16:50'),
+(399, 1, 'Added RAM/SSD price', 'Added price for RAM/SSD ID: 10 (RAM PC4 8GB) to KES 5000', '2026-07-03 12:17:00'),
+(400, 1, 'Give out RAM/SSD', 'Gave 1 SSD (SATA, 512GB) to Peninah Kalundi in KIMATHI branch', '2026-07-03 12:19:09'),
+(401, 1, 'Added UPS', 'Added UPS SN: UP68GH5 (Model: MECCER, Capacity: 1200VA, Branch: KIMATHI)', '2026-07-03 12:46:07'),
+(402, 1, 'Bulk upload UPS', 'Added UPS SN: APC-001 (Model: APC Back-UPS, Capacity: 1500VA) via Excel upload to branch: MOI', '2026-07-03 13:16:24'),
+(403, 1, 'Bulk upload UPS', 'Added UPS SN: UPS-003 (Model: DELTA UPS, Capacity: 3000VA) via Excel upload to branch: KIMATHI', '2026-07-03 13:16:24'),
+(404, 1, 'Bulk upload Phone', 'Added Phone SN: PH001 (Brand: Apple, Model: iPhone 15 Pro) via Excel upload to branch: KIMATHI', '2026-07-03 13:43:44'),
+(405, 1, 'Bulk upload Phone', 'Added Phone SN: PH002 (Brand: Samsung, Model: Galaxy S24) via Excel upload to branch: MOI', '2026-07-03 13:43:44');
+INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `created_at`) VALUES
+(406, 1, 'Bulk upload Phone', 'Added Phone SN: PH003 (Brand: Nokia, Model: G22) via Excel upload to branch: KIMATHI', '2026-07-03 13:43:44'),
+(407, 1, 'Bulk upload Phone', 'Added Phone SN: PH000876 (Brand: Apple, Model: iPhone 15 Pro) via Excel upload to branch: KIMATHI', '2026-07-03 13:44:39'),
+(408, 1, 'Bulk upload Phone', 'Added Phone SN: PH000877 (Brand: Samsung, Model: Galaxy S24) via Excel upload to branch: KIMATHI', '2026-07-03 13:44:39'),
+(409, 1, 'Bulk upload Phone', 'Added Phone SN: PH000878 (Brand: Nokia, Model: G22) via Excel upload to branch: KIMATHI', '2026-07-03 13:44:39'),
+(410, 1, 'Updated phone group price', 'Updated price from KES 120000 to KES 150000 for phone group: Apple iPhone 15 Pro (8 GB RAM, 256GB storage, New) – 2 phones updated', '2026-07-03 14:21:37'),
+(411, 1, 'Added phone group price', 'Added price KES 150000 for phone group: Apple iPhone 15 Pro (8 GB RAM, 256GB storage, New) – 1 phones updated', '2026-07-03 14:22:19'),
+(412, 1, 'Added UPS group price', 'Added price KES 15000 for UPS group: MECCER (1200 VA, New) – 1 units updated', '2026-07-03 14:31:59'),
+(413, 1, 'Updated UPS group price', 'Updated price from KES 12000 to KES 20000 for UPS group: APC Back-UPS (1500 VA, Ex-UK) – 1 units updated', '2026-07-03 14:32:30'),
+(414, 1, 'Added smartboard group price', 'Added price KES 150000 for smartboard group: Onescreen 5 (65 inch) – 1 smartboards updated', '2026-07-03 15:10:19'),
+(415, 1, 'Added smartboard group price', 'Added price KES 200000 for smartboard group: SMART 75-inch (75 inch) – 1 smartboards updated', '2026-07-03 15:14:55'),
+(416, 1, 'Added monitor group price', 'Added price KES 10000 for monitor group: HP FRAMALESS 24 inch (24 inch) – 1 monitors updated', '2026-07-03 15:29:37'),
+(417, 1, 'Updated monitor group price', 'Updated price from KES 10000 to KES 11000 for monitor group: HP FRAMALESS 24 inch (24 inch) – 1 monitors updated', '2026-07-03 15:31:26');
 
 -- --------------------------------------------------------
 
@@ -533,8 +569,8 @@ CREATE TABLE `chargers` (
 --
 
 INSERT INTO `chargers` (`id`, `charger_type`, `charger_condition`, `quantity`, `branch`, `updated_by`, `date_updated`, `added_by`, `date_added`, `price`) VALUES
-(9, 'HP Blue Pin 45W', 'new', 6, 'MOI', 1, '2026-06-08 15:34:24', 8, '2026-06-30 10:02:15', 1500.00),
-(10, 'HP Blue Pin 65W', 'new', 3, 'KIMATHI', 1, '2026-07-02 06:11:29', 8, '2026-06-30 10:02:15', NULL),
+(9, 'HP Blue Pin 45W', 'new', 6, 'MOI', 1, '2026-06-08 15:34:24', 8, '2026-06-30 10:02:15', 2500.00),
+(10, 'HP Blue Pin 65W', 'new', 3, 'KIMATHI', 1, '2026-07-02 06:11:29', 8, '2026-06-30 10:02:15', 3500.00),
 (11, 'HP Blue Pin 65W', 'new', 2, 'MOI', 1, '2026-02-02 07:08:12', NULL, '2026-06-30 10:02:15', 3500.00),
 (12, 'HP Blue Pin 45W', 'new', 4, 'KIMATHI', 1, '2026-06-30 12:35:22', NULL, '2026-06-30 10:02:15', 2000.00);
 
@@ -593,7 +629,7 @@ INSERT INTO `clients` (`id`, `client_name`, `client_phone`, `client_box`, `clien
 (1, 'Munene', '0711529618', 'P.O. BOX 25-90500', 'victormunene207@gmail.com', 7, '2026-06-29 09:41:42', 'KIMATHI'),
 (2, 'peninah', '0703646909', NULL, 'vdebmunene207@gmail.com', 7, '2026-06-29 10:33:17', 'KIMATHI'),
 (7, 'Munene victor', '0711529618', 'P.O. BOX 12-95400', 'victormunene207@gmail.com', 8, '2026-06-29 14:55:01', NULL),
-(8, 'Musili Homes', '0711529618', NULL, 'victormunene207@gmail.com', 7, '2026-07-02 08:18:58', 'KIMATHI');
+(8, 'Musili Homes Limited', '0711529618', NULL, 'victormunene207@gmail.com', 7, '2026-07-02 08:18:58', 'KIMATHI');
 
 -- --------------------------------------------------------
 
@@ -621,106 +657,107 @@ CREATE TABLE `devices` (
   `price_updated_at` timestamp NULL DEFAULT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
   `sold_at` datetime DEFAULT NULL,
-  `sold_by` int DEFAULT NULL
+  `sold_by` int DEFAULT NULL,
+  `place` enum('store','display','warehouse') COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `devices`
 --
 
-INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`, `graphics`, `ram`, `storage_type`, `storage_capacity`, `touch`, `status`, `device_condition`, `date_added`, `added_by`, `branch`, `cargo_number`, `price`, `price_updated_at`, `selling_price`, `sold_at`, `sold_by`) VALUES
-('5CG0302X7Y', 1, 'HP ELITEBOOK 745 G6', 'AMD RYZEN 7 PRO 3700u', '2GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Ex-Uk', '2026-03-27 08:32:20', 1, 'MOI', 'AC26', NULL, NULL, NULL, NULL, NULL),
-('5CG09OZXE32', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('5CG09OZXE33', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('5CG09OZXE34', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('5CG09OZXE35', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', 40000.00, NULL, 40000.00, '2026-06-22 15:57:47', 8),
-('5CG09OZXE36', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'New', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 40000.00, NULL, 40000.00, '2026-06-29 15:15:10', 7),
-('5CG09OZXE37', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 35000.00, NULL, NULL, NULL, NULL),
-('5CG09OZXE38', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, 65000.00, '2026-06-27 17:14:07', 7),
-('5CG09OZXE39', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, 60000.00, '2026-07-01 13:03:15', 7),
-('5CG09OZXE40', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 60000.00, '2026-04-24 11:26:11', 60000.00, '2026-06-17 19:07:54', 7),
-('5CG09OZXE41', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 60000.00, '2026-04-24 11:26:11', NULL, NULL, NULL),
-('5CG09OZXE42', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', 60000.00, '2026-04-24 11:26:11', NULL, NULL, NULL),
-('5CG1234XYZ', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ10', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ11', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ12', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ13', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ14', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ15', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL),
-('5CG7TYTUGJ16', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', 40000.00, '2026-06-20 18:31:25', 8),
-('5CG7TYTUGJ17', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL),
-('5CG7TYTUGJ18', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL),
-('5CG7TYTUGJ19', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL),
-('5CG7TYTUGJ20', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, 60000.00, '2026-07-01 16:41:20', 7),
-('5CG7TYTUGJ21', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, 65000.00, '2026-07-01 16:23:32', 7),
-('5CG7TYTUGJ22', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ23', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ24', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ25', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ26', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ27', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ28', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ29', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ30', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ31', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ32', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ33', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ9', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl10', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl11', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl12', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL),
-('5CG7TYTUGl13', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL),
-('5CG7TYTUGl14', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL),
-('5CG7TYTUGl15', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL),
-('5CG7TYTUGl16', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL),
-('5CG7TYTUGl17', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl18', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl19', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl20', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl21', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl22', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl23', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl24', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl25', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl26', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl27', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl28', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl29', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl30', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl6', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl7', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl8', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl9', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'Sold', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL),
-('5CG9IOK80B', 1, 'HO ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Ex-Uk', '2026-07-02 07:30:16', 8, 'MOI', 'AC26.7', NULL, NULL, NULL, NULL, NULL),
-('5CGBAJJJUU88', 1, 'HP ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 509, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-07 10:45:29', 1, 'KIMATHI', 'AC265', NULL, NULL, NULL, NULL, NULL),
-('5CGUYUIJVIUG', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-22 20:28:16', 1, 'MOI', 'AC526', 30000.00, '2026-04-22 20:30:56', NULL, NULL, NULL),
-('8CC5678ABC', 2, 'HP EliteDesk 705 G4', 'AMD Ryzen 5 PRO 2600', 'AMD Radeon', 16, 'SSD', 512, 'N/A', 'In Stock', 'New', '2026-06-08 07:02:20', 1, 'MOI', 'CX37', NULL, NULL, NULL, NULL, NULL),
-('8CC6YHMS54', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-8TH GEN', '1GB AMD RADEON R7 200', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('8CC6YHMS55', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-8TH GEN', '1GB AMD RADEON R7 200', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('8CC6YHMS56', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-8TH GEN', '2GB AMD RADEON R7 200', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('8CC6YHMS57', 5, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-8TH GEN', '2GB AMD RADEON R7 200', 16, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('8CC6YHMS58', 5, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-8TH GEN', '2GB AMD RADEON R7 200', 16, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('ABC9012DEF', 3, 'HP ProOne 400 G5', 'Intel Core i7-8700T', 'Intel UHD', 32, 'SSD', 1000, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC20', NULL, NULL, NULL, NULL, NULL),
-('MXD90IOOKLW', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON R7 430', 8, 'HDD', 500, 'N/A', 'Sold', 'Refurbished', '2026-02-21 18:48:48', 1, 'KIMATHI', 'AC3', 15000.00, '2026-03-03 18:24:20', NULL, NULL, NULL),
-('MXHT89YU3', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 20000.00, '2026-01-02 15:33:05', NULL, NULL, NULL),
-('MXHT89YU4', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'KIMATHI', 'CX37', 20000.00, '2026-01-02 15:33:05', NULL, NULL, NULL),
-('MXHT89YU5', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'Sold', 'Refurbished', '2025-12-15 18:26:55', 1, 'KIMATHI', 'CX37', 20000.00, '2026-01-02 15:33:05', NULL, NULL, NULL),
-('MXHT89YU6', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 20000.00, '2026-01-06 12:21:00', NULL, NULL, NULL),
-('MXHT89YU7', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 16, 'SSD', 512, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 20000.00, '2026-01-06 12:21:00', NULL, NULL, NULL),
-('MXL8U9UYH09', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', 'None', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-06-22 15:37:34', 1, 'MOI', 'CX37', NULL, NULL, NULL, NULL, NULL),
-('MXY77HJKAL', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON R7 430', 8, 'HDD', 500, 'N/A', 'In Stock', 'Refurbished', '2026-02-21 18:46:43', 1, 'KIMATHI', 'AC3', 15000.00, '2026-03-03 18:24:20', NULL, NULL, NULL),
-('TGBHJJRQW1', 2, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-9TH GEN', 'none', 16, 'SSD', 256, 'N/A', 'Sold', 'Refurbished', '2025-12-15 18:26:54', 1, 'KIMATHI', 'CX50', 55000.00, '2026-03-25 21:32:17', NULL, NULL, NULL),
-('TGBHJJRQW2', 2, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-9TH GEN', 'none', 16, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:54', 1, 'MOI', 'CX50', 55000.00, '2026-03-25 21:32:17', NULL, NULL, NULL),
-('TGBHJJRQW3', 2, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-9TH GEN', 'none', 16, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:54', 1, 'MOI', 'CX50', 55000.00, '2026-03-25 21:32:17', NULL, NULL, NULL),
-('TGBHJJRQW4', 2, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-9TH GEN', 'None', 16, 'SSD', 256, '', 'In Stock', 'Refurbished', '2025-12-15 18:26:54', 1, 'KIMATHI', 'CX50', 20000.00, '2026-06-10 15:10:30', NULL, NULL, NULL),
-('THHGHVCVB', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', 'None', 8, 'SSD', 256, 'N/A', 'Sold', 'Refurbished', '2026-06-17 16:10:45', 1, 'KIMATHI', 'CX37', 25000.00, '2026-06-17 16:12:27', 25000.00, '2026-06-17 19:13:06', 7),
-('THK897YYRS4', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V6', '5GB NVIDIA QUADRO P2000', 32, 'HDD', 2000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('THK897YYRS5', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V6', '5GB NVIDIA QUADRO P2000', 32, 'HDD', 2000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('THK897YYRS6', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V6', '5GB NVIDIA QUADRO P2000', 16, 'HDD', 2000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('THK897YYRS7', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V2', '2GB NVIDIA QUADRO P1000', 32, 'HDD', 2000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('THK897YYRS8', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V2', '2GB NVIDIA QUADRO P1000', 32, 'HDD', 1000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL),
-('THK897YYRS9', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V2', '2GB NVIDIA QUADRO P1000', 16, 'HDD', 1000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`, `graphics`, `ram`, `storage_type`, `storage_capacity`, `touch`, `status`, `device_condition`, `date_added`, `added_by`, `branch`, `cargo_number`, `price`, `price_updated_at`, `selling_price`, `sold_at`, `sold_by`, `place`) VALUES
+('5CG0302X7Y', 1, 'HP ELITEBOOK 745 G6', 'AMD RYZEN 7 PRO 3700u', '2GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Ex-Uk', '2026-03-27 08:32:20', 1, 'MOI', 'AC26', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG09OZXE32', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG09OZXE33', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG09OZXE34', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG09OZXE35', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', 40000.00, NULL, 40000.00, '2026-06-22 15:57:47', 8, NULL),
+('5CG09OZXE36', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'New', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 40000.00, NULL, 40000.00, '2026-06-29 15:15:10', 7, NULL),
+('5CG09OZXE37', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 35000.00, NULL, NULL, NULL, NULL, NULL),
+('5CG09OZXE38', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, 65000.00, '2026-06-27 17:14:07', 7, NULL),
+('5CG09OZXE39', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, 60000.00, '2026-07-01 13:03:15', 7, NULL),
+('5CG09OZXE40', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 60000.00, '2026-04-24 11:26:11', 60000.00, '2026-06-17 19:07:54', 7, NULL),
+('5CG09OZXE41', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 60000.00, '2026-04-24 11:26:11', NULL, NULL, NULL, NULL),
+('5CG09OZXE42', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', 60000.00, '2026-04-24 11:26:11', NULL, NULL, NULL, NULL),
+('5CG1234XYZ', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ10', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ11', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ12', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ13', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ14', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ15', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ16', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', 40000.00, '2026-06-20 18:31:25', 8, NULL),
+('5CG7TYTUGJ17', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ18', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ19', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ20', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, 60000.00, '2026-07-01 16:41:20', 7, NULL),
+('5CG7TYTUGJ21', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, 65000.00, '2026-07-01 16:23:32', 7, NULL),
+('5CG7TYTUGJ22', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ23', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ24', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ25', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ26', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ27', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ28', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ29', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ30', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ31', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ32', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ33', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ9', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl10', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl11', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl12', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL, NULL),
+('5CG7TYTUGl13', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL, NULL),
+('5CG7TYTUGl14', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL, NULL),
+('5CG7TYTUGl15', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL, NULL),
+('5CG7TYTUGl16', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL, NULL),
+('5CG7TYTUGl17', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl18', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl19', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl20', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl21', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl22', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl23', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl24', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl25', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl26', 1, 'HP EliteBook 840 G8', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl27', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl28', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl29', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl30', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl6', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl7', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl8', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl9', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'Sold', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG9IOK80B', 1, 'HO ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Ex-Uk', '2026-07-02 07:30:16', 8, 'MOI', 'AC26.7', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CGBAJJJUU88', 1, 'HP ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 509, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-07 10:45:29', 1, 'KIMATHI', 'AC265', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CGUYUIJVIUG', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-22 20:28:16', 1, 'MOI', 'AC526', 30000.00, '2026-04-22 20:30:56', NULL, NULL, NULL, NULL),
+('8CC5678ABC', 2, 'HP EliteDesk 705 G4', 'AMD Ryzen 5 PRO 2600', 'AMD Radeon', 16, 'SSD', 512, 'N/A', 'In Stock', 'New', '2026-06-08 07:02:20', 1, 'MOI', 'CX37', NULL, NULL, NULL, NULL, NULL, NULL),
+('8CC6YHMS54', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-8TH GEN', '1GB AMD RADEON R7 200', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('8CC6YHMS55', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-8TH GEN', '1GB AMD RADEON R7 200', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('8CC6YHMS56', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-8TH GEN', '2GB AMD RADEON R7 200', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('8CC6YHMS57', 5, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-8TH GEN', '2GB AMD RADEON R7 200', 16, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('8CC6YHMS58', 5, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-8TH GEN', '2GB AMD RADEON R7 200', 16, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('ABC9012DEF', 3, 'HP ProOne 400 G5', 'Intel Core i7-8700T', 'Intel UHD', 32, 'SSD', 1000, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC20', NULL, NULL, NULL, NULL, NULL, NULL),
+('MXD90IOOKLW', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON R7 430', 8, 'HDD', 500, 'N/A', 'Sold', 'Refurbished', '2026-02-21 18:48:48', 1, 'KIMATHI', 'AC3', 15000.00, '2026-03-03 18:24:20', NULL, NULL, NULL, NULL),
+('MXHT89YU3', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 20000.00, '2026-01-02 15:33:05', NULL, NULL, NULL, NULL),
+('MXHT89YU4', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'KIMATHI', 'CX37', 20000.00, '2026-01-02 15:33:05', NULL, NULL, NULL, NULL),
+('MXHT89YU5', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'Sold', 'Refurbished', '2025-12-15 18:26:55', 1, 'KIMATHI', 'CX37', 20000.00, '2026-01-02 15:33:05', NULL, NULL, NULL, NULL),
+('MXHT89YU6', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 20000.00, '2026-01-06 12:21:00', NULL, NULL, NULL, NULL),
+('MXHT89YU7', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 16, 'SSD', 512, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 20000.00, '2026-01-06 12:21:00', NULL, NULL, NULL, NULL),
+('MXL8U9UYH09', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', 'None', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-06-22 15:37:34', 1, 'MOI', 'CX37', NULL, NULL, NULL, NULL, NULL, NULL),
+('MXY77HJKAL', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON R7 430', 8, 'HDD', 500, 'N/A', 'In Stock', 'Refurbished', '2026-02-21 18:46:43', 1, 'KIMATHI', 'AC3', 15000.00, '2026-03-03 18:24:20', NULL, NULL, NULL, NULL),
+('TGBHJJRQW1', 2, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-9TH GEN', 'none', 16, 'SSD', 256, 'N/A', 'Sold', 'Refurbished', '2025-12-15 18:26:54', 1, 'KIMATHI', 'CX50', 55000.00, '2026-03-25 21:32:17', NULL, NULL, NULL, NULL),
+('TGBHJJRQW2', 2, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-9TH GEN', 'none', 16, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:54', 1, 'MOI', 'CX50', 55000.00, '2026-03-25 21:32:17', NULL, NULL, NULL, NULL),
+('TGBHJJRQW3', 2, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-9TH GEN', 'none', 16, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:54', 1, 'MOI', 'CX50', 55000.00, '2026-03-25 21:32:17', NULL, NULL, NULL, NULL),
+('TGBHJJRQW4', 2, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-9TH GEN', 'None', 16, 'SSD', 256, '', 'In Stock', 'Refurbished', '2025-12-15 18:26:54', 1, 'KIMATHI', 'CX50', 20000.00, '2026-06-10 15:10:30', NULL, NULL, NULL, NULL),
+('THHGHVCVB', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', 'None', 8, 'SSD', 256, 'N/A', 'Sold', 'Refurbished', '2026-06-17 16:10:45', 1, 'KIMATHI', 'CX37', 25000.00, '2026-06-17 16:12:27', 25000.00, '2026-06-17 19:13:06', 7, NULL),
+('THK897YYRS4', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V6', '5GB NVIDIA QUADRO P2000', 32, 'HDD', 2000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('THK897YYRS5', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V6', '5GB NVIDIA QUADRO P2000', 32, 'HDD', 2000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('THK897YYRS6', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V6', '5GB NVIDIA QUADRO P2000', 16, 'HDD', 2000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('THK897YYRS7', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V2', '2GB NVIDIA QUADRO P1000', 32, 'HDD', 2000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('THK897YYRS8', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V2', '2GB NVIDIA QUADRO P1000', 32, 'HDD', 1000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('THK897YYRS9', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V2', '2GB NVIDIA QUADRO P1000', 16, 'HDD', 1000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -795,7 +832,9 @@ CREATE TABLE `graphic_cards` (
 --
 
 INSERT INTO `graphic_cards` (`id`, `type`, `storage_capacity`, `quantity`, `added_by`, `date_added`, `price`, `branch`, `status`) VALUES
-(1, 'NVIDIA QUADRO P2000', 5, 6, 1, '2026-06-20 11:24:51', 10000.00, 'MOI', 'instock');
+(1, 'NVIDIA QUADRO P2000', 5, 8, 1, '2026-06-20 11:24:51', 11000.00, 'MOI', 'instock'),
+(2, 'AMD RYZEN 2 PRO 2600', 2, 20, 8, '2026-07-03 09:51:47', 3000.00, 'MOI', 'instock'),
+(3, 'NVIDIA QUADRO P1000', 5, 10, 1, '2026-07-03 11:30:00', 10000.00, 'KIMATHI', 'instock');
 
 -- --------------------------------------------------------
 
@@ -822,7 +861,7 @@ CREATE TABLE `graphic_cards_logs` (
 --
 
 INSERT INTO `graphic_cards_logs` (`id`, `graphic_card_id`, `type`, `storage_capacity`, `quantity`, `given_by`, `given_to`, `date_given`, `status`, `branch`, `sale_item_id`) VALUES
-(1, 1, 'NVIDIA QUADRO P2000', 5, 2, 8, 7, '2026-06-30 10:26:03', 'pending_sale', 'KIMATHI', NULL);
+(1, 1, 'NVIDIA QUADRO P2000', 5, 2, 8, 7, '2026-06-30 10:26:03', 'returned', 'KIMATHI', NULL);
 
 -- --------------------------------------------------------
 
@@ -852,8 +891,8 @@ INSERT INTO `hdds` (`id`, `type`, `quantity`, `storage`, `branch`, `added_by`, `
 (1, 'SATA', 4, '2TB', 'KIMATHI', 1, '2026-06-20 10:22:45', 1, '2026-06-30 15:01:08', 15000.00),
 (2, 'SATA', 7, '500GB', 'MOI', 1, '2026-06-26 10:39:13', 1, '2026-06-26 17:56:19', NULL),
 (3, 'SATA', 30, '2TB', 'MOI', 1, '2026-06-30 13:39:08', 1, '2026-06-30 16:41:03', NULL),
-(4, 'SATA', 15, '500GB', 'KIMATHI', 1, '2026-06-30 13:39:08', 1, '2026-06-30 16:41:03', NULL),
-(5, 'NVMe', 2, '1TB', 'MOI', 1, '2026-06-30 13:41:03', NULL, NULL, NULL);
+(4, 'SATA', 14, '500GB', 'KIMATHI', 1, '2026-06-30 13:39:08', 8, '2026-07-03 11:59:22', NULL),
+(5, 'NVMe', 2, '1TB', 'MOI', 1, '2026-06-30 13:41:03', NULL, NULL, 8000.00);
 
 -- --------------------------------------------------------
 
@@ -892,7 +931,8 @@ INSERT INTO `hdd_logs` (`id`, `hdd_id`, `type`, `quantity_given`, `given_to`, `g
 (10, 1, 'SATA', 2, 7, 1, 'KIMATHI', '2026-06-29 13:08:49', '2TB', 'sold', NULL),
 (11, 1, 'SATA', 1, 7, 1, 'KIMATHI', '2026-06-29 13:20:23', '2TB', 'sold', NULL),
 (12, 1, 'SATA', 1, 7, 8, 'KIMATHI', '2026-06-30 11:26:46', '2TB', 'returned', NULL),
-(13, 1, 'SATA', 1, 7, 1, 'KIMATHI', '2026-06-30 12:00:59', '2TB', 'returned', NULL);
+(13, 1, 'SATA', 1, 7, 1, 'KIMATHI', '2026-06-30 12:00:59', '2TB', 'returned', NULL),
+(14, 4, 'SATA', 1, 7, 8, 'KIMATHI', '2026-07-03 08:59:23', '500GB', 'pending_sale', NULL);
 
 -- --------------------------------------------------------
 
@@ -952,7 +992,7 @@ CREATE TABLE `monitors` (
 --
 
 INSERT INTO `monitors` (`serial_number`, `model_name`, `size_inches`, `status`, `branch`, `added_by`, `date_added`, `sold_by`, `sold_at`, `price`, `selling_price`, `monitor_condition`) VALUES
-('M9JIOHG56DCGF', 'HP FRAMALESS 24 inch', 24, 'In Stock', 'KIMATHI', 1, '2026-06-18 11:46:40', NULL, NULL, NULL, NULL, NULL),
+('M9JIOHG56DCGF', 'HP FRAMALESS 24 inch', 24, 'In Stock', 'KIMATHI', 1, '2026-06-18 11:46:40', NULL, NULL, 11000.00, NULL, NULL),
 ('M9OHG56DCGF', 'HP FRMALESS 24 inch', 24, 'Sold', 'MOI', 1, '2026-06-16 09:18:51', 7, '2026-06-18 11:48:46', 10000.00, 10000.00, NULL);
 
 -- --------------------------------------------------------
@@ -984,7 +1024,13 @@ CREATE TABLE `phones` (
 --
 
 INSERT INTO `phones` (`serial_number`, `brand`, `model`, `ram`, `storage_capacity`, `status`, `branch`, `date_added`, `price`, `date_sold`, `sold_by`, `selling_price`, `price_updated_at`, `added_by`, `phone_condition`) VALUES
-('1', 'Apple', 'Iphone 15 pro', 4, 256, 'instock', 'MOI', '2026-06-20 11:06:25', 100000.00, NULL, NULL, NULL, NULL, NULL, NULL);
+('1', 'Apple', 'Iphone 15 pro', 4, 256, 'sold', 'MOI', '2026-06-20 11:06:25', 100000.00, NULL, NULL, NULL, NULL, NULL, NULL),
+('PH000876', 'Apple', 'iPhone 15 Pro', 8, 256, 'instock', 'KIMATHI', '2026-07-03 13:44:39', NULL, NULL, NULL, NULL, '2026-07-03 17:22:19', 1, 'New'),
+('PH000877', 'Samsung', 'Galaxy S24', 12, 512, 'instock', 'KIMATHI', '2026-07-03 13:44:39', 150000.00, NULL, NULL, NULL, NULL, 1, 'New'),
+('PH000878', 'Nokia', 'G22', 4, 128, 'instock', 'KIMATHI', '2026-07-03 13:44:39', 25000.00, NULL, NULL, NULL, NULL, 1, 'Ex-Uk'),
+('PH001', 'Apple', 'iPhone 15 Pro', 8, 256, 'instock', 'KIMATHI', '2026-07-03 13:43:44', 150000.00, NULL, NULL, NULL, '2026-07-03 17:21:37', 1, 'New'),
+('PH002', 'Samsung', 'Galaxy S24', 12, 512, 'instock', 'MOI', '2026-07-03 13:43:44', 150000.00, NULL, NULL, NULL, NULL, 1, 'New'),
+('PH003', 'Nokia', 'G22', 4, 128, 'instock', 'KIMATHI', '2026-07-03 13:43:44', 25000.00, NULL, NULL, NULL, NULL, 1, 'Ex-Uk');
 
 -- --------------------------------------------------------
 
@@ -1044,11 +1090,11 @@ CREATE TABLE `rams_ssds` (
 --
 
 INSERT INTO `rams_ssds` (`id`, `category`, `type`, `quantity`, `branch`, `updated_by`, `date_updated`, `storage`, `added_by`, `date_added`, `price`) VALUES
-(6, 'SSD', 'SATA', 11, 'KIMATHI', 8, '2026-06-27 14:56:34', 512, 8, '2026-06-26 09:39:37', 10000.00),
+(6, 'SSD', 'SATA', 9, 'KIMATHI', 1, '2026-07-03 15:19:09', 512, 8, '2026-06-26 09:39:37', 10000.00),
 (7, 'RAM', 'DDR3', 1, 'KIMATHI', 1, '2026-01-22 14:32:46', 16, 8, '2026-06-26 09:39:37', 10000.00),
 (8, 'SSD', 'SATA', 14, 'MOI', 1, '2025-12-29 23:46:01', 512, NULL, '2026-06-26 09:39:37', NULL),
-(9, 'RAM', 'PC4', 8, 'KIMATHI', 1, '2025-12-29 23:46:01', 16, NULL, '2026-06-26 09:39:37', NULL),
-(10, 'RAM', 'PC4', 4, 'KIMATHI', 1, '2026-03-28 09:34:30', 8, NULL, '2026-06-26 09:39:37', NULL),
+(9, 'RAM', 'PC4', 8, 'KIMATHI', 1, '2025-12-29 23:46:01', 16, NULL, '2026-06-26 09:39:37', 1000.00),
+(10, 'RAM', 'PC4', 4, 'KIMATHI', 1, '2026-03-28 09:34:30', 8, NULL, '2026-06-26 09:39:37', 5000.00),
 (11, 'RAM', 'DDR3', 16, 'MOI', 1, '2026-06-10 18:54:33', 16, NULL, '2026-06-26 09:39:37', NULL),
 (12, 'RAM', 'PC4', 6, 'MOI', 1, '2025-12-29 23:46:01', 16, NULL, '2026-06-26 09:39:37', NULL),
 (13, 'RAM', 'PC4', 1, 'MOI', 1, '2026-03-28 09:34:30', 8, NULL, '2026-06-26 09:39:37', NULL),
@@ -1089,7 +1135,9 @@ INSERT INTO `rams_ssds_logs` (`id`, `ram_ssd_id`, `category`, `type`, `quantity_
 (7, 6, 'SSD', 'SATA', 2, 8, 1, 'KIMATHI', '2026-06-26 10:46:33', 512, 'returned', NULL),
 (8, 6, 'SSD', 'SATA', 2, 7, 1, 'KIMATHI', '2026-06-26 15:20:09', 512, 'sold', NULL),
 (9, 6, 'SSD', 'SATA', 1, 7, 8, 'KIMATHI', '2026-06-27 10:44:52', 512, 'returned', NULL),
-(10, 14, 'SSD', 'SATA', 1, 7, 1, 'KIMATHI', '2026-06-30 11:39:59', 256, 'sold', 22);
+(10, 14, 'SSD', 'SATA', 1, 7, 1, 'KIMATHI', '2026-06-30 11:39:59', 256, 'sold', 22),
+(11, 6, 'SSD', 'SATA', 1, 7, 1, 'KIMATHI', '2026-07-03 06:01:51', 512, 'pending_sale', NULL),
+(12, 6, 'SSD', 'SATA', 1, 7, 1, 'KIMATHI', '2026-07-03 12:19:09', 512, 'pending_sale', NULL);
 
 -- --------------------------------------------------------
 
@@ -1191,7 +1239,9 @@ INSERT INTO `sales` (`id`, `client_name`, `client_phone`, `total_amount`, `sale_
 (16, 'Munene', '0711529618', 81200.00, 'cancelled', '2026-07-01 11:33:45', '2026-07-02 11:17:52', 7, NULL, NULL, 'pending'),
 (17, 'Munene victor', '0711529618', NULL, 'active', '2026-07-01 15:22:45', NULL, 8, NULL, NULL, NULL),
 (18, 'Munene', '0711529618', NULL, 'cancelled', '2026-07-02 08:18:16', '2026-07-02 11:19:12', 7, NULL, NULL, NULL),
-(19, 'Musili Homes', '0711529618', NULL, 'cancelled', '2026-07-02 08:20:11', '2026-07-02 11:32:56', 7, NULL, NULL, NULL);
+(19, 'Musili Homes', '0711529618', NULL, 'cancelled', '2026-07-02 08:20:11', '2026-07-02 11:32:56', 7, NULL, NULL, NULL),
+(20, NULL, NULL, 10800.00, 'cancelled', '2026-07-02 08:47:55', '2026-07-02 14:48:16', 7, NULL, NULL, 'pending'),
+(21, 'Musili Homes Limited', '0711529618', NULL, 'active', '2026-07-02 11:48:57', NULL, 7, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1248,13 +1298,13 @@ CREATE TABLE `smartboards` (
 --
 
 INSERT INTO `smartboards` (`serial_number`, `model`, `size_inches`, `date_added`, `status`, `added_by`, `branch`, `place`, `price`, `sold_at`, `selling_price`, `sold_by`) VALUES
-('SB001', 'SMART 75-inch', 75, '2026-05-30 08:07:14', 'instock', 1, 'KIMATHI', 'store', NULL, NULL, NULL, NULL),
+('SB001', 'SMART 75-inch', 75, '2026-05-30 08:07:14', 'instock', 1, 'KIMATHI', 'store', 200000.00, NULL, NULL, NULL),
 ('SB002', 'ViewSonic 65-inch', 65, '2026-06-20 08:07:14', 'instock', 1, 'MOI', 'warehouse', NULL, NULL, NULL, NULL),
-('SB0025TY', 'Onescreen 5', 65, '2026-03-16 08:11:59', 'instock', 1, 'MOI', 'warehouse', NULL, NULL, NULL, NULL),
+('SB0025TY', 'Onescreen 5', 65, '2026-03-16 08:11:59', 'instock', 1, 'MOI', 'warehouse', 150000.00, NULL, NULL, NULL),
 ('SB002S4R', 'SMART 75-inch', 75, '2026-06-20 08:11:59', 'sold', 1, 'KIMATHI', 'store', 170000.00, '2026-06-29 09:33:43', 170000.00, 7),
 ('SM5CG09OZXE60', 'Onescreen 5', 65, '2026-03-24 18:44:40', 'sold', 1, 'KIMATHI', 'store', 80000.00, '2026-06-27 17:11:18', 80000.00, 7),
 ('SM7UYYG3VV', 'SMART', 75, '2026-06-17 13:05:45', 'sold', 1, 'KIMATHI', NULL, 200000.00, '2026-06-18 12:34:13', 2050000.00, 7),
-('SMI0OUJ', 'SMART 6065', 65, '2026-06-20 08:23:16', 'sold', 1, NULL, 'sold', 150000.00, '2026-07-02 10:05:34', 150000.00, NULL);
+('SMI0OUJ', 'SMART 6065', 65, '2026-06-20 08:23:16', 'sold', 1, 'MOI', 'sold', 150000.00, '2026-07-02 10:05:34', 150000.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -1421,15 +1471,19 @@ CREATE TABLE `ups` (
   `selling_price` decimal(10,2) DEFAULT NULL,
   `date_sold` datetime DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `ups_condition` enum('New','Ex-UK','Refurbished') DEFAULT 'New'
+  `ups_condition` enum('New','Ex-UK','Refurbished') DEFAULT 'New',
+  `price_updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `ups`
 --
 
-INSERT INTO `ups` (`serial_number`, `model`, `capacity`, `status`, `added_by`, `date_added`, `price`, `sold_by`, `selling_price`, `date_sold`, `branch`, `ups_condition`) VALUES
-('UPKNM9JHFH', 'MECCER UPS', 2600, 'instock', 1, '2026-06-27 10:02:37', NULL, NULL, NULL, NULL, 'KIMATHI', 'New');
+INSERT INTO `ups` (`serial_number`, `model`, `capacity`, `status`, `added_by`, `date_added`, `price`, `sold_by`, `selling_price`, `date_sold`, `branch`, `ups_condition`, `price_updated_at`) VALUES
+('APC-001', 'APC Back-UPS', 1500, 'instock', 1, '2026-07-03 13:16:24', 20000.00, NULL, NULL, NULL, 'MOI', 'Ex-UK', '2026-07-03 17:32:30'),
+('UP68GH5', 'MECCER', 1200, 'instock', 1, '2026-07-03 12:46:07', 15000.00, NULL, NULL, NULL, 'KIMATHI', 'New', '2026-07-03 17:31:59'),
+('UPKNM9JHFH', 'MECCER UPS', 2600, 'instock', 1, '2026-06-27 10:02:37', NULL, NULL, NULL, NULL, 'KIMATHI', 'New', NULL),
+('UPS-003', 'DELTA UPS', 3000, 'instock', 1, '2026-07-03 13:16:24', 35000.00, NULL, NULL, NULL, 'KIMATHI', 'Refurbished', NULL);
 
 -- --------------------------------------------------------
 
@@ -1457,10 +1511,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `username`, `password`, `role`, `is_active`, `full_name`, `created_at`, `last_login`, `branch`, `failed_attempts`, `account_locked_until`) VALUES
-(1, 'victormunene207@gmail.com', 'vic', '$2a$12$q5sPMKAfYhS0AMXRm6BpI.W7flz8n0wmcUbBJ45BAnOa8BsxgYKSK', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-07-02 06:15:30', 'KIMATHI', 0, NULL),
-(4, 'munene@gmail.com', 'Vdeb', '$2y$10$m9PnQbD9v1ZY50s14T45MOV2n4bdaty74/2Y8rBlOuRY56.4OdlGi', 'cashier', 1, 'Munene vicky', '2025-12-03 12:39:40', '2026-07-01 15:06:29', 'KIMATHI', 0, NULL),
-(7, 'peninahkalundi@gmail.com', 'pesh', '$2y$10$cS2ZivexM3srJGrkihxPnumRp0RNDgdHDTX8bkGuUXphAbd9ZJSc.', 'sales', 1, 'Peninah Kalundi', '2025-12-04 18:01:17', '2026-07-02 08:14:31', 'KIMATHI', 0, NULL),
-(8, 'munene23.v@student.cuk.ac.ke', 'syovata', '$2a$12$/VBwYZBkXo6VuCCFIPFWDeLBJ5Ewbo.Z.lALJgWmckCUeT5PFmJ5.', 'inventory_admin', 1, 'Victor Syovata', '2025-12-05 22:19:21', '2026-07-02 07:25:43', 'KIMATHI', 0, NULL);
+(1, 'victormunene207@gmail.com', 'vic', '$2a$12$q5sPMKAfYhS0AMXRm6BpI.W7flz8n0wmcUbBJ45BAnOa8BsxgYKSK', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-07-03 10:00:42', 'KIMATHI', 0, NULL),
+(4, 'munene@gmail.com', 'Vdeb', '$2y$10$m9PnQbD9v1ZY50s14T45MOV2n4bdaty74/2Y8rBlOuRY56.4OdlGi', 'cashier', 1, 'Munene vicky', '2025-12-03 12:39:40', '2026-07-03 07:01:47', 'KIMATHI', 0, NULL),
+(7, 'peninahkalundi@gmail.com', 'pesh', '$2y$10$cS2ZivexM3srJGrkihxPnumRp0RNDgdHDTX8bkGuUXphAbd9ZJSc.', 'sales', 1, 'Peninah Kalundi', '2025-12-04 18:01:17', '2026-07-03 06:01:03', 'KIMATHI', 0, NULL),
+(8, 'munene23.v@student.cuk.ac.ke', 'syovata', '$2a$12$/VBwYZBkXo6VuCCFIPFWDeLBJ5Ewbo.Z.lALJgWmckCUeT5PFmJ5.', 'inventory_admin', 1, 'Victor Syovata', '2025-12-05 22:19:21', '2026-07-03 08:32:16', 'KIMATHI', 0, NULL);
 
 --
 -- Indexes for dumped tables
@@ -1748,13 +1802,13 @@ ALTER TABLE `accessories`
 -- AUTO_INCREMENT for table `accessories_logs`
 --
 ALTER TABLE `accessories_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=384;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=418;
 
 --
 -- AUTO_INCREMENT for table `categories`
@@ -1796,7 +1850,7 @@ ALTER TABLE `expenses`
 -- AUTO_INCREMENT for table `graphic_cards`
 --
 ALTER TABLE `graphic_cards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `graphic_cards_logs`
@@ -1814,7 +1868,7 @@ ALTER TABLE `hdds`
 -- AUTO_INCREMENT for table `hdd_logs`
 --
 ALTER TABLE `hdd_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `maintenance`
@@ -1832,7 +1886,7 @@ ALTER TABLE `rams_ssds`
 -- AUTO_INCREMENT for table `rams_ssds_logs`
 --
 ALTER TABLE `rams_ssds_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `registration_codes`
@@ -1850,19 +1904,19 @@ ALTER TABLE `repairs`
 -- AUTO_INCREMENT for table `sales`
 --
 ALTER TABLE `sales`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `sale_items`
 --
 ALTER TABLE `sale_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `sold_accessories`
 --
 ALTER TABLE `sold_accessories`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `sold_chargers`

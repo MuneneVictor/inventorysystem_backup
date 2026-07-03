@@ -14,13 +14,13 @@ if (!$id) {
 
 $stmt = $conn->prepare("SELECT id, category, type, storage, quantity, branch, price FROM rams_ssds WHERE id = :id");
 $stmt->execute(['id' => $id]);
-$item = $stmt->fetch(PDO::FETCH_ASSOC);
+$ramitem = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$item) {
-    die("Item not found.");
+if (!$ramitem) {
+    die("RAM/SSD item not found.");
 }
 
-if ($item['price'] === null) {
+if ($ramitem['price'] === null) {
     die("This item does not have a price. Use Add Price instead.");
 }
 
@@ -39,17 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (:uid, 'Updated RAM/SSD price', :details)");
         $log->execute([
             'uid' => $_SESSION['user_id'],
-            'details' => "Updated price for RAM/SSD ID: $id ({$item['category']} {$item['type']} {$item['storage']}GB) to KES $price"
+            'details' => "Updated price for RAM/SSD ID: $id ({$ramitem['category']} {$ramitem['type']} {$ramitem['storage']}GB) to KES $price"
         ]);
 
         $success = "Price updated successfully!";
-        header("Location: rams_instock.php");
+        header("Location: rams_instocks.php");
         exit();
     }
 }
-
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>
@@ -60,7 +57,7 @@ require_once "../includes/sidebar.php";
     <title>Update RAM/SSD Price | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Same CSS as add_price_ram.php – kept for consistency */
+        /* Same CSS as add_price_ram.php */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -82,7 +79,7 @@ require_once "../includes/sidebar.php";
             --radius-xl: 1rem;
             --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-         @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: var(--font-sans); background: var(--gray-100); color: var(--gray-800); line-height: 1.5; overflow-x: hidden; }
@@ -257,7 +254,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
-
+<?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-edit"></i> Update RAM/SSD Price</h1>
@@ -270,7 +267,7 @@ require_once "../includes/sidebar.php";
                 <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
-            <a href="rams_instock.php">In‑Stock RAM/SSD</a>
+            <a href="rams_instocks.php">In‑Stock RAM/SSD</a>
             <span> / </span>
             <span>Update Price</span>
         </div>
@@ -290,19 +287,19 @@ require_once "../includes/sidebar.php";
                 <?php endif; ?>
 
                 <div class="specs-box">
-                    <p><strong>ID:</strong> <?= (int)$item['id'] ?></p>
-                    <p><strong>Category:</strong> <?= htmlspecialchars($item['category']) ?></p>
-                    <p><strong>Type:</strong> <?= htmlspecialchars($item['type']) ?></p>
-                    <p><strong>Storage:</strong> <?= (int)$item['storage'] ?> GB</p>
-                    <p><strong>Quantity:</strong> <?= (int)$item['quantity'] ?></p>
-                    <p><strong>Branch:</strong> <?= htmlspecialchars($item['branch']) ?></p>
-                    <p><strong>Current Price:</strong> KES <?= number_format($item['price'], 2) ?></p>
+                    <p><strong>ID:</strong> <?= (int)$ramitem['id'] ?></p>
+                    <p><strong>Category:</strong> <?= htmlspecialchars($ramitem['category']) ?></p>
+                    <p><strong>Type:</strong> <?= htmlspecialchars($ramitem['type']) ?></p>
+                    <p><strong>Storage:</strong> <?= (int)$ramitem['storage'] ?> GB</p>
+                    <p><strong>Quantity:</strong> <?= (int)$ramitem['quantity'] ?></p>
+                    <p><strong>Branch:</strong> <?= htmlspecialchars($ramitem['branch']) ?></p>
+                    <p><strong>Current Price:</strong> KES <?= number_format($ramitem['price'], 2) ?></p>
                 </div>
 
                 <form method="POST">
                     <div class="form-group">
                         <label>New Price (KES) – per unit</label>
-                        <input type="number" name="price" step="0.01" min="0.01" required value="<?= htmlspecialchars($item['price']) ?>" placeholder="Enter new price">
+                        <input type="number" name="price" step="0.01" min="0.01" required value="<?= htmlspecialchars($ramitem['price']) ?>" placeholder="Enter new price">
                     </div>
                     <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Price</button>
                 </form>

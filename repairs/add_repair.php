@@ -2,9 +2,6 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
-
 // Only technicians can add repairs
 if ($_SESSION['role'] !== 'technician') {
     die("ACCESS DENIED. Only technicians can add repairs.");
@@ -170,11 +167,12 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     </style>
 </head>
 <body>
-<div class="main-content">
-    <div class="page-header">
-        <h1><i class="fas fa-tools"></i> Add Repair</h1>
-        <div class="breadcrumb">
-            <?php if ($user_role === 'super_admin'): ?>
+    <?php include "../includes/sidebar.php"; ?>
+    <div class="main-content">
+        <div class="page-header">
+            <h1><i class="fas fa-tools"></i> Add Repair</h1>
+            <div class="breadcrumb">
+                <?php if ($user_role === 'super_admin'): ?>
                 <a href="/inventory_system/dashboard/superadmindashboard.php">Dashboard</a>
             <?php elseif ($user_role === 'manager'): ?>
                 <a href="/inventory_system/dashboard/managerdashboard.php">Dashboard</a>

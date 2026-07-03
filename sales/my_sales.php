@@ -2,8 +2,7 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 
 // Only sales role can access
 if ($_SESSION['role'] !== 'sales') {
@@ -336,6 +335,7 @@ else $greeting = 'Good evening';
     </style>
 </head>
 <body>
+    <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-chart-line"></i> My Sales</h1>

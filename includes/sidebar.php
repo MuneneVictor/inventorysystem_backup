@@ -302,6 +302,19 @@ body {
             // Helper to generate collapsible sections
             $sections = [];
 
+
+             if ($role === 'super_admin'){
+                $sections['REPORTS'] = [
+                    'icon' => 'fas fa-chart-line',
+                    'items' => [
+                        ['Sales Report', '/inventory_system/sales/sales_logs.php', 'fas fa-chart-line'],
+                        ['Sales Team', '/inventory_system/reports/sales_team.php', 'fas fa-users'],
+                        ['Inventory Overview', '/inventory_system/reports/overview.php', 'fas fa-warehouse'],
+                        ['Categories Report', '/inventory_system/reports/categories_report.php', 'fas fa-list-alt'],
+                        ['Low Stock Report', '/inventory_system/reports/low_stock.php', 'fas fa-exclamation-triangle']
+                    ]
+                ];
+            }
             // Devices section
             if (in_array($role, ['super_admin','manager','inventory_admin'])) {
                 $deviceItems = [
@@ -311,6 +324,8 @@ body {
                     ['In Stock', '/inventory_system/devices/instock.php', 'fas fa-box'],
                     ['Sold', '/inventory_system/devices/sold.php', 'fas fa-money-bill-wave'],
                     ['Search Device', '/inventory_system/devices/search.php', 'fas fa-search'],
+                    ['Give out Device', '/inventory_system/devices/give_device.php', 'fas fa-gift'],
+                    ['Device Logs', '/inventory_system/devices/device_logs.php', 'fas fa-clipboard-list'],
                 ];
                 if ($role === 'super_admin') {
                     $deviceItems[] = ['Price list', '/inventory_system/devices/price_list.php', 'fas fa-dollar-sign'];
@@ -513,8 +528,8 @@ body {
                 $sections['QUOTATIONS'] = [
                     'icon' => 'fas fa-file-invoice',
                     'items' => [
-                        ['Make a Quotation', '/inventory_system/sales/make_quotation.php', 'fas fa-file-invoice'],
-                        ['My Quotations', '/inventory_system/sales/my_quotations.php', 'fas fa-chart-bar'],
+                        ['Make a Quotation', '/inventory_system/quotations/write_quotation.php', 'fas fa-file-invoice'],
+                        ['My Quotations', '/inventory_system/quotations/my_quotations.php', 'fas fa-chart-bar'],
                     ]
                 ];
             }

@@ -473,7 +473,8 @@ $places = array_unique(array_column($accessories, 'place'));
                             <th>Total Value (KES)</th>
                             <th>Date Added</th>
                             <th>Added By</th>
-                            <th>Updated By</th>  
+                            <th>Updated By</th> 
+                            <th>Date Updated</th> 
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -494,6 +495,7 @@ $places = array_unique(array_column($accessories, 'place'));
                                 <td><small><?= date('M j, Y g:i A', strtotime($a['date_added'])) ?></small></td>
                                 <td><?= htmlspecialchars($a['added_by_name'] ?? 'N/A') ?></td>
                                 <td><?= htmlspecialchars($a['updated_by_name'] ?? '-') ?></td>   <!-- NEW CELL -->
+                                <td><small><?= $a['updated_at'] ? date('M j, Y g:i A', strtotime($a['updated_at'])) : 'Not updated yet' ?></small></td>
                                 <td>
                                     <?php if (in_array($role, ['super_admin', 'manager'])): ?>
                                                 

@@ -39,7 +39,8 @@ function buildDeviceSpecs($device) {
 }
 
 // Get filter inputs
-$filter_search = trim($_GET['search'] ?? '');
+$filter_serial = trim($_GET['serial'] ?? '');
+$filter_model = trim($_GET['model'] ?? '');
 $filter_branch = trim($_GET['branch'] ?? '');
 $filter_category = trim($_GET['category'] ?? '');
 $filter_place = trim($_GET['place'] ?? '');
@@ -73,9 +74,13 @@ if ($filter_place) {
     $sql .= " AND d.place = :place";
     $params['place'] = $filter_place;
 }
-if ($filter_search) {
-    $sql .= " AND (d.serial_number LIKE :search OR d.model_name LIKE :search)";
-    $params['search'] = "%$filter_search%";
+if ($filter_serial) {
+    $sql .= " AND d.serial_number LIKE :serial";
+    $params['serial'] = "%$filter_serial%";
+}
+if ($filter_model) {
+    $sql .= " AND d.model_name LIKE :model";
+    $params['model'] = "%$filter_model%";
 }
 
 $sql .= " ORDER BY d.date_added DESC";
@@ -157,7 +162,7 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
         .empty-state { text-align: center; padding: 3rem; color: var(--gray-500); }
         .empty-state i { font-size: 2rem; display: block; margin-bottom: 1rem; opacity: 0.5; }
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
-        .btn-view { background: var(--info, #3b82f6); color: white; border: none; border-radius: var(--radius-sm); padding: 0.3rem 0.6rem; font-size: 0.75rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; }
+        .btn-view { background: #3b82f6; color: white; border: none; border-radius: var(--radius-sm); padding: 0.3rem 0.6rem; font-size: 0.75rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; }
         .btn-view:hover { background: #2563eb; }
         @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
         @media (max-width: 768px) { 
@@ -203,8 +208,12 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="filter-title"><i class="fas fa-filter"></i> Filter Devices</div>
         <form method="GET" class="filter-grid">
             <div class="filter-group">
-                <label>Search (Serial / Model)</label>
-                <input type="text" name="search" placeholder="e.g., 5CG..." value="<?= htmlspecialchars($filter_search) ?>">
+                <label>Serial Number</label>
+                <input type="text" name="serial" placeholder="e.g., 5CG..." value="<?= htmlspecialchars($filter_serial) ?>">
+            </div>
+            <div class="filter-group">
+                <label>Model Name</label>
+                <input type="text" name="model" placeholder="e.g., ThinkPad..." value="<?= htmlspecialchars($filter_model) ?>">
             </div>
             <?php if ($role !== 'manager'): ?>
             <div class="filter-group">
@@ -237,7 +246,7 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
             <div class="filter-actions">
                 <button type="submit" class="btn"><i class="fas fa-search"></i> Filter</button>
-                <a href="instock_devices.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
+                <a href="instock.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
             </div>
         </form>
     </div>
@@ -247,7 +256,7 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="empty-state">
                 <i class="fas fa-box-open"></i>
                 <p>No in-stock devices found matching your criteria.</p>
-                <a href="instock_devices.php" class="btn" style="margin-top: 1rem;">
+                <a href="instock.php" class="btn" style="margin-top: 1rem;">
                     <i class="fas fa-undo"></i> Clear Filters
                 </a>
             </div>
@@ -258,6 +267,7 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <th>#</th>
                         <th>Serial Number</th>
                         <th>Model</th>
+                        <th>Category</th>
                         <th>Specifications</th>
                         <th>Place</th>
                         <th>Added By</th>
@@ -279,6 +289,7 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <td><?= $i++ ?></td>
                             <td><code><?= htmlspecialchars($device['serial_number']) ?></code></td>
                             <td><strong><?= htmlspecialchars($device['model_name'] ?? '-') ?></strong></td>
+                            <td><?= htmlspecialchars($device['category_name'] ?? '-') ?></td>
                             <td>
                                 <span class="specs-text" title="<?= htmlspecialchars($specs) ?>">
                                     <?= htmlspecialchars($specs ?: '-') ?>

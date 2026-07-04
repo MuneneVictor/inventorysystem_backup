@@ -24,6 +24,7 @@ if ($user_role !== 'super_admin') {
 $error = "";
 $success = "";
 $skippedSerials = [];
+$rowErrors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_FILES['file']) || $_FILES['file']['error'] !== 0) {
@@ -31,64 +32,126 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         if ($user_role === 'super_admin') {
             $branch = $_POST['branch'] ?? '';
-            if (!$branch) $error = "Please select a branch.";
+            if (!$branch || !in_array($branch, ['KIMATHI', 'MOI'])) {
+                $error = "Please select a valid branch.";
+            }
         } else {
             $branch = $user_branch;
         }
 
         if (!$error) {
             $fileTmp = $_FILES['file']['tmp_name'];
-            $fileExt = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
-            $allowed = ['csv', 'xlsx', 'xls'];
-            if (!in_array($fileExt, $allowed)) {
-                $error = "Invalid file type. Please upload CSV or Excel file.";
+            $fileName = $_FILES['file']['name'];
+            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
+                $error = "Invalid file type. Please upload .xlsx, .xls, or .csv.";
             } else {
                 try {
                     $spreadsheet = IOFactory::load($fileTmp);
                     $sheet = $spreadsheet->getActiveSheet();
                     $rows = $sheet->toArray();
 
-                    $count = 0;
-                    $duplicates = 0;
+                    if (empty($rows)) {
+                        $error = "The file is empty.";
+                    } else {
+                        // Validate header
+                        $header = array_map('trim', $rows[0]);
+                        $expectedHeader = ['serial_number', 'model_name'];
+                        $headerLower = array_map('strtolower', $header);
+                        if ($headerLower !== $expectedHeader) {
+                            $error = "Invalid header. Expected columns: " . implode(', ', $expectedHeader);
+                        } else {
+                            unset($rows[0]); // remove header
 
-                    foreach ($rows as $index => $row) {
-                        if ($index === 0) continue; // skip header
-                        $serial = trim($row[0] ?? '');
-                        $model = trim($row[1] ?? '');
-                        if (!$serial || !$model) continue;
+                            $added_by = $user_id;
+                            $count = 0;
+                            $duplicates = 0;
+                            $invalidRows = 0;
+                            $rowErrors = [];
+                            $skippedSerials = [];
 
-                        $check = $conn->prepare("SELECT serial_number FROM printers WHERE serial_number = ?");
-                        $check->execute([$serial]);
-                        if ($check->rowCount() > 0) {
-                            $duplicates++;
-                            $skippedSerials[] = $serial;
-                            continue;
+                            // Prepare insert
+                            $insertStmt = $conn->prepare("
+                                INSERT INTO printers (serial_number, model_name, branch, added_by, status, date_added)
+                                VALUES (?, ?, ?, ?, 'In Stock', NOW())
+                            ");
+
+                            foreach ($rows as $rowIndex => $row) {
+                                $rowNumber = $rowIndex + 2; // 1-indexed with header
+                                // Ensure at least 2 columns
+                                if (count($row) < 2) {
+                                    $invalidRows++;
+                                    $rowErrors[] = "Row $rowNumber: Not enough columns (expected 2).";
+                                    continue;
+                                }
+
+                                $serial = trim($row[0] ?? '');
+                                $model = trim($row[1] ?? '');
+
+                                $errors = [];
+
+                                if (empty($serial)) {
+                                    $errors[] = "Serial number is required.";
+                                } else {
+                                    // Check duplicate
+                                    $check = $conn->prepare("SELECT serial_number FROM printers WHERE serial_number = ?");
+                                    $check->execute([$serial]);
+                                    if ($check->rowCount() > 0) {
+                                        $errors[] = "Serial number already exists.";
+                                        $duplicates++;
+                                        $skippedSerials[] = $serial;
+                                    }
+                                }
+
+                                if (empty($model)) {
+                                    $errors[] = "Model name is required.";
+                                }
+
+                                if (!empty($errors)) {
+                                    $invalidRows++;
+                                    $rowErrors[] = "Row $rowNumber (SN: $serial): " . implode(' ', $errors);
+                                    continue;
+                                }
+
+                                // Skip if duplicate already flagged
+                                if (!empty($skippedSerials) && in_array($serial, $skippedSerials)) {
+                                    continue;
+                                }
+
+                                // Insert
+                                try {
+                                    $insertStmt->execute([$serial, $model, $branch, $added_by]);
+                                    $count++;
+                                } catch (PDOException $e) {
+                                    $invalidRows++;
+                                    $rowErrors[] = "Row $rowNumber (SN: $serial): Database error - " . $e->getMessage();
+                                }
+                            }
+
+                            if ($count > 0) {
+                                $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Bulk upload printers', ?)");
+                                $log->execute([$user_id, "Uploaded $count printers to $branch branch"]);
+                            }
+
+                            $success = "$count printer(s) uploaded successfully to $branch branch.";
+                            if ($duplicates > 0) {
+                                $success .= " $duplicates duplicate serial(s) were skipped.";
+                            }
+                            if ($invalidRows > 0) {
+                                $success .= " $invalidRows row(s) contained errors and were skipped.";
+                            }
                         }
-
-                        $stmt = $conn->prepare("
-                            INSERT INTO printers (serial_number, model_name, branch, added_by, status, date_added)
-                            VALUES (?, ?, ?, ?, 'In Stock', NOW())
-                        ");
-                        $stmt->execute([$serial, $model, $branch, $user_id]);
-                        $count++;
                     }
-
-                    if ($count > 0) {
-                        $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Bulk upload printers', ?)");
-                        $log->execute([$user_id, "Uploaded $count printers to $branch branch"]);
-                    }
-
-                    $success = "$count printers uploaded to $branch branch successfully.";
-                    if ($duplicates > 0) $success .= " $duplicates duplicate serial(s) were skipped.";
                 } catch (Exception $e) {
-                    $error = "File error: " . $e->getMessage();
+                    $error = "File processing error: " . $e->getMessage();
                 }
             }
         }
     }
 }
 
-// Greeting (same as add_printer)
+// Greeting
 date_default_timezone_set('Africa/Nairobi');
 $hour = date('G');
 if ($hour < 12) $greeting = 'Good morning';
@@ -96,7 +159,6 @@ elseif ($hour < 17) $greeting = 'Good afternoon';
 else $greeting = 'Good evening';
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -106,11 +168,9 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Same CSS as add_printer.php – include exactly as in monitor version */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
-            --primary-dark: #0f3a1e;
             --gray-50: #f9fafb;
             --gray-100: #f3f4f6;
             --gray-200: #e5e7eb;
@@ -136,13 +196,14 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         .page-header h1 i { color: var(--primary); font-size: 1.75rem; }
         .breadcrumb { color: var(--gray-500); font-size: 0.9rem; }
         .breadcrumb a { color: var(--primary); text-decoration: none; }
-        .form-container { max-width: 700px; margin: 0 auto; }
-        .card { background: white; border-radius: var(--radius-xl); border: 1px solid var(--gray-200); overflow: hidden; box-shadow: var(--shadow-sm); }
+        .form-container { max-width: 800px; margin: 0 auto; }
+        .card { background: white; border-radius: var(--radius-xl); border: 1px solid var(--gray-200); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 1.5rem; }
         .card-header { background: var(--gray-50); padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--gray-200); }
         .card-header h2 { font-size: 1.25rem; font-weight: 600; color: var(--gray-800); display: flex; align-items: center; gap: 0.5rem; }
         .card-header h2 i { color: var(--primary); }
         .card-body { padding: 1.5rem; }
         .info-box { background: var(--gray-50); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid var(--primary); }
+        .info-box ul { margin-top: 0.5rem; padding-left: 1.5rem; }
         .form-group { margin-bottom: 1.5rem; }
         .form-group label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--gray-700); margin-bottom: 0.5rem; }
         .form-group input, .form-group select { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); font-size: 0.9rem; background: white; font-family: var(--font-sans); }
@@ -150,17 +211,22 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         .btn { padding: 0.75rem 1.5rem; border: none; border-radius: var(--radius-md); font-size: 0.9rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-sans); }
         .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; }
         .btn-primary:hover { background: var(--primary-light); }
-        .alert { padding: 1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
+        .btn-secondary { background: var(--gray-200); color: var(--gray-700); }
+        .alert { padding: 1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; }
         .alert-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
         .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
         .skipped-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.85rem; }
+        .error-list { background: #fee2e2; border: 1px solid #fecaca; border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.85rem; max-height: 200px; overflow-y: auto; }
+        .error-list strong { color: #991b1b; display: block; margin-bottom: 0.5rem; }
+        .error-list ul { padding-left: 1.5rem; }
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
+        .template-download { margin-top: 1rem; }
         @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
         @media (max-width: 768px) { .page-header h1 { font-size: 1.25rem; } .card-body { padding: 1rem; } .btn { width: 100%; justify-content: center; } }
     </style>
 </head>
 <body>
-    <?php include "../includes/sidebar.php"; ?>
+<?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-upload"></i> Bulk Upload Printers</h1>
@@ -180,25 +246,45 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     </div>
 
     <div class="form-container">
+        <?php if ($error): ?>
+            <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
+        <?php endif; ?>
+        <?php if ($success): ?>
+            <div class="alert alert-success"><i class="fas fa-check-circle"></i> <?= htmlspecialchars($success) ?></div>
+        <?php endif; ?>
+        <?php if (!empty($skippedSerials)): ?>
+            <div class="skipped-box">
+                <strong><i class="fas fa-ban"></i> Skipped Serial Numbers (duplicates):</strong><br>
+                <?= implode(', ', array_unique($skippedSerials)) ?>
+            </div>
+        <?php endif; ?>
+        <?php if (!empty($rowErrors)): ?>
+            <div class="error-list">
+                <strong><i class="fas fa-exclamation-triangle"></i> Row Errors:</strong>
+                <ul>
+                    <?php foreach ($rowErrors as $err): ?>
+                        <li><?= htmlspecialchars($err) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
+
         <div class="card">
             <div class="card-header"><h2><i class="fas fa-table"></i> Upload Excel / CSV File</h2></div>
             <div class="card-body">
-                <?php if ($error): ?>
-                    <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
-                <?php endif; ?>
-                <?php if ($success): ?>
-                    <div class="alert alert-success"><i class="fas fa-check-circle"></i> <?= htmlspecialchars($success) ?></div>
-                <?php endif; ?>
-                <?php if (!empty($skippedSerials)): ?>
-                    <div class="skipped-box"><strong>Skipped Serials:</strong><br><?= implode(', ', array_unique($skippedSerials)) ?></div>
-                <?php endif; ?>
-
                 <div class="info-box">
                     <?php if ($user_role === 'super_admin'): ?>
                         <strong>You can upload printers to any branch.</strong>
                     <?php else: ?>
                         <strong>Your branch: <?= htmlspecialchars($user_branch) ?></strong>
                     <?php endif; ?>
+                    <br><br>
+                    <strong>File Format Requirements:</strong>
+                    <ul>
+                        <li>First row must be the header: <code>serial_number, model_name</code></li>
+                        <li>Serial number: required, unique</li>
+                        <li>Model name: required</li>
+                    </ul>
                 </div>
 
                 <form method="POST" enctype="multipart/form-data">
@@ -218,18 +304,49 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                     <div class="form-group">
                         <label>Excel/CSV File (.xlsx, .xls, .csv)</label>
                         <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
+                        <p style="font-size:0.8rem; color:var(--gray-500); margin-top:0.25rem;">Maximum file size: 10MB</p>
                     </div>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Upload</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Upload & Process</button>
                 </form>
-                <div class="info-box" style="margin-top:1rem;">
-                    <strong>File Format (2 columns):</strong><br>
-                    Serial Number | Model Name
+
+                <div class="template-download">
+                    <p><i class="fas fa-download"></i> <a href="#" id="downloadTemplate" style="color: var(--primary); text-decoration: none;">Download CSV Template</a></p>
                 </div>
             </div>
         </div>
     </div>
     <div class="footer"><i class="fas fa-copyright"></i> <?= date('Y'); ?> Mombasa Computers</div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function adjustMainContent() {
+        const main = document.querySelector('.main-content');
+        if (window.innerWidth <= 1200) {
+            main.style.marginLeft = '0';
+        } else {
+            main.style.marginLeft = '260px';
+        }
+    }
+    window.addEventListener('resize', adjustMainContent);
+    adjustMainContent();
+
+    // Download template
+    document.getElementById('downloadTemplate').addEventListener('click', function(e) {
+        e.preventDefault();
+        const csv = "serial_number,model_name\nP001,HP LaserJet Pro M404\nP002,Canon imageCLASS MF743Cdw\nP003,Epson WorkForce Pro WF-4830";
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'printer_upload_template.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+});
+</script>
 <?php require_once "../includes/footer.php"; ?>
 </body>
 </html>

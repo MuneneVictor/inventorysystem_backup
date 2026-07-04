@@ -167,6 +167,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                         $branch = $user_branch;
                     }
                     
+                    // --- NEW: Determine 'place' based on category ---
+                    // If category is 'Laptop' (case-insensitive) then place = 'store', else 'display'
+                    $place = 'display'; // default
+                    if (strtolower($category_name_raw) === 'laptop') {
+                        $place = 'store';
+                    }
+                    
                     $status = 'In Stock';
                     
                     if (!empty($rowErrors)) {
@@ -184,10 +191,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                         continue;
                     }
 
-                    // Insert device
+                    // Insert device – now including 'place'
                     $insert = $conn->prepare("INSERT INTO devices 
-                        (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, device_condition, added_by, branch, cargo_number) 
-                        VALUES (:serial_number, :category_id, :model_name, :processor, :graphics, :ram, :storage_type, :storage_capacity, :touch, :status, :device_condition, :added_by, :branch, :cargo_number)");
+                        (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, device_condition, added_by, branch, cargo_number, place) 
+                        VALUES (:serial_number, :category_id, :model_name, :processor, :graphics, :ram, :storage_type, :storage_capacity, :touch, :status, :device_condition, :added_by, :branch, :cargo_number, :place)");
 
                     $insert->execute([
                         'serial_number' => $serial_number,
@@ -203,7 +210,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                         'device_condition' => $device_condition,
                         'added_by' => $added_by,
                         'branch' => $branch,
-                        'cargo_number' => $cargo_number
+                        'cargo_number' => $cargo_number,
+                        'place' => $place
                     ]);
 
                     // Log activity
@@ -212,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                     $log->execute([
                         'user_id' => $added_by,
                         'action'  => 'Bulk upload',
-                        'details' => "Added device $serial_number ($model_name) via Excel upload to branch: $branch"
+                        'details' => "Added device $serial_number ($model_name) via Excel upload to branch: $branch, place: $place"
                     ]);
 
                     $addedCount++;

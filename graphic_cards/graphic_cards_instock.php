@@ -554,7 +554,7 @@ $branches = array_unique(array_column($cards, 'branch'));
                             <th>Added By</th>
                             <th>Date Added</th>
                             <?php if (in_array($role, ['super_admin', 'inventory_admin', 'manager'])): ?>
-                                <th>Actions</th>
+                            <th>Actions</th>
                             <?php endif; ?>
                         </tr>
                     </thead>
@@ -578,9 +578,10 @@ $branches = array_unique(array_column($cards, 'branch'));
                                 </td>
                                 <td><?= htmlspecialchars($c['added_by_name'] ?? 'N/A') ?></td>
                                 <td><small><?= date('M j, Y g:i A', strtotime($c['date_added'])) ?></small></td>
-                                <?php if (in_array($role, ['super_admin', 'inventory_admin', 'manager'])): ?>
-                                    <td>
-                                        <td>
+                                <td>
+                                    <?php if (in_array($role, ['super_admin', 'inventory_admin', 'manager'])): ?>
+                                    
+                                        
                                             <div class="action-links">
                                                 <?php if ($c['price'] === null): ?>
                                                     <a href="add_price_graphic_card.php?id=<?= urlencode($c['id']) ?>" class="action-link">
@@ -592,9 +593,10 @@ $branches = array_unique(array_column($cards, 'branch'));
                                                     </a>
                                                 <?php endif; ?>
                                             </div>
-                                        </td>
-                                    </td>
-                                <?php endif; ?>
+                                        
+                                    
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

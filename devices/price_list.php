@@ -3,7 +3,6 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
-
 if (!in_array($_SESSION['role'], ['super_admin', 'manager'])) {
    die("Access denied.");
 }
@@ -21,7 +20,7 @@ $cargoNumbers = $cargoStmt->fetchAll(PDO::FETCH_COLUMN);
 $categoryStmt = $conn->query("SELECT DISTINCT c.id, c.category_name FROM devices d JOIN categories c ON d.category_id = c.id WHERE d.cargo_number IS NOT NULL AND d.status = 'In Stock' ORDER BY c.category_name");
 $categories = $categoryStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Build SQL query with filters
+// Build SQL query with filters – now grouping by device_condition as well
 $sql = "
 SELECT 
     d.cargo_number,
@@ -34,6 +33,7 @@ SELECT
     d.storage_capacity,
     d.graphics,
     d.touch,
+    d.device_condition,
     d.price,
     COUNT(*) AS quantity,
     MAX(d.price_updated_at) AS price_updated_at
@@ -72,6 +72,7 @@ GROUP BY
     d.storage_capacity,
     d.graphics,
     d.touch,
+    d.device_condition,
     d.price
 ORDER BY d.cargo_number DESC
 ";
@@ -89,6 +90,7 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <title>Price List | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* (styles unchanged – same as before) */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -113,21 +115,9 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font-sans); background: var(--gray-100); color: var(--gray-800); line-height: 1.5; overflow-x: hidden; }
 
-        body {
-            font-family: var(--font-sans);
-            background: var(--gray-100);
-            color: var(--gray-800);
-            line-height: 1.5;
-            overflow-x: hidden;
-        }
-
-        /* Main Content Area */
         .main-content {
             padding: 2rem 2rem 1rem;
             margin-left: 260px;
@@ -139,7 +129,6 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
             max-width: 100%;
         }
 
-        /* Page Header */
         .page-header {
             background: white;
             padding: 1.5rem 2rem;
@@ -159,26 +148,15 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
             gap: 0.75rem;
         }
 
-        .page-header h1 i {
-            color: var(--primary);
-            font-size: 1.75rem;
-        }
+        .page-header h1 i { color: var(--primary); font-size: 1.75rem; }
 
         .breadcrumb {
             color: var(--gray-500);
             font-size: 0.9rem;
         }
+        .breadcrumb a { color: var(--primary); text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
 
-        .breadcrumb a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
-
-        /* Stats Cards */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -194,31 +172,11 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
             box-shadow: var(--shadow-sm);
             transition: all 0.2s ease;
         }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .stat-card .stat-icon { font-size: 1.5rem; color: var(--primary); margin-bottom: 0.5rem; }
+        .stat-card .stat-value { font-size: 1.75rem; font-weight: 600; color: var(--gray-800); }
+        .stat-card .stat-label { font-size: 0.85rem; color: var(--gray-500); margin-top: 0.25rem; }
 
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .stat-card .stat-icon {
-            font-size: 1.5rem;
-            color: var(--primary);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-card .stat-value {
-            font-size: 1.75rem;
-            font-weight: 600;
-            color: var(--gray-800);
-        }
-
-        .stat-card .stat-label {
-            font-size: 0.85rem;
-            color: var(--gray-500);
-            margin-top: 0.25rem;
-        }
-
-        /* Filter Form */
         .filter-section {
             background: white;
             padding: 1.5rem;
@@ -275,7 +233,6 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
             box-shadow: 0 0 0 3px rgba(26, 75, 42, 0.1);
         }
 
-        /* Table Styles */
         .table-wrapper {
             background: white;
             border-radius: var(--radius-xl);
@@ -284,16 +241,13 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
             box-shadow: var(--shadow-sm);
         }
 
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
-            min-width: 1200px;
+            min-width: 1300px;
         }
 
         th {
@@ -314,15 +268,9 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
             vertical-align: middle;
         }
 
-        tr:hover {
-            background: var(--gray-50);
-        }
+        tr:hover { background: var(--gray-50); }
+        tr:last-child td { border-bottom: none; }
 
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        /* Text wrapping */
         .wrap-model {
             max-width: 180px;
             word-wrap: break-word;
@@ -341,7 +289,6 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
             white-space: normal;
         }
 
-        /* Badge */
         .badge {
             display: inline-block;
             padding: 0.25rem 0.625rem;
@@ -357,7 +304,6 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
             color: #059669;
         }
 
-        /* Buttons */
         .btn {
             padding: 0.5rem 1rem;
             border: none;
@@ -378,34 +324,21 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
             background: var(--primary);
             color: white;
         }
-
-        .btn-primary:hover {
-            background: var(--primary-light);
-        }
+        .btn-primary:hover { background: var(--primary-light); }
 
         .btn-add {
             background: #3b82f6;
             color: white;
         }
+        .btn-add:hover { background: #2563eb; }
 
-        .btn-add:hover {
-            background: #2563eb;
-        }
-
-        /* Empty state */
         .empty-state {
             text-align: center;
             padding: 3rem;
             color: var(--gray-500);
         }
+        .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
 
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        /* Footer */
         .footer {
             text-align: center;
             padding: 1.5rem 0 0.5rem;
@@ -415,78 +348,30 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
             border-top: 1px solid var(--gray-200);
         }
 
-        /* Responsive */
         @media (max-width: 1200px) {
-            .main-content {
-                margin-left: 0 !important;
-                width: 100% !important;
-                padding: 1.5rem 1rem 1rem !important;
-                padding-top: 5rem !important;
-            }
+            .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
         }
-
         @media (max-width: 768px) {
-            .main-content {
-                padding: 1rem 0.75rem 0.75rem !important;
-                padding-top: 4.5rem !important;
-            }
-
-            .page-header h1 {
-                font-size: 1.25rem;
-            }
-
-            .page-header {
-                padding: 1rem 1.25rem;
-            }
-
-            .stats-row {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 0.75rem;
-            }
-
-            .stat-card {
-                padding: 1rem;
-            }
-
-            .stat-card .stat-value {
-                font-size: 1.5rem;
-            }
-
-            .filter-form {
-                flex-direction: column;
-            }
-
-            .filter-group select,
-            .filter-group input {
-                width: 100%;
-            }
-
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
+            .main-content { padding: 1rem 0.75rem 0.75rem !important; padding-top: 4.5rem !important; }
+            .page-header h1 { font-size: 1.25rem; }
+            .page-header { padding: 1rem 1.25rem; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+            .stat-card { padding: 1rem; }
+            .stat-card .stat-value { font-size: 1.5rem; }
+            .filter-form { flex-direction: column; }
+            .filter-group select, .filter-group input { width: 100%; }
+            .btn { width: 100%; justify-content: center; }
         }
-
         @media (max-width: 480px) {
-            .main-content {
-                padding: 0.75rem 0.5rem 0.5rem !important;
-                padding-top: 4rem !important;
-            }
-
-            .stats-row {
-                grid-template-columns: 1fr;
-            }
-
-            .page-header h1 {
-                font-size: 1.1rem;
-            }
+            .main-content { padding: 0.75rem 0.5rem 0.5rem !important; padding-top: 4rem !important; }
+            .stats-row { grid-template-columns: 1fr; }
+            .page-header h1 { font-size: 1.1rem; }
         }
     </style>
     <script>
         function autoApplyFilter() {
             document.getElementById('filterForm').submit();
         }
-
         function handleEnterKey(event) {
             if (event.key === 'Enter') {
                 autoApplyFilter();
@@ -497,7 +382,6 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body>
 <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
-    <!-- Page Header -->
     <div class="page-header">
         <h1>
             <i class="fas fa-dollar-sign"></i>
@@ -596,6 +480,7 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <th>Storage</th>
                             <th>Graphics</th>
                             <th>Touch?</th>
+                            <th>Condition</th>
                             <th>Price (KES)</th>
                             <th>Qty</th>
                             <th>Action</th>
@@ -614,6 +499,7 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <td><span class="badge"><?= $d['storage_type'] . ' ' . $d['storage_capacity'] . 'GB' ?></span></td>
                             <td class="wrap-graphics"><?= htmlspecialchars($d['graphics']) ?></td>
                             <td><span class="badge"><?= htmlspecialchars($d['touch']) ?></span></td>
+                            <td><span class="badge"><?= htmlspecialchars($d['device_condition'] ?? 'Ex-Uk') ?></span></td>
                             <td class="price">
                                 <?= $d['price'] !== null ? 'KES ' . number_format($d['price'], 2) : '-' ?>
                             </td>
@@ -621,12 +507,12 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <td>
                                 <?php if($d['price'] === null): ?>
                                     <a class="btn btn-add" 
-                                       href="add_price.php?cargo=<?= urlencode($d['cargo_number']) ?>&category_id=<?= $d['category_id'] ?>&model=<?= urlencode($d['model_name']) ?>&processor=<?= urlencode($d['processor']) ?>&ram=<?= $d['ram'] ?>&storage_type=<?= urlencode($d['storage_type']) ?>&storage_capacity=<?= $d['storage_capacity'] ?>&graphics=<?= urlencode($d['graphics']) ?>&touch=<?= urlencode($d['touch']) ?>">
+                                       href="add_price.php?cargo=<?= urlencode($d['cargo_number']) ?>&category_id=<?= $d['category_id'] ?>&model=<?= urlencode($d['model_name']) ?>&processor=<?= urlencode($d['processor']) ?>&ram=<?= $d['ram'] ?>&storage_type=<?= urlencode($d['storage_type']) ?>&storage_capacity=<?= $d['storage_capacity'] ?>&graphics=<?= urlencode($d['graphics']) ?>&touch=<?= urlencode($d['touch']) ?>&device_condition=<?= urlencode($d['device_condition'] ?? 'Ex-Uk') ?>">
                                         <i class="fas fa-plus"></i> Add Price
                                     </a>
                                 <?php else: ?>
                                     <a class="btn btn-primary" 
-                                       href="update_price.php?cargo=<?= urlencode($d['cargo_number']) ?>&category_id=<?= $d['category_id'] ?>&model=<?= urlencode($d['model_name']) ?>&processor=<?= urlencode($d['processor']) ?>&ram=<?= $d['ram'] ?>&storage_type=<?= urlencode($d['storage_type']) ?>&storage_capacity=<?= $d['storage_capacity'] ?>&graphics=<?= urlencode($d['graphics']) ?>&touch=<?= urlencode($d['touch']) ?>">
+                                       href="update_price.php?cargo=<?= urlencode($d['cargo_number']) ?>&category_id=<?= $d['category_id'] ?>&model=<?= urlencode($d['model_name']) ?>&processor=<?= urlencode($d['processor']) ?>&ram=<?= $d['ram'] ?>&storage_type=<?= urlencode($d['storage_type']) ?>&storage_capacity=<?= $d['storage_capacity'] ?>&graphics=<?= urlencode($d['graphics']) ?>&touch=<?= urlencode($d['touch']) ?>&device_condition=<?= urlencode($d['device_condition'] ?? 'Ex-Uk') ?>">
                                         <i class="fas fa-edit"></i> Update Price
                                     </a>
                                 <?php endif; ?>

@@ -464,6 +464,7 @@ $branches = array_unique(array_column($items, 'branch'));
                             <th>Total Value (KES)</th>
                             <th>Added By</th>
                             <th>Updated By</th>
+                            <th>Date Updated</th>
                             <th>Date Added</th>
                             <th>Actions</th>
                         </tr>
@@ -485,6 +486,7 @@ $branches = array_unique(array_column($items, 'branch'));
                                 <td class="price"><?= $item['total_price'] !== null ? 'KES '.number_format($item['total_price'], 2) : '-' ?></td>
                                 <td><?= htmlspecialchars($item['added_by_name'] ?? 'N/A') ?></td>
                                 <td><?= htmlspecialchars($item['updated_by_name'] ?? 'Not updated yet') ?></td>
+                                <td><small><?= $item['date_updated'] ? date('M j, Y g:i A', strtotime($item['date_updated'])) : 'Not updated yet' ?></small></td>
                                 <td><small><?= date('M j, Y g:i A', strtotime($item['date_added'])) ?></small></td>
                                 <td>
                                     <div class="action-links">

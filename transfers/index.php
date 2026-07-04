@@ -3,8 +3,6 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
-
-
 // Only super_admin, inventory_admin, manager, and cashier can access
 if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin', 'manager', 'cashier'])) {
     die("ACCESS DENIED.");
@@ -74,7 +72,7 @@ else $greeting = 'Good evening';
         .breadcrumb { color: var(--gray-500); font-size: 0.9rem; }
         .breadcrumb a { color: var(--primary); text-decoration: none; }
         .branch-info { background: var(--gray-50); padding: 0.75rem 1.25rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem; border-left: 4px solid var(--info); }
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
         .card { background: white; border-radius: var(--radius-xl); border: 1px solid var(--gray-200); overflow: hidden; transition: all 0.3s ease; box-shadow: var(--shadow-sm); }
         .card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
         .card-header { padding: 1.5rem; text-align: center; border-bottom: 1px solid var(--gray-200); }
@@ -84,6 +82,12 @@ else $greeting = 'Good evening';
         .card-header.printer i { color: #f59e0b; }
         .card-header.charger i { color: #ef4444; }
         .card-header.ramssd i { color: #8b5cf6; }
+        .card-header.smartboard i { color: #ec4899; }
+        .card-header.ups i { color: #f97316; }
+        .card-header.phone i { color: #14b8a6; }
+        .card-header.accessory i { color: #6366f1; }
+        .card-header.graphics i { color: #d946ef; }
+        .card-header.hdd i { color: #6b7280; }
         .card-header h3 { font-size: 1.25rem; margin-top: 0.75rem; color: var(--gray-800); }
         .card-body { padding: 1.25rem; text-align: center; }
         .card-body p { color: var(--gray-500); font-size: 0.9rem; margin-bottom: 1rem; }
@@ -91,7 +95,8 @@ else $greeting = 'Good evening';
         .btn:hover { background: var(--primary-light); }
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
         @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
-        @media (max-width: 768px) { .cards-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { .cards-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 480px) { .cards-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -179,6 +184,78 @@ else $greeting = 'Good evening';
             <div class="card-body">
                 <p>Transfer RAM and SSD components between branches.</p>
                 <a href="transfer_ram_ssd.php" class="btn"><i class="fas fa-arrow-right"></i> Transfer RAM/SSD</a>
+            </div>
+        </div>
+
+        <!-- Transfer Smartboards -->
+        <div class="card">
+            <div class="card-header smartboard">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <h3>Smartboards</h3>
+            </div>
+            <div class="card-body">
+                <p>Transfer interactive smartboards between branches.</p>
+                <a href="transfer_smartboard.php" class="btn"><i class="fas fa-arrow-right"></i> Transfer Smartboard</a>
+            </div>
+        </div>
+
+        <!-- Transfer UPS -->
+        <div class="card">
+            <div class="card-header ups">
+                <i class="fas fa-battery-three-quarters"></i>
+                <h3>UPS Units</h3>
+            </div>
+            <div class="card-body">
+                <p>Transfer UPS units between branches.</p>
+                <a href="transfer_ups.php" class="btn"><i class="fas fa-arrow-right"></i> Transfer UPS</a>
+            </div>
+        </div>
+
+        <!-- Transfer Phones -->
+        <div class="card">
+            <div class="card-header phone">
+                <i class="fas fa-mobile-alt"></i>
+                <h3>Phones</h3>
+            </div>
+            <div class="card-body">
+                <p>Transfer phones between branches.</p>
+                <a href="transfer_phone.php" class="btn"><i class="fas fa-arrow-right"></i> Transfer Phone</a>
+            </div>
+        </div>
+
+        <!-- Transfer Accessories -->
+        <div class="card">
+            <div class="card-header accessory">
+                <i class="fas fa-headset"></i>
+                <h3>Accessories</h3>
+            </div>
+            <div class="card-body">
+                <p>Transfer accessories (mice, keyboards, cables, etc.) between branches.</p>
+                <a href="transfer_accessory.php" class="btn"><i class="fas fa-arrow-right"></i> Transfer Accessory</a>
+            </div>
+        </div>
+
+        <!-- Transfer Graphics Cards -->
+        <div class="card">
+            <div class="card-header graphics">
+                <i class="fas fa-video"></i>
+                <h3>Graphics Cards</h3>
+            </div>
+            <div class="card-body">
+                <p>Transfer graphics cards between branches.</p>
+                <a href="transfer_graphics.php" class="btn"><i class="fas fa-arrow-right"></i> Transfer Graphics</a>
+            </div>
+        </div>
+
+        <!-- Transfer HDDs -->
+        <div class="card">
+            <div class="card-header hdd">
+                <i class="fas fa-hdd"></i>
+                <h3>HDDs</h3>
+            </div>
+            <div class="card-body">
+                <p>Transfer internal/external hard drives between branches.</p>
+                <a href="transfer_hdd.php" class="btn"><i class="fas fa-arrow-right"></i> Transfer HDD</a>
             </div>
         </div>
     </div>

@@ -45,11 +45,22 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     } else {
         $touch = 'N/A';
     }
+    if($category_name === 'Laptop' ){
+        $place = 'store';
+    }else{
+        $place = 'display';
+    }
     
     // NEW: Get cargo number and condition
     $cargo_number = trim($_POST['cargo_number']) ?: null;
     $device_condition = trim($_POST['device_condition']) ?: null;
     
+    if($cargo_number === null){
+        $cargo_numbervalue = "NO CARGO";
+    }else
+    {
+        $cargo_numbervalue = $cargo_number;
+    }
     // Get logged-in user ID for added_by
     $added_by = $_SESSION['user_id'];
 
@@ -59,12 +70,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     if($stmt->fetchColumn() > 0){
         $error = "A device with this serial number already exists!";
     } else {
+
         // Insert device including added_by, cargo_number, and device_condition
         $insert = $conn->prepare("
             INSERT INTO devices
-            (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, added_by, cargo_number, device_condition, branch)
+            (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, added_by, cargo_number, device_condition, branch, place)
             VALUES
-            (:serial_number, :category_id, :model_name, :processor, :graphics, :ram, :storage_type, :storage_capacity, :touch, :status, :added_by, :cargo_number, :device_condition, :branch)
+            (:serial_number, :category_id, :model_name, :processor, :graphics, :ram, :storage_type, :storage_capacity, :touch, :status, :added_by, :cargo_number, :device_condition, :branch, :place)
         ");
         $insert->execute([
             'serial_number' => $serial_number,
@@ -78,9 +90,10 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             'touch' => $touch,
             'status' => $status,
             'added_by' => $added_by,
-            'cargo_number' => $cargo_number,
+            'cargo_number' => $cargo_numbervalue,
             'device_condition' => $device_condition,
-            'branch' => $branch
+            'branch' => $branch,
+            'place' => $place
         ]);
 
         // Log activity

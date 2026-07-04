@@ -3,12 +3,11 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
-
 if (!in_array($_SESSION['role'], ['super_admin', 'manager'])) {
     die("Access denied.");
 }
 
-// Get all parameters from GET (same as add_price.php)
+// Get all parameters from GET (including device_condition)
 $cargo = $_GET['cargo'] ?? '';
 $category_id = $_GET['category_id'] ?? '';
 $model = $_GET['model'] ?? '';
@@ -18,6 +17,7 @@ $storage_type = $_GET['storage_type'] ?? '';
 $storage_capacity = $_GET['storage_capacity'] ?? '';
 $graphics = $_GET['graphics'] ?? '';
 $touch = $_GET['touch'] ?? '';
+$device_condition = $_GET['device_condition'] ?? 'Ex-Uk';
 
 if (!$cargo || !$category_id || !$model) {
     die("Invalid request");
@@ -28,7 +28,7 @@ $stmt = $conn->prepare("SELECT category_name FROM categories WHERE id = ?");
 $stmt->execute([$category_id]);
 $category_name = $stmt->fetchColumn() ?: 'Unknown';
 
-// Get count of devices in this group (same as add_price.php)
+// Get count of devices in this group (including device_condition) that have a price
 $stmt_count = $conn->prepare("
     SELECT COUNT(*) as total_count 
     FROM devices 
@@ -41,7 +41,8 @@ $stmt_count = $conn->prepare("
       AND storage_capacity = :storage_capacity
       AND graphics = :graphics
       AND touch = :touch
-      AND price IS NOT NULL  -- Only count devices that already have a price
+      AND device_condition = :device_condition
+      AND price IS NOT NULL
 ");
 $stmt_count->execute([
     'cargo' => $cargo,
@@ -52,7 +53,8 @@ $stmt_count->execute([
     'storage_type' => $storage_type,
     'storage_capacity' => $storage_capacity,
     'graphics' => $graphics,
-    'touch' => $touch
+    'touch' => $touch,
+    'device_condition' => $device_condition
 ]);
 $total_count = $stmt_count->fetchColumn();
 
@@ -69,7 +71,8 @@ $stmt_price = $conn->prepare("
       AND storage_capacity = :storage_capacity
       AND graphics = :graphics
       AND touch = :touch
-    AND price IS NOT NULL
+      AND device_condition = :device_condition
+      AND price IS NOT NULL
     LIMIT 1
 ");
 $stmt_price->execute([
@@ -81,7 +84,8 @@ $stmt_price->execute([
     'storage_type' => $storage_type,
     'storage_capacity' => $storage_capacity,
     'graphics' => $graphics,
-    'touch' => $touch
+    'touch' => $touch,
+    'device_condition' => $device_condition
 ]);
 $current_price = $stmt_price->fetchColumn();
 
@@ -95,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Enter a valid price";
     } else {
         if ($apply_to_all) {
-            // Update all devices in this cargo group with same specs that already have a price
+            // Update all devices in this group that have a price (same specs and condition)
             $update = $conn->prepare("
                 UPDATE devices
                 SET price = :price,
@@ -109,7 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   AND storage_capacity = :storage_capacity
                   AND graphics = :graphics
                   AND touch = :touch
-                  AND price IS NOT NULL  -- Only update devices that already have a price
+                  AND device_condition = :device_condition
+                  AND price IS NOT NULL
             ");
 
             $update->execute([
@@ -122,7 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'storage_type' => $storage_type,
                 'storage_capacity' => $storage_capacity,
                 'graphics' => $graphics,
-                'touch' => $touch
+                'touch' => $touch,
+                'device_condition' => $device_condition
             ]);
         } else {
             // Update only first device in this group that has a price
@@ -138,7 +144,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   AND storage_capacity = :storage_capacity
                   AND graphics = :graphics
                   AND touch = :touch
-                  AND price IS NOT NULL  -- Only devices that already have a price
+                  AND device_condition = :device_condition
+                  AND price IS NOT NULL
                 LIMIT 1
             ");
             $stmt_first->execute([
@@ -150,7 +157,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'storage_type' => $storage_type,
                 'storage_capacity' => $storage_capacity,
                 'graphics' => $graphics,
-                'touch' => $touch
+                'touch' => $touch,
+                'device_condition' => $device_condition
             ]);
             $serial = $stmt_first->fetchColumn();
 
@@ -182,6 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Update Price | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* Same CSS as add_price.php */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -206,21 +215,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font-sans); background: var(--gray-100); color: var(--gray-800); line-height: 1.5; overflow-x: hidden; }
 
-        body {
-            font-family: var(--font-sans);
-            background: var(--gray-100);
-            color: var(--gray-800);
-            line-height: 1.5;
-            overflow-x: hidden;
-        }
-
-        /* Main Content Area */
         .main-content {
             padding: 2rem 2rem 1rem;
             margin-left: 260px;
@@ -232,7 +229,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             max-width: 100%;
         }
 
-        /* Page Header */
         .page-header {
             background: white;
             padding: 1.5rem 2rem;
@@ -252,31 +248,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             gap: 0.75rem;
         }
 
-        .page-header h1 i {
-            color: var(--primary);
-            font-size: 1.75rem;
-        }
+        .page-header h1 i { color: var(--primary); font-size: 1.75rem; }
 
         .breadcrumb {
             color: var(--gray-500);
             font-size: 0.9rem;
         }
+        .breadcrumb a { color: var(--primary); text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
 
-        .breadcrumb a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
-
-        /* Form Container */
-        .form-container {
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
+        .form-container { max-width: 700px; margin: 0 auto; }
         .card {
             background: white;
             border-radius: var(--radius-xl);
@@ -284,13 +265,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             overflow: hidden;
             box-shadow: var(--shadow-sm);
         }
-
         .card-header {
             background: var(--gray-50);
             padding: 1.25rem 1.5rem;
             border-bottom: 1px solid var(--gray-200);
         }
-
         .card-header h2 {
             font-size: 1.25rem;
             font-weight: 600;
@@ -299,16 +278,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             align-items: center;
             gap: 0.5rem;
         }
+        .card-header h2 i { color: var(--primary); }
+        .card-body { padding: 1.5rem; }
 
-        .card-header h2 i {
-            color: var(--primary);
-        }
-
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        /* Specs Box */
         .specs-box {
             background: var(--gray-50);
             border-radius: var(--radius-lg);
@@ -316,27 +288,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 1.5rem;
             border-left: 4px solid var(--primary);
         }
-
         .specs-box p {
             margin: 0.5rem 0;
             font-size: 0.9rem;
         }
-
-        .specs-box p:first-child {
-            margin-top: 0;
-        }
-
-        .specs-box p:last-child {
-            margin-bottom: 0;
-        }
-
+        .specs-box p:first-child { margin-top: 0; }
+        .specs-box p:last-child { margin-bottom: 0; }
         .specs-box strong {
             color: var(--primary);
             width: 100px;
             display: inline-block;
         }
 
-        /* Info Note */
         .info-note {
             background: #eff6ff;
             border-left: 4px solid #3b82f6;
@@ -346,16 +309,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 0.9rem;
             color: #1e40af;
         }
+        .info-note i { margin-right: 0.5rem; }
+        .info-note strong { color: #1e40af; }
 
-        .info-note i {
-            margin-right: 0.5rem;
-        }
-
-        .info-note strong {
-            color: #1e40af;
-        }
-
-        /* Checkbox Group */
         .checkbox-group {
             margin-bottom: 1.5rem;
             padding: 0.75rem;
@@ -365,14 +321,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             align-items: center;
             gap: 0.75rem;
         }
-
         .checkbox-group input[type="checkbox"] {
             width: 18px;
             height: 18px;
             cursor: pointer;
             accent-color: var(--primary);
         }
-
         .checkbox-group label {
             font-size: 0.9rem;
             color: var(--gray-700);
@@ -380,11 +334,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin: 0;
         }
 
-        /* Form Group */
         .form-group {
             margin-bottom: 1.5rem;
         }
-
         .form-group label {
             display: block;
             font-size: 0.875rem;
@@ -392,7 +344,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--gray-700);
             margin-bottom: 0.5rem;
         }
-
         .form-group input {
             width: 100%;
             padding: 0.75rem 1rem;
@@ -403,14 +354,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-family: var(--font-sans);
             background: white;
         }
-
         .form-group input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(26, 75, 42, 0.1);
+            box-shadow: 0 0 0 3px rgba(26,75,42,0.1);
         }
 
-        /* Buttons */
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
@@ -425,35 +374,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             gap: 0.5rem;
             font-family: var(--font-sans);
         }
-
         .btn-primary {
             background: var(--primary);
             color: white;
             width: 100%;
             justify-content: center;
         }
+        .btn-primary:hover { background: var(--primary-light); }
 
-        .btn-primary:hover {
-            background: var(--primary-light);
-        }
-
-        .btn-secondary {
-            background: var(--gray-100);
-            color: var(--gray-700);
-            border: 1px solid var(--gray-300);
-        }
-
-        .btn-secondary:hover {
-            background: var(--gray-200);
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        /* Error Message */
         .alert-error {
             background: #fef2f2;
             border: 1px solid #fecaca;
@@ -465,12 +393,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             align-items: center;
             gap: 0.5rem;
         }
+        .alert-error i { font-size: 1.1rem; }
 
-        .alert-error i {
-            font-size: 1.1rem;
-        }
-
-        /* Footer */
         .footer {
             text-align: center;
             padding: 1.5rem 0 0.5rem;
@@ -480,67 +404,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-top: 1px solid var(--gray-200);
         }
 
-        /* Responsive */
         @media (max-width: 1200px) {
-            .main-content {
-                margin-left: 0 !important;
-                width: 100% !important;
-                padding: 1.5rem 1rem 1rem !important;
-                padding-top: 5rem !important;
-            }
+            .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; }
         }
-
         @media (max-width: 768px) {
-            .main-content {
-                padding: 1rem 0.75rem 0.75rem !important;
-                padding-top: 4.5rem !important;
-            }
-
-            .page-header h1 {
-                font-size: 1.25rem;
-            }
-
-            .page-header {
-                padding: 1rem 1.25rem;
-            }
-
-            .card-header {
-                padding: 1rem 1.25rem;
-            }
-
-            .card-body {
-                padding: 1.25rem;
-            }
-
-            .specs-box strong {
-                width: auto;
-                display: block;
-                margin-bottom: 0.25rem;
-            }
-
-            .action-buttons {
-                flex-direction: column;
-            }
-
-            .btn-secondary {
-                width: 100%;
-                justify-content: center;
-            }
+            .main-content { padding: 1rem 0.75rem 0.75rem !important; padding-top: 4.5rem !important; }
+            .page-header h1 { font-size: 1.25rem; }
+            .page-header { padding: 1rem 1.25rem; }
+            .card-header { padding: 1rem 1.25rem; }
+            .card-body { padding: 1.25rem; }
+            .specs-box strong { width: auto; display: block; margin-bottom: 0.25rem; }
         }
-
         @media (max-width: 480px) {
-            .main-content {
-                padding: 0.75rem 0.5rem 0.5rem !important;
-                padding-top: 4rem !important;
-            }
-
-            .page-header h1 {
-                font-size: 1.1rem;
-            }
-
-            .card-body {
-                padding: 1rem;
-            }
+            .main-content { padding: 0.75rem 0.5rem 0.5rem !important; padding-top: 4rem !important; }
+            .page-header h1 { font-size: 1.1rem; }
         }
     </style>
 </head>
@@ -594,18 +471,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <p><strong>Storage:</strong> <?= htmlspecialchars($storage_type . ' ' . $storage_capacity . 'GB') ?></p>
                         <p><strong>Graphics:</strong> <?= htmlspecialchars($graphics ?: 'Integrated') ?></p>
                         <p><strong>Touch:</strong> <?= htmlspecialchars($touch ?: 'N/A') ?></p>
+                        <p><strong>Condition:</strong> <?= htmlspecialchars($device_condition) ?></p>
                     </div>
 
                     <?php if ($total_count > 1): ?>
                         <div class="info-note">
                             <i class="fas fa-info-circle"></i>
-                            <strong>Note:</strong> There are <strong><?= $total_count ?></strong> devices in this group that have a price.
+                            <strong>Note:</strong> There are <strong><?= $total_count ?></strong> devices in this group that have a price (same specs and condition).
                             You can update the price for all matching devices or just one.
                         </div>
                         
                         <div class="checkbox-group">
                             <input type="checkbox" id="apply_to_all" name="apply_to_all" value="1" checked>
-                            <label for="apply_to_all">Apply this price to ALL <?= $total_count ?> devices with same specifications</label>
+                            <label for="apply_to_all">Apply this price to ALL <?= $total_count ?> devices with same specifications and condition</label>
                         </div>
                     <?php endif; ?>
 

@@ -3,7 +3,6 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
-
 $user_role = $_SESSION['role'];
 $user_id = (int) $_SESSION['user_id'];
 
@@ -14,6 +13,7 @@ if (!in_array($user_role, ['sales', 'super_admin', 'inventory_admin', 'manager',
 $search_sn = trim($_GET['sn'] ?? '');
 $search_model = trim($_GET['model'] ?? '');
 $searched = ($search_sn || $search_model);
+$ajax = isset($_GET['ajax']);
 
 $allResults = [];
 
@@ -83,7 +83,7 @@ if ($searched) {
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as $row) {
-        $specs = 'N/A'; // as per sales_logs
+        $specs = 'N/A';
         $viewLink = in_array('Printer', $viewableTypes) ? '../printers/view_printer.php?sn=' . urlencode($row['serial_number']) : null;
         addResult($allResults, 'Printer', $row['serial_number'], $row['model_name'], $row['branch'], 1, $row['price'] ?? null, $specs, $viewLink);
     }
@@ -149,8 +149,8 @@ if ($searched) {
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as $row) {
-        $specs = 'Qty: ' . $row['quantity']; // simple spec
-        $viewLink = null; // not viewable
+        $specs = 'Qty: ' . $row['quantity'];
+        $viewLink = null;
         addResult($allResults, 'Accessory', $row['id'], $row['name'], $row['branch'], $row['quantity'], $row['price'] ?? null, $specs, $viewLink);
     }
 
@@ -229,8 +229,79 @@ if ($searched) {
 
 date_default_timezone_set('Africa/Nairobi');
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
-?>
 
+// ---- AJAX response: output only the results container ----
+if ($ajax) {
+    // Only output the results part
+    ?>
+    <div id="results-container">
+        <?php if ($searched): ?>
+            <?php
+            $total = count($allResults);
+            echo '<div style="margin-bottom:1rem;"><strong>Found ' . $total . ' item(s)</strong>';
+            if ($search_sn) echo ' • Serial/ID: "' . htmlspecialchars($search_sn) . '"';
+            if ($search_model) echo ' • Name/Model: "' . htmlspecialchars($search_model) . '"';
+            echo '</div>';
+            ?>
+
+            <?php if ($total === 0): ?>
+                <div class="empty-state"><i class="fas fa-box-open"></i><p>No matching in‑stock items found.</p></div>
+            <?php else: ?>
+                <?php
+                $grouped = [];
+                foreach ($allResults as $item) {
+                    $grouped[$item['type']][] = $item;
+                }
+                foreach ($grouped as $type => $items): ?>
+                    <div class="section-title">
+                        <span><i class="fas fa-<?= strtolower($type) == 'device' ? 'laptop' : (strtolower($type) == 'monitor' ? 'desktop' : (strtolower($type) == 'printer' ? 'print' : (strtolower($type) == 'smartboard' ? 'chalkboard' : (strtolower($type) == 'ups' ? 'bolt' : (strtolower($type) == 'phone' ? 'mobile-alt' : 'box'))))) ?>"></i> <?= $type ?> (<?= count($items) ?>)</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>ID / Serial</th>
+                                    <th>Name / Model</th>
+                                    <th>Branch</th>
+                                    <th>Qty</th>
+                                    <th>Price</th>
+                                    <th>Specifications</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $i=1; foreach ($items as $item): ?>
+                                <tr>
+                                    <td><?= $i++ ?></td>
+                                    <td><code><?= htmlspecialchars($item['id']) ?></code></td>
+                                    <td><?= htmlspecialchars($item['name']) ?></td>
+                                    <td><span class="badge"><?= htmlspecialchars($item['branch']) ?></span></td>
+                                    <td><?= $item['quantity'] ?></td>
+                                    <td><?= $item['price'] !== null ? 'KES ' . number_format($item['price'], 0) : '-' ?></td>
+                                    <td class="specs-cell"><?= htmlspecialchars($item['specs'] ?? '-') ?></td>
+                                    <td>
+                                        <?php if (!empty($item['view'])): ?>
+                                            <a href="<?= $item['view'] ?>" class="view-btn">View</a>
+                                        <?php else: ?>
+                                            <span style="color: var(--gray-500);">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        <?php else: ?>
+            <div class="empty-state"><i class="fas fa-search"></i><p>Type something to start searching...</p></div>
+        <?php endif; ?>
+    </div>
+    <?php
+    exit; // stop further output
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -330,14 +401,14 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     </div>
 
     <div class="search-section">
-        <form method="GET" class="search-form">
+        <form method="GET" class="search-form" id="searchForm">
             <div class="search-group">
                 <label><i class="fas fa-tag"></i> Model / Name / Type</label>
-                <input type="text" name="model" placeholder="Search by model, name, or type..." value="<?= htmlspecialchars($search_model) ?>">
+                <input type="text" name="model" id="searchModel" placeholder="Search by model, name, or type..." value="<?= htmlspecialchars($search_model) ?>">
             </div>
             <div class="search-group">
                 <label><i class="fas fa-qrcode"></i> Serial / ID</label>
-                <input type="text" name="sn" placeholder="Scan or type serial/ID..." value="<?= htmlspecialchars($search_sn) ?>" autofocus>
+                <input type="text" name="sn" id="searchSn" placeholder="Scan or type serial/ID..." value="<?= htmlspecialchars($search_sn) ?>" autofocus>
             </div>
             <div class="search-group" style="flex: 0 0 auto; min-width: auto;">
                 <button type="submit" class="btn"><i class="fas fa-search"></i> Search</button>
@@ -345,66 +416,71 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         </form>
     </div>
 
-    <?php if ($searched): ?>
-        <?php
-        $total = count($allResults);
-        echo '<div style="margin-bottom:1rem;"><strong>Found ' . $total . ' item(s)</strong>';
-        if ($search_sn) echo ' • Serial/ID: "' . htmlspecialchars($search_sn) . '"';
-        if ($search_model) echo ' • Name/Model: "' . htmlspecialchars($search_model) . '"';
-        echo '</div>';
-        ?>
-
-        <?php if ($total === 0): ?>
-            <div class="empty-state"><i class="fas fa-box-open"></i><p>No matching in‑stock items found.</p></div>
-        <?php else: ?>
+    <div id="results-container">
+        <?php if ($searched): ?>
             <?php
-            $grouped = [];
-            foreach ($allResults as $item) {
-                $grouped[$item['type']][] = $item;
-            }
-            foreach ($grouped as $type => $items): ?>
-                <div class="section-title">
-                    <span><i class="fas fa-<?= strtolower($type) == 'device' ? 'laptop' : (strtolower($type) == 'monitor' ? 'desktop' : (strtolower($type) == 'printer' ? 'print' : (strtolower($type) == 'smartboard' ? 'chalkboard' : (strtolower($type) == 'ups' ? 'bolt' : (strtolower($type) == 'phone' ? 'mobile-alt' : 'box'))))) ?>"></i> <?= $type ?> (<?= count($items) ?>)</span>
-                </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>ID / Serial</th>
-                                <th>Name / Model</th>
-                                <th>Branch</th>
-                                <th>Qty</th>
-                                <th>Price</th>
-                                <th>Specifications</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php $i=1; foreach ($items as $item): ?>
-                            <tr>
-                                <td><?= $i++ ?></td>
-                                <td><code><?= htmlspecialchars($item['id']) ?></code></td>
-                                <td><?= htmlspecialchars($item['name']) ?></td>
-                                <td><span class="badge"><?= htmlspecialchars($item['branch']) ?></span></td>
-                                <td><?= $item['quantity'] ?></td>
-                                <td><?= $item['price'] !== null ? 'KES ' . number_format($item['price'], 0) : '-' ?></td>
-                                <td class="specs-cell"><?= htmlspecialchars($item['specs'] ?? '-') ?></td>
-                                <td>
-                                    <?php if (!empty($item['view'])): ?>
-                                        <a href="<?= $item['view'] ?>" class="view-btn">View</a>
-                                    <?php else: ?>
-                                        <span style="color: var(--gray-500);">-</span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endforeach; ?>
+            $total = count($allResults);
+            echo '<div style="margin-bottom:1rem;"><strong>Found ' . $total . ' item(s)</strong>';
+            if ($search_sn) echo ' • Serial/ID: "' . htmlspecialchars($search_sn) . '"';
+            if ($search_model) echo ' • Name/Model: "' . htmlspecialchars($search_model) . '"';
+            echo '</div>';
+            ?>
+
+            <?php if ($total === 0): ?>
+                <div class="empty-state"><i class="fas fa-box-open"></i><p>No matching in‑stock items found.</p></div>
+            <?php else: ?>
+                <?php
+                $grouped = [];
+                foreach ($allResults as $item) {
+                    $grouped[$item['type']][] = $item;
+                }
+                foreach ($grouped as $type => $items): ?>
+                    <div class="section-title">
+                        <span><i class="fas fa-<?= strtolower($type) == 'device' ? 'laptop' : (strtolower($type) == 'monitor' ? 'desktop' : (strtolower($type) == 'printer' ? 'print' : (strtolower($type) == 'smartboard' ? 'chalkboard' : (strtolower($type) == 'ups' ? 'bolt' : (strtolower($type) == 'phone' ? 'mobile-alt' : 'box'))))) ?>"></i> <?= $type ?> (<?= count($items) ?>)</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>ID / Serial</th>
+                                    <th>Name / Model</th>
+                                    <th>Branch</th>
+                                    <th>Qty</th>
+                                    <th>Price</th>
+                                    <th>Specifications</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $i=1; foreach ($items as $item): ?>
+                                <tr>
+                                    <td><?= $i++ ?></td>
+                                    <td><code><?= htmlspecialchars($item['id']) ?></code></td>
+                                    <td><?= htmlspecialchars($item['name']) ?></td>
+                                    <td><span class="badge"><?= htmlspecialchars($item['branch']) ?></span></td>
+                                    <td><?= $item['quantity'] ?></td>
+                                    <td><?= $item['price'] !== null ? 'KES ' . number_format($item['price'], 0) : '-' ?></td>
+                                    <td class="specs-cell"><?= htmlspecialchars($item['specs'] ?? '-') ?></td>
+                                    <td>
+                                        <?php if (!empty($item['view'])): ?>
+                                            <a href="<?= $item['view'] ?>" class="view-btn">View</a>
+                                        <?php else: ?>
+                                            <span style="color: var(--gray-500);">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        <?php else: ?>
+            <div class="empty-state"><i class="fas fa-search"></i><p>Type something to start searching...</p></div>
         <?php endif; ?>
-    <?php endif; ?>
+    </div>
+
     <div class="footer"><i class="fas fa-copyright"></i> <?= date('Y'); ?> Mombasa Computers</div>
 </div>
 
@@ -416,6 +492,61 @@ function adjustMainContent() {
 }
 window.addEventListener('resize', adjustMainContent);
 adjustMainContent();
+
+// ---- Live Search ----
+(function() {
+    const searchModel = document.getElementById('searchModel');
+    const searchSn = document.getElementById('searchSn');
+    const resultsContainer = document.getElementById('results-container');
+    const form = document.getElementById('searchForm');
+    let debounceTimer = null;
+
+    function performSearch() {
+        const model = searchModel.value.trim();
+        const sn = searchSn.value.trim();
+
+        // If both empty, clear results and show placeholder
+        if (model === '' && sn === '') {
+            resultsContainer.innerHTML = `<div class="empty-state"><i class="fas fa-search"></i><p>Type something to start searching...</p></div>`;
+            return;
+        }
+
+        // Build URL with current parameters
+        const params = new URLSearchParams();
+        if (model) params.append('model', model);
+        if (sn) params.append('sn', sn);
+        params.append('ajax', '1');
+
+        fetch(window.location.pathname + '?' + params.toString())
+            .then(response => response.text())
+            .then(html => {
+                resultsContainer.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Live search error:', error);
+            });
+    }
+
+    function debouncedSearch() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(performSearch, 300);
+    }
+
+    // Attach input events
+    searchModel.addEventListener('input', debouncedSearch);
+    searchSn.addEventListener('input', debouncedSearch);
+
+    // Intercept form submit to avoid page reload (but still allow normal submission for non-JS)
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        performSearch();
+    });
+
+    // Initial search if there are already values (page loaded with GET params)
+    if (searchModel.value || searchSn.value) {
+        performSearch();
+    }
+})();
 </script>
 <?php require_once "../includes/footer.php"; ?>
 </body>

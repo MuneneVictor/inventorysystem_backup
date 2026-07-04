@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 03, 2026 at 03:32 PM
+-- Generation Time: Jul 04, 2026 at 04:06 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.30
 
@@ -50,11 +50,12 @@ INSERT INTO `accessories` (`id`, `name`, `quantity`, `added_by`, `place`, `branc
 (1, 'DELL optical mouse', 21, 1, 'display', 'MOI', NULL, '2026-06-17 15:07:59', 'instock', 1, '2026-06-22 13:34:24'),
 (2, 'JBL essential 2 speaker', 14, 1, 'display', 'KIMATHI', NULL, '2026-06-22 08:38:12', 'instock', 1, '2026-07-02 11:51:11'),
 (3, 'power cable', 5, 1, 'display', 'MOI', 500.00, '2026-03-17 09:51:07', 'instock', NULL, NULL),
-(4, 'power cable', 32, 1, 'store', 'KIMATHI', 600.00, '2026-03-15 10:29:47', 'instock', 1, '2026-07-02 14:42:05'),
+(4, 'power cable', 22, 1, 'store', 'KIMATHI', 600.00, '2026-03-15 10:29:47', 'instock', 1, '2026-07-04 16:41:13'),
 (5, 'HP Keyboard', 5, 1, 'store', 'MOI', NULL, '2026-06-22 10:34:24', 'instock', 1, '2026-06-22 13:34:24'),
 (6, 'USB-C Adapter', 3, 1, 'warehouse', 'MOI', NULL, '2026-06-22 10:34:24', 'instock', 1, '2026-06-22 13:34:24'),
 (7, 'power cable', 6, 1, 'store', 'KIMATHI', 500.00, '2026-03-19 08:15:54', 'instock', 1, '2026-06-26 11:16:06'),
-(8, 'power cable', 1, 8, 'display', 'MOI', NULL, '2026-03-17 09:22:16', 'instock', NULL, NULL);
+(8, 'power cable', 1, 8, 'display', 'MOI', NULL, '2026-03-17 09:22:16', 'instock', NULL, NULL),
+(9, 'power cable', 10, 1, 'store', 'MOI', 600.00, '2026-07-04 13:41:13', 'instock', 1, '2026-07-04 16:41:13');
 
 -- --------------------------------------------------------
 
@@ -519,7 +520,31 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `created_at`)
 (414, 1, 'Added smartboard group price', 'Added price KES 150000 for smartboard group: Onescreen 5 (65 inch) – 1 smartboards updated', '2026-07-03 15:10:19'),
 (415, 1, 'Added smartboard group price', 'Added price KES 200000 for smartboard group: SMART 75-inch (75 inch) – 1 smartboards updated', '2026-07-03 15:14:55'),
 (416, 1, 'Added monitor group price', 'Added price KES 10000 for monitor group: HP FRAMALESS 24 inch (24 inch) – 1 monitors updated', '2026-07-03 15:29:37'),
-(417, 1, 'Updated monitor group price', 'Updated price from KES 10000 to KES 11000 for monitor group: HP FRAMALESS 24 inch (24 inch) – 1 monitors updated', '2026-07-03 15:31:26');
+(417, 1, 'Updated monitor group price', 'Updated price from KES 10000 to KES 11000 for monitor group: HP FRAMALESS 24 inch (24 inch) – 1 monitors updated', '2026-07-03 15:31:26'),
+(418, 1, 'Updated graphic card price', 'Updated price for graphic card ID: 3 (Type: NVIDIA QUADRO P1000) to KES 10000.00', '2026-07-04 07:15:16'),
+(419, 1, 'Added smartboard', 'Added smartboard SN: SMJJ8Y6UH', '2026-07-04 07:24:04'),
+(420, 1, 'Added smartboard', 'Added smartboard SN: SRTF556DCGF', '2026-07-04 07:24:46'),
+(421, 1, 'Added smartboard group price', 'Added price KES 150000 for smartboard group: Onescreen 5 (65 inch) – 2 smartboards updated', '2026-07-04 07:26:37'),
+(422, 1, 'Added device', 'Added device SN: 5CH78UYBO12, Cargo: AC26.7', '2026-07-04 07:46:57'),
+(423, 1, 'Took to display', 'Took device SN: 5CG0302X7Y to display', '2026-07-04 08:48:57'),
+(424, 1, 'Returned Device', 'Returned device SN: 5CG0302X7Y from log ID 1. Action was: take_to_display. Status set to returned. <a href=\'../uploads/device_returns/device_return_1_1783156853.jpg\' target=\'_blank\'>View Photo</a>', '2026-07-04 09:20:53'),
+(425, 1, 'Give out device', 'Gave device SN: 5CG0302X7Y to salesperson ID 7 (Branch: KIMATHI)', '2026-07-04 09:37:24'),
+(426, 1, 'Give out device', 'Gave device SN: 5CG0302X7Y to salesperson ID 7 (Branch: KIMATHI)', '2026-07-04 09:38:21'),
+(427, 1, 'Give out device', 'Gave device SN: 5CG0302X7Y to salesperson ID 7 (Branch: KIMATHI)', '2026-07-04 09:46:06'),
+(428, 8, 'Give out device', 'Gave device SN: 5CH78UYBO12 to salesperson Peninah Kalundi (Branch: KIMATHI)', '2026-07-04 10:00:22'),
+(429, 1, 'Returned Device', 'Returned device SN: 5CH78UYBO12 from log ID 5. Action was: give_out. Status set to returned. <a href=\'../uploads/device_returns/device_return_5_1783159273.jpeg\' target=\'_blank\'>View Photo</a>', '2026-07-04 10:01:13'),
+(430, 1, 'Added device', 'Added device SN: MXLI98HDD', '2026-07-04 10:10:36'),
+(431, 1, 'Bulk upload', 'Added device 5CG12465TG8 (HP EliteBook 840 G6) via Excel upload to branch: KIMATHI', '2026-07-04 10:30:27'),
+(432, 1, 'Bulk upload', 'Added device 5CG12465TG9 (HP EliteDesk 705 G4) via Excel upload to branch: MOI', '2026-07-04 10:30:27'),
+(433, 1, 'Bulk upload', 'Added device 5CG12465TG10 (HP ProOne 400 G5) via Excel upload to branch: KIMATHI', '2026-07-04 10:30:27'),
+(434, 1, 'Bulk upload', 'Added device 5CG12465TG09 (HP EliteBook 840 G6) via Excel upload to branch: KIMATHI, place: store', '2026-07-04 10:49:24'),
+(435, 1, 'Bulk upload', 'Added device 5CG12465TG11 (HP ProOne 400 G5) via Excel upload to branch: KIMATHI, place: display', '2026-07-04 10:49:24'),
+(436, 1, 'Bulk upload monitors', 'Uploaded 3 monitors to KIMATHI branch', '2026-07-04 11:20:46'),
+(437, 1, 'Bulk upload monitors', 'Uploaded 3 monitors to MOI branch', '2026-07-04 11:32:12'),
+(438, 1, 'Give out device', 'Gave device SN: 5CG12465TG09 to salesperson Peninah Kalundi (Branch: KIMATHI)', '2026-07-04 12:53:54'),
+(439, 8, 'Transfer smartboard', 'Transferred smartboard SN: SRTF556DCGF from KIMATHI to MOI (Delivered by: victor)', '2026-07-04 13:17:47'),
+(440, 1, 'Transfer accessories', 'Transferred 1 accessory type(s) (10 total items) from KIMATHI (store) to MOI (store): power cable x10 (Delivered by: victor)', '2026-07-04 13:41:13'),
+(441, 1, 'Transfer HDDs', 'Transferred 1 HDD type(s) (1 total items) from KIMATHI to MOI: SATA 2TB x1 (Delivered by: victor)', '2026-07-04 13:49:40');
 
 -- --------------------------------------------------------
 
@@ -629,7 +654,12 @@ INSERT INTO `clients` (`id`, `client_name`, `client_phone`, `client_box`, `clien
 (1, 'Munene', '0711529618', 'P.O. BOX 25-90500', 'victormunene207@gmail.com', 7, '2026-06-29 09:41:42', 'KIMATHI'),
 (2, 'peninah', '0703646909', NULL, 'vdebmunene207@gmail.com', 7, '2026-06-29 10:33:17', 'KIMATHI'),
 (7, 'Munene victor', '0711529618', 'P.O. BOX 12-95400', 'victormunene207@gmail.com', 8, '2026-06-29 14:55:01', NULL),
-(8, 'Musili Homes Limited', '0711529618', NULL, 'victormunene207@gmail.com', 7, '2026-07-02 08:18:58', 'KIMATHI');
+(8, 'Musili Homes Limited', '0711529618', NULL, 'victormunene207@gmail.com', 7, '2026-07-02 08:18:58', 'KIMATHI'),
+(9, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:01', 'KIMATHI'),
+(10, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:04', 'KIMATHI'),
+(11, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:09', 'KIMATHI'),
+(12, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:09', 'KIMATHI'),
+(13, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:09', 'KIMATHI');
 
 -- --------------------------------------------------------
 
@@ -666,7 +696,7 @@ CREATE TABLE `devices` (
 --
 
 INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`, `graphics`, `ram`, `storage_type`, `storage_capacity`, `touch`, `status`, `device_condition`, `date_added`, `added_by`, `branch`, `cargo_number`, `price`, `price_updated_at`, `selling_price`, `sold_at`, `sold_by`, `place`) VALUES
-('5CG0302X7Y', 1, 'HP ELITEBOOK 745 G6', 'AMD RYZEN 7 PRO 3700u', '2GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Ex-Uk', '2026-03-27 08:32:20', 1, 'MOI', 'AC26', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG0302X7Y', 1, 'HP ELITEBOOK 745 G6', 'AMD RYZEN 7 PRO 3700u', '2GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Ex-Uk', '2026-03-27 08:32:20', 1, 'KIMATHI', 'AC26', NULL, NULL, NULL, NULL, NULL, 'display'),
 ('5CG09OZXE32', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG09OZXE33', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG09OZXE34', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
@@ -679,6 +709,11 @@ INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`
 ('5CG09OZXE41', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 60000.00, '2026-04-24 11:26:11', NULL, NULL, NULL, NULL),
 ('5CG09OZXE42', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', 60000.00, '2026-04-24 11:26:11', NULL, NULL, NULL, NULL),
 ('5CG1234XYZ', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG12465TG09', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-07-04 10:49:24', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, 'display'),
+('5CG12465TG10', 3, 'HP ProOne 400 G5', 'Intel Core i7-8700T', 'Intel UHD', 32, 'SSD', 1000, 'Touch', 'In Stock', 'Refurbished', '2026-07-04 10:30:27', 1, 'KIMATHI', 'AC20', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG12465TG11', 3, 'HP ProOne 400 G5', 'Intel Core i7-8700T', 'Intel UHD', 32, 'SSD', 1000, 'Touch', 'In Stock', 'Refurbished', '2026-07-04 10:49:24', 1, 'KIMATHI', 'AC20', NULL, NULL, NULL, NULL, NULL, 'display'),
+('5CG12465TG8', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-07-04 10:30:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG12465TG9', 2, 'HP EliteDesk 705 G4', 'AMD Ryzen 5 PRO 2600', 'AMD Radeon', 16, 'SSD', 512, 'N/A', 'In Stock', 'Refurbished', '2026-07-04 10:30:27', 1, 'MOI', 'CX37', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGJ10', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGJ11', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGJ12', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
@@ -732,7 +767,8 @@ INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`
 ('5CG9IOK80B', 1, 'HO ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Ex-Uk', '2026-07-02 07:30:16', 8, 'MOI', 'AC26.7', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CGBAJJJUU88', 1, 'HP ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 509, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-07 10:45:29', 1, 'KIMATHI', 'AC265', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CGUYUIJVIUG', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-22 20:28:16', 1, 'MOI', 'AC526', 30000.00, '2026-04-22 20:30:56', NULL, NULL, NULL, NULL),
-('8CC5678ABC', 2, 'HP EliteDesk 705 G4', 'AMD Ryzen 5 PRO 2600', 'AMD Radeon', 16, 'SSD', 512, 'N/A', 'In Stock', 'New', '2026-06-08 07:02:20', 1, 'MOI', 'CX37', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CH78UYBO12', 1, 'HP ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Ex-Uk', '2026-07-04 07:46:57', 1, 'KIMATHI', 'AC26.7', 70000.00, '2026-07-04 10:02:06', NULL, NULL, NULL, 'store'),
+('8CC5678ABC', 2, 'HP EliteDesk 705 G4', 'AMD Ryzen 5 PRO 2600', 'AMD Radeon', 16, 'SSD', 512, 'N/A', 'In Stock', 'New', '2026-06-08 07:02:20', 1, 'MOI', 'CX37', 40000.00, '2026-07-04 07:35:07', NULL, NULL, NULL, NULL),
 ('8CC6YHMS54', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-8TH GEN', '1GB AMD RADEON R7 200', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('8CC6YHMS55', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-8TH GEN', '1GB AMD RADEON R7 200', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('8CC6YHMS56', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-8TH GEN', '2GB AMD RADEON R7 200', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
@@ -740,12 +776,13 @@ INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`
 ('8CC6YHMS58', 5, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-8TH GEN', '2GB AMD RADEON R7 200', 16, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('ABC9012DEF', 3, 'HP ProOne 400 G5', 'Intel Core i7-8700T', 'Intel UHD', 32, 'SSD', 1000, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC20', NULL, NULL, NULL, NULL, NULL, NULL),
 ('MXD90IOOKLW', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON R7 430', 8, 'HDD', 500, 'N/A', 'Sold', 'Refurbished', '2026-02-21 18:48:48', 1, 'KIMATHI', 'AC3', 15000.00, '2026-03-03 18:24:20', NULL, NULL, NULL, NULL),
-('MXHT89YU3', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 20000.00, '2026-01-02 15:33:05', NULL, NULL, NULL, NULL),
-('MXHT89YU4', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'KIMATHI', 'CX37', 20000.00, '2026-01-02 15:33:05', NULL, NULL, NULL, NULL),
-('MXHT89YU5', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'Sold', 'Refurbished', '2025-12-15 18:26:55', 1, 'KIMATHI', 'CX37', 20000.00, '2026-01-02 15:33:05', NULL, NULL, NULL, NULL),
+('MXHT89YU3', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 25000.00, '2026-07-04 07:36:45', NULL, NULL, NULL, NULL),
+('MXHT89YU4', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'KIMATHI', 'CX37', 25000.00, '2026-07-04 07:36:45', NULL, NULL, NULL, NULL),
+('MXHT89YU5', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'Sold', 'Refurbished', '2025-12-15 18:26:55', 1, 'KIMATHI', 'CX37', 25000.00, '2026-07-04 07:36:45', NULL, NULL, NULL, NULL),
 ('MXHT89YU6', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 20000.00, '2026-01-06 12:21:00', NULL, NULL, NULL, NULL),
 ('MXHT89YU7', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 16, 'SSD', 512, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 20000.00, '2026-01-06 12:21:00', NULL, NULL, NULL, NULL),
 ('MXL8U9UYH09', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', 'None', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-06-22 15:37:34', 1, 'MOI', 'CX37', NULL, NULL, NULL, NULL, NULL, NULL),
+('MXLI98HDD', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON 2600', 8, 'SSD', 256, 'N/A', 'In Stock', 'Ex-Uk', '2026-07-04 10:10:36', 1, 'KIMATHI', 'NO CARGO', NULL, NULL, NULL, NULL, NULL, 'display'),
 ('MXY77HJKAL', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON R7 430', 8, 'HDD', 500, 'N/A', 'In Stock', 'Refurbished', '2026-02-21 18:46:43', 1, 'KIMATHI', 'AC3', 15000.00, '2026-03-03 18:24:20', NULL, NULL, NULL, NULL),
 ('TGBHJJRQW1', 2, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-9TH GEN', 'none', 16, 'SSD', 256, 'N/A', 'Sold', 'Refurbished', '2025-12-15 18:26:54', 1, 'KIMATHI', 'CX50', 55000.00, '2026-03-25 21:32:17', NULL, NULL, NULL, NULL),
 ('TGBHJJRQW2', 2, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-9TH GEN', 'none', 16, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:54', 1, 'MOI', 'CX50', 55000.00, '2026-03-25 21:32:17', NULL, NULL, NULL, NULL),
@@ -758,6 +795,47 @@ INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`
 ('THK897YYRS7', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V2', '2GB NVIDIA QUADRO P1000', 32, 'HDD', 2000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('THK897YYRS8', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V2', '2GB NVIDIA QUADRO P1000', 32, 'HDD', 1000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('THK897YYRS9', 4, 'HP Z6 WORKSTATION', 'INTEL XEON E-CPU12 V2', '2GB NVIDIA QUADRO P1000', 16, 'HDD', 1000, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `devices_logs`
+--
+
+CREATE TABLE `devices_logs` (
+  `serial_number` varchar(50) NOT NULL,
+  `category_id` int DEFAULT NULL,
+  `model_name` varchar(100) DEFAULT NULL,
+  `processor` varchar(100) DEFAULT NULL,
+  `graphics` varchar(100) DEFAULT NULL,
+  `ram` int DEFAULT NULL,
+  `storage_type` varchar(50) DEFAULT NULL,
+  `storage_capacity` int DEFAULT NULL,
+  `touch` enum('Touch','Non-touch','N/A') DEFAULT 'N/A',
+  `device_condition` enum('Ex-Uk','Refurbished','New') DEFAULT NULL,
+  `branch` enum('MOI','KIMATHI') DEFAULT NULL,
+  `cargo_number` varchar(50) DEFAULT 'NO CARGO',
+  `action` varchar(100) DEFAULT NULL,
+  `given_by` int DEFAULT NULL,
+  `given_to` int DEFAULT NULL,
+  `date_given` datetime DEFAULT NULL,
+  `taken_by` int DEFAULT NULL,
+  `date_taken` datetime DEFAULT NULL,
+  `id` int NOT NULL,
+  `status` enum('instock','returned','sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'instock'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `devices_logs`
+--
+
+INSERT INTO `devices_logs` (`serial_number`, `category_id`, `model_name`, `processor`, `graphics`, `ram`, `storage_type`, `storage_capacity`, `touch`, `device_condition`, `branch`, `cargo_number`, `action`, `given_by`, `given_to`, `date_given`, `taken_by`, `date_taken`, `id`, `status`) VALUES
+('5CG0302X7Y', 1, 'HP ELITEBOOK 745 G6', 'AMD RYZEN 7 PRO 3700u', '2GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'Non-touch', 'Ex-Uk', 'KIMATHI', 'AC26', 'take_to_display', NULL, NULL, NULL, 1, '2026-07-04 11:48:57', 1, 'returned'),
+('5CG0302X7Y', 1, 'HP ELITEBOOK 745 G6', 'AMD RYZEN 7 PRO 3700u', '2GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'Non-touch', 'Ex-Uk', 'KIMATHI', 'AC26', 'give_out', 1, 7, '2026-07-04 12:37:24', NULL, NULL, 2, 'instock'),
+('5CG0302X7Y', 1, 'HP ELITEBOOK 745 G6', 'AMD RYZEN 7 PRO 3700u', '2GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'Non-touch', 'Ex-Uk', 'KIMATHI', 'AC26', 'give_out', 1, 7, '2026-07-04 12:38:21', NULL, NULL, 3, 'instock'),
+('5CG0302X7Y', 1, 'HP ELITEBOOK 745 G6', 'AMD RYZEN 7 PRO 3700u', '2GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'Non-touch', 'Ex-Uk', 'KIMATHI', 'AC26', 'give_out', 1, 7, '2026-07-04 12:46:06', NULL, NULL, 4, 'instock'),
+('5CH78UYBO12', 1, 'HP ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Ex-Uk', 'KIMATHI', 'AC26.7', 'give_out', 8, 7, '2026-07-04 13:00:22', NULL, NULL, 5, 'returned'),
+('5CG12465TG09', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'Refurbished', 'KIMATHI', 'AC16', 'give_out', 1, 7, '2026-07-04 15:53:54', NULL, NULL, 6, 'instock');
 
 -- --------------------------------------------------------
 
@@ -888,9 +966,9 @@ CREATE TABLE `hdds` (
 --
 
 INSERT INTO `hdds` (`id`, `type`, `quantity`, `storage`, `branch`, `added_by`, `date_added`, `updated_by`, `date_updated`, `price`) VALUES
-(1, 'SATA', 4, '2TB', 'KIMATHI', 1, '2026-06-20 10:22:45', 1, '2026-06-30 15:01:08', 15000.00),
+(1, 'SATA', 3, '2TB', 'KIMATHI', 1, '2026-06-20 10:22:45', 1, '2026-07-04 16:49:40', 15000.00),
 (2, 'SATA', 7, '500GB', 'MOI', 1, '2026-06-26 10:39:13', 1, '2026-06-26 17:56:19', NULL),
-(3, 'SATA', 30, '2TB', 'MOI', 1, '2026-06-30 13:39:08', 1, '2026-06-30 16:41:03', NULL),
+(3, 'SATA', 31, '2TB', 'MOI', 1, '2026-06-30 13:39:08', 1, '2026-07-04 16:49:40', NULL),
 (4, 'SATA', 14, '500GB', 'KIMATHI', 1, '2026-06-30 13:39:08', 8, '2026-07-03 11:59:22', NULL),
 (5, 'NVMe', 2, '1TB', 'MOI', 1, '2026-06-30 13:41:03', NULL, NULL, 8000.00);
 
@@ -993,7 +1071,10 @@ CREATE TABLE `monitors` (
 
 INSERT INTO `monitors` (`serial_number`, `model_name`, `size_inches`, `status`, `branch`, `added_by`, `date_added`, `sold_by`, `sold_at`, `price`, `selling_price`, `monitor_condition`) VALUES
 ('M9JIOHG56DCGF', 'HP FRAMALESS 24 inch', 24, 'In Stock', 'KIMATHI', 1, '2026-06-18 11:46:40', NULL, NULL, 11000.00, NULL, NULL),
-('M9OHG56DCGF', 'HP FRMALESS 24 inch', 24, 'Sold', 'MOI', 1, '2026-06-16 09:18:51', 7, '2026-06-18 11:48:46', 10000.00, 10000.00, NULL);
+('M9OHG56DCGF', 'HP FRMALESS 24 inch', 24, 'Sold', 'MOI', 1, '2026-06-16 09:18:51', 7, '2026-06-18 11:48:46', 10000.00, 10000.00, NULL),
+('SN001', 'Dell P2419H', 24, 'In Stock', 'MOI', 1, '2026-07-04 11:32:12', NULL, NULL, NULL, NULL, NULL),
+('SN002', 'HP E243', 23, 'In Stock', 'MOI', 1, '2026-07-04 11:32:12', NULL, NULL, NULL, NULL, NULL),
+('SN003', 'Lenovo ThinkVision', 27, 'In Stock', 'MOI', 1, '2026-07-04 11:32:12', NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1063,6 +1144,67 @@ INSERT INTO `printers` (`serial_number`, `model_name`, `branch`, `status`, `adde
 ('PTNJGGDHH8', 'EPSON PRINTER', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-14 18:46:38', NULL, NULL, NULL, NULL),
 ('PTNJGGDHH9', 'EPSON PRINTER', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-14 18:46:38', NULL, NULL, NULL, NULL),
 ('TH5JJ897D', 'MECER PRINTER', 'KIMATHI', 'In Stock', 1, NULL, '2025-12-16 13:39:53', NULL, NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `quotations`
+--
+
+CREATE TABLE `quotations` (
+  `id` int NOT NULL,
+  `quotation_number` varchar(20) NOT NULL,
+  `client_name` varchar(100) NOT NULL,
+  `client_phone` varchar(20) DEFAULT NULL,
+  `client_box` varchar(100) DEFAULT NULL,
+  `client_email` varchar(100) DEFAULT NULL,
+  `quotation_date` date NOT NULL,
+  `payment_due_date` date NOT NULL,
+  `subtotal` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `vat` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `grand_total` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `status` enum('draft','sent','cancelled') DEFAULT 'draft',
+  `user_id` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `quotations`
+--
+
+INSERT INTO `quotations` (`id`, `quotation_number`, `client_name`, `client_phone`, `client_box`, `client_email`, `quotation_date`, `payment_due_date`, `subtotal`, `vat`, `grand_total`, `status`, `user_id`, `created_at`, `updated_at`) VALUES
+(1, 'MC01', 'Vimark Tech', '', '', '', '2026-07-04', '2026-07-11', 210000.00, 11200.00, 221200.00, 'draft', 7, '2026-07-04 15:36:38', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `quotation_items`
+--
+
+CREATE TABLE `quotation_items` (
+  `id` int NOT NULL,
+  `quotation_id` int NOT NULL,
+  `item_type` enum('device','monitor','printer','smartboard','ups','phone','accessory','graphic','hdd','ram_ssd','charger','manual') NOT NULL,
+  `item_id` varchar(50) DEFAULT NULL,
+  `description` varchar(255) NOT NULL,
+  `specs` text,
+  `quantity` int NOT NULL DEFAULT '1',
+  `unit_price` decimal(10,2) NOT NULL,
+  `total_price` decimal(10,2) NOT NULL,
+  `vat_rate` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `vat_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `total_with_vat` decimal(10,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `quotation_items`
+--
+
+INSERT INTO `quotation_items` (`id`, `quotation_id`, `item_type`, `item_id`, `description`, `specs`, `quantity`, `unit_price`, `total_price`, `vat_rate`, `vat_amount`, `total_with_vat`) VALUES
+(1, 1, 'manual', '', 'Hp elitebook 840 g9', '8gb ram 256gb ssd i7 12th gen', 1, 70000.00, 70000.00, 0.00, 0.00, 70000.00),
+(2, 1, 'manual', '', 'Hp elitebook 840 g9', '8gb ram 256gb ssd i7 12th gen', 1, 70000.00, 70000.00, 0.00, 0.00, 70000.00),
+(3, 1, 'manual', '', 'Hp elitebook 840 g9', '8gb ram 256gb ssd i7 12th gen', 1, 70000.00, 70000.00, 16.00, 11200.00, 81200.00);
 
 -- --------------------------------------------------------
 
@@ -1304,7 +1446,9 @@ INSERT INTO `smartboards` (`serial_number`, `model`, `size_inches`, `date_added`
 ('SB002S4R', 'SMART 75-inch', 75, '2026-06-20 08:11:59', 'sold', 1, 'KIMATHI', 'store', 170000.00, '2026-06-29 09:33:43', 170000.00, 7),
 ('SM5CG09OZXE60', 'Onescreen 5', 65, '2026-03-24 18:44:40', 'sold', 1, 'KIMATHI', 'store', 80000.00, '2026-06-27 17:11:18', 80000.00, 7),
 ('SM7UYYG3VV', 'SMART', 75, '2026-06-17 13:05:45', 'sold', 1, 'KIMATHI', NULL, 200000.00, '2026-06-18 12:34:13', 2050000.00, 7),
-('SMI0OUJ', 'SMART 6065', 65, '2026-06-20 08:23:16', 'sold', 1, 'MOI', 'sold', 150000.00, '2026-07-02 10:05:34', 150000.00, NULL);
+('SMI0OUJ', 'SMART 6065', 65, '2026-06-20 08:23:16', 'sold', 1, 'MOI', 'sold', 150000.00, '2026-07-02 10:05:34', 150000.00, NULL),
+('SMJJ8Y6UH', 'Onescreen 5', 65, '2026-07-04 07:24:04', 'instock', 1, 'KIMATHI', 'store', 150000.00, NULL, NULL, NULL),
+('SRTF556DCGF', 'Onescreen 5', 65, '2026-07-04 07:24:46', 'instock', 1, 'MOI', 'store', 150000.00, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1511,10 +1655,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `username`, `password`, `role`, `is_active`, `full_name`, `created_at`, `last_login`, `branch`, `failed_attempts`, `account_locked_until`) VALUES
-(1, 'victormunene207@gmail.com', 'vic', '$2a$12$q5sPMKAfYhS0AMXRm6BpI.W7flz8n0wmcUbBJ45BAnOa8BsxgYKSK', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-07-03 10:00:42', 'KIMATHI', 0, NULL),
-(4, 'munene@gmail.com', 'Vdeb', '$2y$10$m9PnQbD9v1ZY50s14T45MOV2n4bdaty74/2Y8rBlOuRY56.4OdlGi', 'cashier', 1, 'Munene vicky', '2025-12-03 12:39:40', '2026-07-03 07:01:47', 'KIMATHI', 0, NULL),
-(7, 'peninahkalundi@gmail.com', 'pesh', '$2y$10$cS2ZivexM3srJGrkihxPnumRp0RNDgdHDTX8bkGuUXphAbd9ZJSc.', 'sales', 1, 'Peninah Kalundi', '2025-12-04 18:01:17', '2026-07-03 06:01:03', 'KIMATHI', 0, NULL),
-(8, 'munene23.v@student.cuk.ac.ke', 'syovata', '$2a$12$/VBwYZBkXo6VuCCFIPFWDeLBJ5Ewbo.Z.lALJgWmckCUeT5PFmJ5.', 'inventory_admin', 1, 'Victor Syovata', '2025-12-05 22:19:21', '2026-07-03 08:32:16', 'KIMATHI', 0, NULL);
+(1, 'victormunene207@gmail.com', 'vic', '$2a$12$q5sPMKAfYhS0AMXRm6BpI.W7flz8n0wmcUbBJ45BAnOa8BsxgYKSK', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-07-04 13:27:09', 'KIMATHI', 0, NULL),
+(4, 'munene@gmail.com', 'Vdeb', '$2y$10$m9PnQbD9v1ZY50s14T45MOV2n4bdaty74/2Y8rBlOuRY56.4OdlGi', 'sales', 1, 'Munene vicky', '2025-12-03 12:39:40', '2026-07-03 07:01:47', 'KIMATHI', 0, NULL),
+(7, 'peninahkalundi@gmail.com', 'pesh', '$2y$10$cS2ZivexM3srJGrkihxPnumRp0RNDgdHDTX8bkGuUXphAbd9ZJSc.', 'sales', 1, 'Peninah Kalundi', '2025-12-04 18:01:17', '2026-07-04 14:03:47', 'KIMATHI', 0, NULL),
+(8, 'munene23.v@student.cuk.ac.ke', 'syovata', '$2a$12$/VBwYZBkXo6VuCCFIPFWDeLBJ5Ewbo.Z.lALJgWmckCUeT5PFmJ5.', 'inventory_admin', 1, 'Victor Syovata', '2025-12-05 22:19:21', '2026-07-04 12:59:13', 'KIMATHI', 0, NULL);
 
 --
 -- Indexes for dumped tables
@@ -1586,6 +1730,16 @@ ALTER TABLE `devices`
   ADD KEY `category_id` (`category_id`),
   ADD KEY `added_by` (`added_by`),
   ADD KEY `sold_by` (`sold_by`);
+
+--
+-- Indexes for table `devices_logs`
+--
+ALTER TABLE `devices_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_category_id_devices_logs` (`category_id`),
+  ADD KEY `fk_taken_by_devices_logs` (`given_by`),
+  ADD KEY `fk_given_to_device_devices_logs` (`given_to`),
+  ADD KEY `fk_taken_by_devices` (`taken_by`);
 
 --
 -- Indexes for table `device_updates`
@@ -1668,6 +1822,21 @@ ALTER TABLE `printers`
   ADD PRIMARY KEY (`serial_number`),
   ADD KEY `added_by` (`added_by`),
   ADD KEY `sold_by` (`sold_by`);
+
+--
+-- Indexes for table `quotations`
+--
+ALTER TABLE `quotations`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `quotation_number` (`quotation_number`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `quotation_items`
+--
+ALTER TABLE `quotation_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `quotation_id` (`quotation_id`);
 
 --
 -- Indexes for table `rams_ssds`
@@ -1796,7 +1965,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `accessories`
 --
 ALTER TABLE `accessories`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `accessories_logs`
@@ -1808,7 +1977,7 @@ ALTER TABLE `accessories_logs`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=418;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=442;
 
 --
 -- AUTO_INCREMENT for table `categories`
@@ -1832,7 +2001,13 @@ ALTER TABLE `charger_logs`
 -- AUTO_INCREMENT for table `clients`
 --
 ALTER TABLE `clients`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT for table `devices_logs`
+--
+ALTER TABLE `devices_logs`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `device_updates`
@@ -1875,6 +2050,18 @@ ALTER TABLE `hdd_logs`
 --
 ALTER TABLE `maintenance`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `quotations`
+--
+ALTER TABLE `quotations`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `quotation_items`
+--
+ALTER TABLE `quotation_items`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `rams_ssds`
@@ -2002,7 +2189,19 @@ ALTER TABLE `clients`
 ALTER TABLE `devices`
   ADD CONSTRAINT `devices_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`),
   ADD CONSTRAINT `devices_ibfk_2` FOREIGN KEY (`added_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_serial_number_devices_logs` FOREIGN KEY (`serial_number`) REFERENCES `devices` (`serial_number`) ON UPDATE CASCADE,
   ADD CONSTRAINT `sold_by` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `devices_logs`
+--
+ALTER TABLE `devices_logs`
+  ADD CONSTRAINT `fk_category_id_devices_logs` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_given_by_devices_logs` FOREIGN KEY (`given_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_given_to_device_devices_logs` FOREIGN KEY (`given_to`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_given_to_devices_logs` FOREIGN KEY (`given_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_taken_by_devices` FOREIGN KEY (`taken_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_taken_by_devices_logs` FOREIGN KEY (`given_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `expenses`
@@ -2059,6 +2258,18 @@ ALTER TABLE `phones`
 --
 ALTER TABLE `printers`
   ADD CONSTRAINT `fk_printer_users` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `quotations`
+--
+ALTER TABLE `quotations`
+  ADD CONSTRAINT `quotations_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `quotation_items`
+--
+ALTER TABLE `quotation_items`
+  ADD CONSTRAINT `quotation_items_ibfk_1` FOREIGN KEY (`quotation_id`) REFERENCES `quotations` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `rams_ssds`

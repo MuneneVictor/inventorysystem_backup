@@ -528,8 +528,8 @@ body {
                 $sections['QUOTATIONS'] = [
                     'icon' => 'fas fa-file-invoice',
                     'items' => [
-                        ['Make a Quotation', '/inventory_system/quotations/write_quotation.php', 'fas fa-file-invoice'],
-                        ['My Quotations', '/inventory_system/quotations/my_quotations.php', 'fas fa-chart-bar'],
+                        ['Write Quotation', '/inventory_system/quotations/write_quotation.php', 'fas fa-file-invoice'],
+                        ['My Quotations', '/inventory_system/quotations/quotations_list.php', 'fas fa-chart-bar'],
                     ]
                 ];
             }
@@ -538,8 +538,8 @@ body {
                 $sections['INVOICES'] = [
                     'icon' => 'fas fa-file-invoice-dollar',
                     'items' => [
-                        ['Make an Invoice', '/inventory_system/sales/make_invoice.php', 'fas fa-file-invoice-dollar'],
-                        ['My Invoices', '/inventory_system/sales/my_invoices.php', 'fas fa-chart-bar'],
+                        ['Write Invoice', '/inventory_system/invoices/write_invoice.php', 'fas fa-file-invoice-dollar'],
+                        ['My Invoices', '/inventory_system/invoices/invoices_list.php', 'fas fa-chart-bar'],
                     ]
                 ];
             }

@@ -562,7 +562,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 </h2>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" id="profileForm">
                     <div class="form-group">
                         <label>Full Name <span class="required">*</span></label>
                         <input type="text" name="full_name" value="<?= htmlspecialchars($user['full_name'] ?? '') ?>" required>
@@ -579,7 +579,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                     </div>
                     
                     <div class="form-actions">
-                        <button type="submit" name="update_profile" class="btn btn-primary">
+                        <button type="submit" name="update_profile" class="btn btn-primary" onclick="return confirmProfileUpdate()">
                             <i class="fas fa-save"></i> Update Profile
                         </button>
                     </div>
@@ -596,7 +596,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 </h2>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" id="passwordForm">
                     <div class="form-group">
                         <label>Current Password <span class="required">*</span></label>
                         <input type="password" name="current_password" placeholder="Enter your current password" required>
@@ -613,7 +613,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                     </div>
                     
                     <div class="form-actions">
-                        <button type="submit" name="change_password" class="btn btn-primary">
+                        <button type="submit" name="change_password" class="btn btn-primary" onclick="return confirmPasswordChange()">
                             <i class="fas fa-lock"></i> Change Password
                         </button>
                     </div>
@@ -781,6 +781,45 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', adjustMainContent);
     window.addEventListener('orientationchange', adjustMainContent);
 });
+
+// Confirm Profile Update
+function confirmProfileUpdate() {
+    return confirm("Are you sure you want to update your profile? This action cannot be undone.");
+}
+
+// Confirm Password Change
+function confirmPasswordChange() {
+    // Get password values
+    var currentPassword = document.querySelector('input[name="current_password"]').value;
+    var newPassword = document.querySelector('input[name="new_password"]').value;
+    var confirmPassword = document.querySelector('input[name="confirm_password"]').value;
+    
+    // Validate if passwords are filled
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        alert("Please fill in all password fields.");
+        return false;
+    }
+    
+    // Validate password length
+    if (newPassword.length < 6) {
+        alert("New password must be at least 6 characters long.");
+        return false;
+    }
+    
+    // Validate password match
+    if (newPassword !== confirmPassword) {
+        alert("New passwords do not match. Please try again.");
+        return false;
+    }
+    
+    // Check if current password is same as new password
+    if (currentPassword === newPassword) {
+        alert("New password cannot be the same as your current password.");
+        return false;
+    }
+    
+    return confirm("Are you sure you want to change your password? This action cannot be undone.");
+}
 </script>
 
 </body>

@@ -3,7 +3,6 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
-
 // Enable debug mode to see SQL errors (set to false in production)
 $debug = true;
 
@@ -91,6 +90,23 @@ $stmt = secureQuery($conn, "
     WHERE DATE(sold_at) = CURDATE()
 ", array_fill(0, 11, $user_branch), $debug);
 if ($stmt) $todaysRevenue = (float)$stmt->fetchColumn();
+
+// ============================================================
+// TODAY'S EXPENSES
+// ============================================================
+$todaysExpenses = 0;
+$stmt = secureQuery($conn, "
+    SELECT COALESCE(SUM(total_amount), 0) 
+    FROM expenses 
+    WHERE DATE(expense_date) = CURDATE() 
+    AND branch = ?
+", [$user_branch], $debug);
+if ($stmt) $todaysExpenses = (float)$stmt->fetchColumn();
+
+// ============================================================
+// TODAY'S NET REVENUE (Revenue - Expenses)
+// ============================================================
+$todaysNetRevenue = $todaysRevenue - $todaysExpenses;
 
 // ============================================================
 // THIS WEEK REVENUE
@@ -448,6 +464,11 @@ $hour = date('G');
 if ($hour < 12) $greeting = 'Good morning';
 elseif ($hour < 17) $greeting = 'Good afternoon';
 else $greeting = 'Good evening';
+
+// Helper function for safe HTML
+function safe($value) {
+    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -456,7 +477,6 @@ else $greeting = 'Good evening';
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=yes">
     <title>Cashier Dashboard | Mombasa Computers</title>
     <style>
-    /* (CSS unchanged – keep your existing styles) */
     :root {
         --primary: #1a4b2a;
         --primary-light: #2a6b3a;
@@ -471,6 +491,7 @@ else $greeting = 'Good evening';
         --warning: #d97706;
         --danger: #dc2626;
         --info: #2563eb;
+        --expense: #ef4444;
         
         --gray-50: #f9fafb;
         --gray-100: #f3f4f6;
@@ -575,7 +596,7 @@ else $greeting = 'Good evening';
     /* Compact stat cards row */
     .stats-row {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 1.5rem;
         margin-bottom: 2rem;
     }
@@ -602,6 +623,7 @@ else $greeting = 'Good evening';
     .stat-card:nth-child(2)::before { background: linear-gradient(90deg, var(--info), #60a5fa); }
     .stat-card:nth-child(3)::before { background: linear-gradient(90deg, var(--accent), #fbbf24); }
     .stat-card:nth-child(4)::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .stat-card:nth-child(5)::before { background: linear-gradient(90deg, var(--expense), #f87171); }
 
     .stat-card:hover {
         transform: translateY(-3px);
@@ -635,6 +657,8 @@ else $greeting = 'Good evening';
     .stat-card:nth-child(3) .stat-value { color: var(--accent); }
     .stat-card:nth-child(4) .stat-icon,
     .stat-card:nth-child(4) .stat-value { color: #8b5cf6; }
+    .stat-card:nth-child(5) .stat-icon,
+    .stat-card:nth-child(5) .stat-value { color: var(--expense); }
 
     .toggle-btn {
         background: none;
@@ -744,6 +768,10 @@ else $greeting = 'Good evening';
         background: #d1fae5;
         color: #065f46;
     }
+    .badge-danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
 
     .link-btn { 
         padding: 0.5rem 1rem; 
@@ -797,6 +825,7 @@ else $greeting = 'Good evening';
     }
     .text-muted { color: var(--gray-500); }
     .text-success { color: var(--success); }
+    .text-danger { color: var(--expense); }
 
     /* Two‑column grid for desktop */
     .dashboard-grid-2col {
@@ -851,7 +880,7 @@ else $greeting = 'Good evening';
             font-size: 0.85rem !important;
         }
         .stats-row {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
         }
         .dashboard-grid-2col {
@@ -872,7 +901,7 @@ else $greeting = 'Good evening';
             height: 40px !important;
         }
         .stats-row {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: 0.75rem;
         }
         .stat-card .stat-value {
@@ -898,6 +927,10 @@ else $greeting = 'Good evening';
         }
         .page-title {
             font-size: 1.25rem !important;
+        }
+        .stats-row {
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
         }
         .table {
             min-width: 380px !important;
@@ -925,10 +958,10 @@ else $greeting = 'Good evening';
             <div class="page-title">Cashier Dashboard</div>
             <div class="welcome-text">
                 <i class="fas fa-hand-wave" style="color: var(--accent); margin-right: 0.5rem;"></i>
-                <?= $greeting ?>, <?= htmlspecialchars(explode(' ', $user_name)[0]) ?> • <?= date('l, F j, Y') ?>
+                <?= safe($greeting) ?>, <?= safe(explode(' ', $user_name)[0]) ?> • <?= date('l, F j, Y') ?>
             </div>
             <div class="branch-badge">
-                <i class="fas fa-store"></i> <?= htmlspecialchars($user_branch) ?> Branch
+                <i class="fas fa-store"></i> <?= safe($user_branch) ?> Branch
             </div>
         </div>
         <div class="logo">
@@ -967,6 +1000,12 @@ else $greeting = 'Good evening';
             <div class="stat-label">Monthly Revenue</div>
             <button class="toggle-btn" onclick="toggleMonthRevenue()"><i class="fas fa-eye"></i> Show</button>
         </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+            <div class="stat-value" id="todayExpensesValue">••••••</div>
+            <div class="stat-label">Today's Expenses</div>
+            <button class="toggle-btn" onclick="toggleTodayExpenses()"><i class="fas fa-eye"></i> Show</button>
+        </div>
     </div>
 
     <!-- Top Selling Items Today & Active Sales (two‑column grid) -->
@@ -974,7 +1013,6 @@ else $greeting = 'Good evening';
         <div class="section" style="margin-bottom: 0;">
             <div class="flex-between">
                 <h4><i class="fas fa-fire" style="color: var(--accent);"></i> Top Selling Items Today</h4>
-                <a href="/inventory_system/reports/top_items.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table">
@@ -983,8 +1021,8 @@ else $greeting = 'Good evening';
                         <?php if(!empty($topProductsToday)): $i=1; foreach($topProductsToday as $item): ?>
                         <tr>
                             <td style="text-align:center; width:35px;"><?= $i++ ?></td>
-                            <td><strong><?= htmlspecialchars($item['item_name']) ?></strong></td>
-                            <td><span class="badge badge-info"><?= htmlspecialchars($item['category']) ?></span></td>
+                            <td><strong><?= safe($item['item_name']) ?></strong></td>
+                            <td><span class="badge badge-info"><?= safe($item['category']) ?></span></td>
                             <td><span class="badge badge-primary"><?= (int)$item['quantity_sold'] ?></span></td>
                             <td class="text-success">KES <?= number_format($item['revenue'], 0) ?></td>
                         </tr>
@@ -1008,10 +1046,10 @@ else $greeting = 'Good evening';
                         <?php if(!empty($activeSales)): $i=1; foreach($activeSales as $sale): ?>
                         <tr>
                             <td style="text-align:center; width:35px;"><?= $i++ ?></td>
-                            <td><strong><?= htmlspecialchars($sale['client_name'] ?? '-') ?></strong></td>
-                            <td><?= htmlspecialchars($sale['client_phone'] ?? '-') ?></td>
+                            <td><strong><?= safe($sale['client_name'] ?? '-') ?></strong></td>
+                            <td><?= safe($sale['client_phone'] ?? '-') ?></td>
                             <td class="text-success">KES <?= number_format($sale['total_amount'] ?? 0, 0) ?></td>
-                            <td><i class="fas fa-user" style="margin-right: 0.25rem; color: var(--gray-400);"></i><?= htmlspecialchars($sale['sold_by_name'] ?? '-') ?></td>
+                            <td><i class="fas fa-user" style="margin-right: 0.25rem; color: var(--gray-400);"></i><?= safe($sale['sold_by_name'] ?? '-') ?></td>
                             <td><?= date('M j, Y H:i', strtotime($sale['created_at'] ?? '')) ?></td>
                         </tr>
                         <?php endforeach; else: ?>
@@ -1036,9 +1074,9 @@ else $greeting = 'Good evening';
                     <?php if(!empty($recentSales)): $i=1; foreach($recentSales as $sale): ?>
                     <tr>
                         <td style="text-align:center; width:35px;"><?= $i++ ?></td>
-                        <td><strong><?= htmlspecialchars($sale['item_name'] ?? '-') ?></strong></td>
-                        <td><span class="badge badge-info"><?= htmlspecialchars($sale['category'] ?? '-') ?></span></td>
-                        <td><i class="fas fa-user" style="margin-right: 0.25rem; color: var(--gray-400);"></i><?= htmlspecialchars($sale['sold_by_name'] ?? '-') ?></td>
+                        <td><strong><?= safe($sale['item_name'] ?? '-') ?></strong></td>
+                        <td><span class="badge badge-info"><?= safe($sale['category'] ?? '-') ?></span></td>
+                        <td><i class="fas fa-user" style="margin-right: 0.25rem; color: var(--gray-400);"></i><?= safe($sale['sold_by_name'] ?? '-') ?></td>
                         <td class="text-success">KES <?= number_format($sale['price'] ?? 0, 0) ?></td>
                         <td><?= date('M j, Y H:i', strtotime($sale['sold_at'] ?? '')) ?></td>
                     </tr>
@@ -1064,6 +1102,9 @@ else $greeting = 'Good evening';
         <a href="/inventory_system/sales/sales_logs.php" class="link-btn btn-outline">
             <i class="fas fa-chart-line"></i> Sales Logs
         </a>
+        <a href="/inventory_system/expenses/add_expense.php" class="link-btn btn-outline" style="border-color: var(--expense); color: var(--expense) !important;">
+            <i class="fas fa-receipt"></i> Add Expense
+        </a>
     </div>
 
     <footer>
@@ -1074,10 +1115,11 @@ else $greeting = 'Good evening';
 </div>
 
 <script>
-let todayShown = false, weekShown = false, monthShown = false;
+let todayShown = false, weekShown = false, monthShown = false, expensesShown = false;
 const todayRevenueActual = <?= $todaysRevenue ?>;
 const weekRevenueActual = <?= $weeklyRevenue ?>;
 const monthRevenueActual = <?= $monthlyRevenue ?>;
+const todayExpensesActual = <?= $todaysExpenses ?>;
 
 function toggleTodayRevenue() {
     const span = document.getElementById('todayRevenueValue');
@@ -1118,6 +1160,20 @@ function toggleMonthRevenue() {
         span.innerHTML = '••••••';
         btn.innerHTML = '<i class="fas fa-eye"></i> Show';
         monthShown = false;
+    }
+}
+
+function toggleTodayExpenses() {
+    const span = document.getElementById('todayExpensesValue');
+    const btn = document.querySelector('.stat-card:nth-child(5) .toggle-btn');
+    if (!expensesShown) {
+        span.innerHTML = 'KES ' + todayExpensesActual.toLocaleString();
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i> Hide';
+        expensesShown = true;
+    } else {
+        span.innerHTML = '••••••';
+        btn.innerHTML = '<i class="fas fa-eye"></i> Show';
+        expensesShown = false;
     }
 }
 

@@ -9,7 +9,7 @@ if (!in_array($_SESSION['role'], ['software', 'super_admin', 'inventory_admin', 
 }
 
 $user_role = $_SESSION['role'];
-$user_id = $_SESSION['user_id'];
+$user_id = (int)$_SESSION['user_id'];
 $params = [];
 
 // Get user's branch if not super_admin
@@ -20,19 +20,33 @@ if ($user_role !== 'super_admin') {
     $user_branch = $stmt->fetchColumn();
 }
 
+// Helper function to safely escape HTML
+function safe($value) {
+    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+}
+
 // Filter inputs
 $filter_serial = trim($_GET['serial'] ?? '');
 $filter_start_date = trim($_GET['start_date'] ?? '');
 $filter_end_date = trim($_GET['end_date'] ?? '');
 $filter_branch = trim($_GET['branch'] ?? '');
+$filter_performed_by = trim($_GET['performed_by'] ?? '');
 
-$sql = "SELECT m.*, d.model_name, d.storage_type, d.storage_capacity, c.category_name, 
-               u.full_name AS performed_by_name, d.branch
+// Get list of software users for filter
+$softwareUsers = [];
+if ($user_role === 'super_admin') {
+    $userStmt = $conn->query("SELECT id, full_name FROM users WHERE role = 'software' ORDER BY full_name");
+    $softwareUsers = $userStmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Build query with COLLATE for collation compatibility
+$sql = "SELECT m.*, d.model_name, d.storage_type, d.storage_capacity, 
+               c.category_name, u.full_name AS performed_by_name, d.branch
         FROM maintenance m
-        LEFT JOIN devices d ON m.device_serial = d.serial_number
+        LEFT JOIN devices d ON m.device_serial COLLATE utf8mb4_general_ci = d.serial_number
         LEFT JOIN categories c ON d.category_id = c.id
         LEFT JOIN users u ON m.performed_by = u.id
-        WHERE 1";
+        WHERE 1=1";
 
 if ($user_role === 'software') {
     $sql .= " AND m.performed_by = :performed_by";
@@ -48,6 +62,12 @@ if (in_array($user_role, ['manager', 'inventory_admin']) && !empty($user_branch)
 if (!empty($filter_serial)) {
     $sql .= " AND m.device_serial LIKE :serial";
     $params['serial'] = "%$filter_serial%";
+}
+
+// Performed by filter (only for super_admin)
+if ($user_role === 'super_admin' && !empty($filter_performed_by)) {
+    $sql .= " AND m.performed_by = :performed_by_id";
+    $params['performed_by_id'] = $filter_performed_by;
 }
 
 // Branch filter (only for super_admin)
@@ -81,6 +101,12 @@ if ($user_role === 'super_admin') {
     $branchStmt = $conn->query("SELECT DISTINCT branch FROM devices WHERE branch IS NOT NULL ORDER BY branch");
     $branches = $branchStmt->fetchAll(PDO::FETCH_COLUMN);
 }
+
+// Calculate statistics
+$totalRecords = count($logs);
+$totalRamUpgraded = array_sum(array_column($logs, 'new_ram'));
+$totalStorageUpgraded = array_sum(array_column($logs, 'new_storage'));
+$uniqueDevices = count(array_unique(array_column($logs, 'device_serial')));
 
 date_default_timezone_set('Africa/Nairobi');
 $hour = date('G');
@@ -127,31 +153,77 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         .page-header h1 i { color: var(--primary); font-size: 1.75rem; }
         .breadcrumb { color: var(--gray-500); font-size: 0.9rem; }
         .breadcrumb a { color: var(--primary); text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        
+        .user-info { margin-top: 0.5rem; color: var(--gray-500); font-size: 0.85rem; }
+        .user-info i { color: var(--primary); }
+
         .stats-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-        .stat-card { background: white; padding: 1rem 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); flex: 1; min-width: 150px; }
+        .stat-card { background: white; padding: 1rem 1.5rem; border-radius: var(--radius-xl); border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); flex: 1; min-width: 150px; }
         .stat-card .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--primary); }
-        .stat-card .stat-label { font-size: 0.8rem; color: var(--gray-500); }
+        .stat-card .stat-label { font-size: 0.75rem; color: var(--gray-500); }
+        .stat-card .stat-icon { font-size: 1.25rem; margin-right: 0.5rem; color: var(--primary); }
+
         .filter-section { background: white; padding: 1.5rem; border-radius: var(--radius-xl); margin-bottom: 1.5rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); }
-        .filter-title { font-size: 1rem; font-weight: 500; color: var(--gray-700); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: flex-end; }
-        .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        .filter-group label { font-size: 0.85rem; font-weight: 500; color: var(--gray-600); }
-        .filter-group input, .filter-group select { padding: 0.625rem 0.875rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); font-size: 0.9rem; background: white; font-family: var(--font-sans); }
+        .filter-title { font-size: 1rem; font-weight: 600; color: var(--gray-700); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: flex-end; }
+        .filter-group { display: flex; flex-direction: column; gap: 0.4rem; }
+        .filter-group label { font-size: 0.7rem; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 0.3rem; }
+        .filter-group label i { color: var(--primary); }
+        .filter-group input, .filter-group select { padding: 0.6rem 0.875rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); font-size: 0.875rem; background: white; font-family: var(--font-sans); width: 100%; transition: all 0.2s ease; }
         .filter-group input:focus, .filter-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,75,42,0.1); }
-        .filter-actions { display: flex; gap: 0.75rem; align-items: flex-end; }
-        .btn { padding: 0.625rem 1.25rem; border: none; border-radius: var(--radius-md); font-size: 0.9rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+        .filter-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-end; }
+        
+        .btn { padding: 0.6rem 1.25rem; border: none; border-radius: var(--radius-md); font-size: 0.875rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; transition: all 0.2s ease; font-family: var(--font-sans); }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-light); }
+        .btn-primary:hover { background: var(--primary-light); transform: translateY(-1px); box-shadow: var(--shadow-md); }
         .btn-secondary { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
-        .table-wrapper { background: white; border-radius: var(--radius-xl); border: 1px solid var(--gray-200); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
-        th { background: var(--gray-50); padding: 1rem; text-align: left; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
-        td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
-        .badge { display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; background: var(--gray-100); }
+        .btn-secondary:hover { background: var(--gray-200); }
+        .btn-export { background: #2563eb; color: white; }
+        .btn-export:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+        .table-wrapper { background: white; border-radius: var(--radius-xl); border: 1px solid var(--gray-200); overflow-x: auto; box-shadow: var(--shadow-sm); }
+        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+        th { background: var(--gray-50); padding: 0.875rem 1rem; text-align: left; font-weight: 600; color: var(--gray-600); border-bottom: 2px solid var(--gray-200); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; font-size: 0.85rem; }
+        tr:hover { background: var(--gray-50); }
+        
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; background: var(--gray-100); color: var(--gray-600); }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        
         .empty-state { text-align: center; padding: 3rem; color: var(--gray-500); }
+        .empty-state i { font-size: 3rem; color: var(--gray-300); margin-bottom: 1rem; display: block; }
+        
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
+        .footer span { color: var(--primary); }
+        
+        .view-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: var(--radius-md); font-size: 0.7rem; font-weight: 600; background: var(--gray-100); color: var(--gray-600); }
+        .upgrade-arrow { color: var(--success, #10b981); font-weight: 700; }
+
+        .actions-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem; }
+        .link-btn { padding: 0.4rem 0.8rem; background: var(--primary); color: white !important; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 500; font-size: 0.85rem; transition: all 0.2s ease; border: none; cursor: pointer; }
+        .link-btn:hover { background: var(--primary-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .link-btn-sm { padding: 0.25rem 0.6rem; font-size: 0.75rem; }
+
         @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
-        @media (max-width: 768px) { .filter-grid { grid-template-columns: 1fr; } .filter-actions { grid-column: span 1; } .btn { width: 100%; justify-content: center; } .stats-row { flex-direction: column; } }
+        @media (max-width: 768px) { 
+            .main-content { padding: 1rem 0.75rem 0.75rem !important; padding-top: 4.5rem !important; }
+            .page-header h1 { font-size: 1.25rem; }
+            .page-header { padding: 1.25rem; }
+            .filter-grid { grid-template-columns: 1fr; }
+            .filter-actions { grid-column: span 1; flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
+            .stats-row { flex-direction: column; }
+            table { min-width: 800px; }
+        }
+        @media (max-width: 480px) {
+            .main-content { padding: 0.75rem 0.5rem 0.5rem !important; padding-top: 4rem !important; }
+            .page-header { padding: 1rem; }
+            .page-header h1 { font-size: 1.1rem; }
+            table { min-width: 700px; }
+        }
     </style>
 </head>
 <body>
@@ -172,58 +244,113 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
             <span> / </span>
             <span>Maintenance Logs</span>
         </div>
+        <div class="user-info">
+            <i class="fas fa-eye"></i> View: 
+            <span class="view-badge">
+                <?php 
+                if ($user_role === 'software') echo 'My Logs';
+                elseif ($user_role === 'manager') echo 'Branch: ' . safe($user_branch);
+                elseif ($user_role === 'inventory_admin') echo 'Branch: ' . safe($user_branch);
+                else echo 'All Logs';
+                ?>
+            </span>
+        </div>
     </div>
 
     <div class="stats-row">
-        <div class="stat-card"><div class="stat-value"><?= count($logs) ?></div><div class="stat-label">Total Records</div></div>
-        <div class="stat-card"><div class="stat-value"><?= array_sum(array_column($logs, 'new_ram')) ?></div><div class="stat-label">RAM Upgrades (GB)</div></div>
-        <div class="stat-card"><div class="stat-value"><?= array_sum(array_column($logs, 'new_storage')) ?></div><div class="stat-label">Storage Upgrades (GB)</div></div>
+        <div class="stat-card">
+            <div class="stat-value"><?= number_format($totalRecords) ?></div>
+            <div class="stat-label"><i class="fas fa-clipboard-list stat-icon"></i> Total Records</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value"><?= number_format($totalRamUpgraded) ?></div>
+            <div class="stat-label"><i class="fas fa-microchip stat-icon"></i> RAM Upgraded (GB)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value"><?= number_format($totalStorageUpgraded) ?></div>
+            <div class="stat-label"><i class="fas fa-hdd stat-icon"></i> Storage Upgraded (GB)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value"><?= number_format($uniqueDevices) ?></div>
+            <div class="stat-label"><i class="fas fa-laptop stat-icon"></i> Unique Devices</div>
+        </div>
     </div>
 
     <div class="filter-section">
         <div class="filter-title"><i class="fas fa-filter"></i> Filter Logs</div>
         <form method="GET" class="filter-grid">
             <div class="filter-group">
-                <label>Serial Number</label>
-                <input type="text" name="serial" placeholder="Search by serial number..." value="<?= htmlspecialchars($filter_serial) ?>">
+                <label><i class="fas fa-hashtag"></i> Serial Number</label>
+                <input type="text" name="serial" placeholder="Search by serial..." value="<?= safe($filter_serial) ?>">
             </div>
-            <div class="filter-group">
-                <label>Start Date</label>
-                <input type="date" name="start_date" value="<?= htmlspecialchars($filter_start_date) ?>">
-            </div>
-            <div class="filter-group">
-                <label>End Date</label>
-                <input type="date" name="end_date" value="<?= htmlspecialchars($filter_end_date) ?>">
-            </div>
+            
             <?php if ($user_role === 'super_admin'): ?>
                 <div class="filter-group">
-                    <label>Branch</label>
+                    <label><i class="fas fa-user-cog"></i> Performed By</label>
+                    <select name="performed_by">
+                        <option value="">All Users</option>
+                        <?php foreach ($softwareUsers as $u): ?>
+                            <option value="<?= safe($u['id']) ?>" <?= $filter_performed_by == $u['id'] ? 'selected' : '' ?>>
+                                <?= safe($u['full_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label><i class="fas fa-store"></i> Branch</label>
                     <select name="branch">
                         <option value="">All Branches</option>
                         <?php foreach ($branches as $b): ?>
-                            <option value="<?= htmlspecialchars($b) ?>" <?= $filter_branch == $b ? 'selected' : '' ?>><?= htmlspecialchars($b) ?></option>
+                            <option value="<?= safe($b) ?>" <?= $filter_branch == $b ? 'selected' : '' ?>>
+                                <?= safe($b) ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
             <?php endif; ?>
-            <div class="filter-actions">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
-                <a href="software_logs.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-calendar-alt"></i> From Date</label>
+                <input type="date" name="start_date" value="<?= safe($filter_start_date) ?>">
+            </div>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-calendar-alt"></i> To Date</label>
+                <input type="date" name="end_date" value="<?= safe($filter_end_date) ?>">
+            </div>
+            
+            <div class="filter-group">
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
+                    <a href="software_logs.php" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</a>
+                </div>
             </div>
         </form>
     </div>
 
     <div class="table-wrapper">
         <?php if (empty($logs)): ?>
-            <div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No maintenance records found matching your criteria.</p></div>
+            <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <p>No maintenance records found matching your criteria.</p>
+                <?php if ($user_role === 'software'): ?>
+                    <p style="font-size:0.85rem; margin-top:0.5rem; color:var(--gray-400);">
+                        <a href="/inventory_system/software/update_specs.php" style="color:var(--primary); text-decoration:none;">
+                            <i class="fas fa-plus-circle"></i> Perform your first update
+                        </a>
+                    </p>
+                <?php endif; ?>
+            </div>
         <?php else: ?>
             <table>
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Serial Number</th>
+                        <th>Serial</th>
                         <th>Category</th>
                         <th>Model</th>
+                        <th>Branch</th>
                         <th>Old RAM</th>
                         <th>New RAM</th>
                         <th>Old Storage</th>
@@ -231,7 +358,6 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                         <th>Old Graphics</th>
                         <th>New Graphics</th>
                         <th>Performed By</th>
-                        <th>Branch</th>
                         <th>Date</th>
                     </tr>
                 </thead>
@@ -239,17 +365,17 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                     <?php $i = 1; foreach ($logs as $log): ?>
                     <tr>
                         <td><?= $i++ ?></td>
-                        <td><code><?= htmlspecialchars($log['device_serial']) ?></code></td>
-                        <td><span class="badge"><?= htmlspecialchars($log['category_name'] ?? '-') ?></span></td>
-                        <td><?= htmlspecialchars($log['model_name'] ?? '-') ?></td>
-                        <td><?= $log['old_ram'] ?> GB</td>
-                        <td><strong><?= $log['new_ram'] ?> GB</strong></td>
-                        <td><?= $log['old_storage'] ?> GB</td>
-                        <td><strong><?= $log['new_storage'] ?> GB</strong></td>
-                        <td><?= htmlspecialchars($log['old_graphics'] ?? '-') ?></td>
-                        <td><?= htmlspecialchars($log['new_graphics'] ?? '-') ?></td>
-                        <td><?= htmlspecialchars($log['performed_by_name'] ?? '-') ?></td>
-                        <td><span class="badge"><?= htmlspecialchars($log['branch'] ?? '-') ?></span></td>
+                        <td><code><?= safe($log['device_serial']) ?></code></td>
+                        <td><span class="badge"><?= safe($log['category_name'] ?? '-') ?></span></td>
+                        <td><?= safe($log['model_name'] ?? '-') ?></td>
+                        <td><span class="badge"><?= safe($log['branch'] ?? '-') ?></span></td>
+                        <td><?= safe($log['old_ram']) ?> GB</td>
+                        <td><strong class="upgrade-arrow"><?= safe($log['new_ram']) ?> GB <?= ($log['new_ram'] > $log['old_ram']) ? '↑' : '' ?></strong></td>
+                        <td><?= safe($log['old_storage']) ?> GB</td>
+                        <td><strong class="upgrade-arrow"><?= safe($log['new_storage']) ?> GB <?= ($log['new_storage'] > $log['old_storage']) ? '↑' : '' ?></strong></td>
+                        <td><?= safe($log['old_graphics'] ?? '-') ?></td>
+                        <td><?= safe($log['new_graphics'] ?? '-') ?></td>
+                        <td><?= safe($log['performed_by_name'] ?? '-') ?></td>
                         <td><?= date('M j, Y H:i', strtotime($log['date_performed'])) ?></td>
                     </tr>
                     <?php endforeach; ?>
@@ -257,7 +383,27 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
             </table>
         <?php endif; ?>
     </div>
-    <div class="footer"><i class="fas fa-copyright"></i> <?= date('Y'); ?> Mombasa Computers</div>
+
+    <!-- Quick Action Buttons -->
+    <div class="actions-row">
+        <a href="/inventory_system/software/update_specs.php" class="link-btn">
+            <i class="fas fa-microchip"></i> Update Specs
+        </a>
+        <a href="/inventory_system/search/search_device.php" class="link-btn link-btn-sm">
+            <i class="fas fa-search"></i> Search Device
+        </a>
+        <?php if (!empty($logs)): ?>
+            <a href="export_maintenance_logs.php?<?= http_build_query($_GET) ?>" class="link-btn link-btn-sm" style="background:#2563eb;">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </a>
+        <?php endif; ?>
+    </div>
+
+    <div class="footer">
+        <i class="fas fa-copyright"></i> <?= date('Y'); ?> <span>Mombasa Computers</span>. All rights reserved.
+        <span style="margin:0 0.5rem;">•</span>
+        <span>v2.0.0</span>
+    </div>
 </div>
 
 <script>

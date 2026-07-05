@@ -27,6 +27,11 @@ function secureQuery($conn, $sql, $params = []) {
     }
 }
 
+// Helper function to safely escape HTML
+function safe($value) {
+    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+}
+
 // ========== TECHNICIAN STATISTICS (CURRENT MONTH) ==========
 
 // 1. Total completed repairs this month (by this technician)
@@ -37,8 +42,8 @@ $techTotalRepairs = $s ? (int)$s->fetchColumn() : 0;
 $s = secureQuery($conn, "SELECT COUNT(*) FROM repairs WHERE added_by = ? AND fix_status = 'Fixed' AND DATE(date_fixed) = CURDATE()", [$user_id]);
 $techTodayRepairs = $s ? (int)$s->fetchColumn() : 0;
 
-// 3. Pending repairs (by this technician)
-$s = secureQuery($conn, "SELECT COUNT(*) FROM repairs WHERE added_by = ? AND fix_status = 'Not Fixed'", [$user_id]);
+// 3. Pending repairs (by this technician) - Using 'pending' status
+$s = secureQuery($conn, "SELECT COUNT(*) FROM repairs WHERE added_by = ? AND fix_status = 'pending'", [$user_id]);
 $techPendingRepairs = $s ? (int)$s->fetchColumn() : 0;
 
 // 4. Success rate (lifetime)
@@ -63,8 +68,8 @@ $s = secureQuery($conn, "SELECT problem_description, COUNT(*) as count FROM repa
 $mostCommonIssue = '';
 $mostCommonIssueCount = 0;
 if ($s && $row = $s->fetch(PDO::FETCH_ASSOC)) {
-    $mostCommonIssue = htmlspecialchars($row['problem_description']);
-    $mostCommonIssueCount = (int)$row['count'];
+    $mostCommonIssue = $row['problem_description'] ?? '';
+    $mostCommonIssueCount = (int)($row['count'] ?? 0);
 }
 
 // 7. This month's repairs (fixed this month)
@@ -75,15 +80,15 @@ $thisMonthRepairs = $s ? (int)$s->fetchColumn() : 0;
 $s = secureQuery($conn, "SELECT COUNT(*) FROM repairs WHERE fix_status = 'Fixed' AND MONTH(date_fixed) = MONTH(CURDATE()) AND YEAR(date_fixed) = YEAR(CURDATE())");
 $totalSystemRepairs = $s ? (int)$s->fetchColumn() : 0;
 
-// 9. System pending repairs
-$s = secureQuery($conn, "SELECT COUNT(*) FROM repairs WHERE fix_status = 'Not Fixed'");
+// 9. System pending repairs - Using 'pending' status
+$s = secureQuery($conn, "SELECT COUNT(*) FROM repairs WHERE fix_status = 'pending'");
 $systemPendingRepairs = $s ? (int)$s->fetchColumn() : 0;
 
 // 10. Most common issue (system-wide)
 $s = secureQuery($conn, "SELECT problem_description, COUNT(*) as count FROM repairs GROUP BY problem_description ORDER BY count DESC LIMIT 1");
 $systemMostCommonIssue = '';
 if ($s && $row = $s->fetch(PDO::FETCH_ASSOC)) {
-    $systemMostCommonIssue = htmlspecialchars($row['problem_description']);
+    $systemMostCommonIssue = $row['problem_description'] ?? '';
 }
 
 // 11. Device with most repairs (by this technician)
@@ -91,22 +96,27 @@ $s = secureQuery($conn, "SELECT serial_number, COUNT(*) as count FROM repairs WH
 $mostRepairedDevice = '';
 $mostRepairedDeviceCount = 0;
 if ($s && $row = $s->fetch(PDO::FETCH_ASSOC)) {
-    $mostRepairedDevice = htmlspecialchars($row['serial_number']);
-    $mostRepairedDeviceCount = (int)$row['count'];
+    $mostRepairedDevice = $row['serial_number'] ?? '';
+    $mostRepairedDeviceCount = (int)($row['count'] ?? 0);
 }
 
 // ========== RECENT REPAIRS (THIS MONTH) ==========
-$s = secureQuery($conn, "SELECT r.*, d.model_name FROM repairs r 
-    LEFT JOIN devices d ON r.serial_number = d.serial_number 
-    WHERE r.added_by = ? AND MONTH(r.date_added) = MONTH(CURDATE()) AND YEAR(r.date_added) = YEAR(CURDATE())
+$s = secureQuery($conn, "SELECT r.*, d.model_name 
+    FROM repairs r 
+    LEFT JOIN devices d ON r.serial_number COLLATE utf8mb4_general_ci = d.serial_number 
+    WHERE r.added_by = ? 
+    AND MONTH(r.date_added) = MONTH(CURDATE()) 
+    AND YEAR(r.date_added) = YEAR(CURDATE())
     ORDER BY r.date_added DESC 
     LIMIT 10", [$user_id]);
 $recentRepairs = $s ? $s->fetchAll(PDO::FETCH_ASSOC) : [];
 
 // ========== PENDING REPAIRS ==========
-$s = secureQuery($conn, "SELECT r.*, d.model_name FROM repairs r 
-    LEFT JOIN devices d ON r.serial_number = d.serial_number 
-    WHERE r.added_by = ? AND r.fix_status = 'Not Fixed' 
+$s = secureQuery($conn, "SELECT r.*, d.model_name 
+    FROM repairs r 
+    LEFT JOIN devices d ON r.serial_number COLLATE utf8mb4_general_ci = d.serial_number 
+    WHERE r.added_by = ? 
+    AND r.fix_status = 'pending' 
     ORDER BY r.date_added ASC 
     LIMIT 10", [$user_id]);
 $pendingRepairs = $s ? $s->fetchAll(PDO::FETCH_ASSOC) : [];
@@ -295,7 +305,7 @@ $systemPendingRepairsFormatted = number_format($systemPendingRepairs);
     <div class="header-row">
         <div>
             <div class="page-title">Technician Dashboard</div>
-            <div class="welcome-text"><i class="fas fa-hand-wave" style="color: var(--accent);"></i> <?= $greeting ?>, <?= htmlspecialchars(explode(' ', $user_name)[0]) ?> • <?= date('l, F j, Y') ?></div>
+            <div class="welcome-text"><i class="fas fa-hand-wave" style="color: var(--accent);"></i> <?= safe($greeting) ?>, <?= safe(explode(' ', $user_name)[0]) ?> • <?= date('l, F j, Y') ?></div>
         </div>
         <div class="logo"><img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'"></div>
         <div><a href="/inventory_system/dashboard/techniciandashboard.php" class="link-btn"><i class="fas fa-sync-alt"></i> Refresh</a></div>
@@ -342,14 +352,14 @@ $systemPendingRepairsFormatted = number_format($systemPendingRepairs);
             <div class="icon"><i class="fas fa-wrench" style="color: var(--warning);"></i></div>
             <div class="info">
                 <div class="label">Most Repaired Device</div>
-                <div class="value"><?= $mostRepairedDevice ? htmlspecialchars($mostRepairedDevice) . ' (' . $mostRepairedDeviceCount . 'x)' : 'None yet' ?></div>
+                <div class="value"><?= !empty($mostRepairedDevice) ? safe($mostRepairedDevice) . ' (' . $mostRepairedDeviceCount . 'x)' : 'None yet' ?></div>
             </div>
         </div>
         <div class="stat-card-extra">
             <div class="icon"><i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i></div>
             <div class="info">
                 <div class="label">Most Common Issue</div>
-                <div class="value"><?= $mostCommonIssue ? htmlspecialchars(substr($mostCommonIssue, 0, 30)) . ($mostCommonIssueCount > 1 ? ' (' . $mostCommonIssueCount . 'x)' : '') : 'None yet' ?></div>
+                <div class="value"><?= !empty($mostCommonIssue) ? safe(substr($mostCommonIssue, 0, 30)) . ($mostCommonIssueCount > 1 ? ' (' . $mostCommonIssueCount . 'x)' : '') : 'None yet' ?></div>
             </div>
         </div>
         <div class="stat-card-extra">
@@ -370,7 +380,7 @@ $systemPendingRepairsFormatted = number_format($systemPendingRepairs);
                 <div class="chart-bar-wrapper">
                     <div class="chart-value"><?= $value ?></div>
                     <div class="chart-bar" style="height: <?= max(10, ($value / $maxChartValue) * 80) ?>px;"></div>
-                    <div class="chart-label"><?= $chartLabels[$index] ?></div>
+                    <div class="chart-label"><?= safe($chartLabels[$index] ?? '') ?></div>
                 </div>
                 <?php endforeach; ?>
             </div>
@@ -388,25 +398,34 @@ $systemPendingRepairsFormatted = number_format($systemPendingRepairs);
             </div>
             <div class="table-responsive">
                 <table class="table">
-                    <thead><tr><th>Serial</th><th>Model</th><th>Issue</th><th>Date</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Serial</th>
+                            <th>Model</th>
+                            <th>Client</th>
+                            <th>Issue</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         <?php if(!empty($pendingRepairs)): ?>
                             <?php foreach($pendingRepairs as $r): ?>
                             <tr>
-                                <td><code><?= htmlspecialchars($r['serial_number']) ?></code></td>
-                                <td><?= htmlspecialchars($r['model_name'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars(substr($r['problem_description'] ?? '-', 0, 50)) ?></td>
-                                <td><?= date('M j, Y', strtotime($r['date_added'])) ?></td>
+                                <td><code><?= safe($r['serial_number'] ?? '') ?></code></td>
+                                <td><?= safe($r['model_name'] ?? '-') ?></td>
+                                <td><?= safe($r['client_name'] ?? 'N/A') ?></td>
+                                <td><?= safe(substr($r['problem_description'] ?? '-', 0, 50)) ?></td>
+                                <td><?= date('M j, Y', strtotime($r['date_added'] ?? 'now')) ?></td>
                             </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <tr><td colspan="4" class="text-muted" style="text-align:center; padding:1.5rem;">No pending repairs</td></tr>
+                            <tr><td colspan="5" class="text-muted" style="text-align:center; padding:1.5rem;">No pending repairs</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
             </div>
             <div style="margin-top:0.5rem;">
-                <a href="/inventory_system/repairs/view_repairs.php?status=pending" class="view-all-link">View All Pending <i class="fas fa-arrow-right"></i></a>
+                <a href="/inventory_system/repairs/under_repair.php" class="view-all-link">View All Pending <i class="fas fa-arrow-right"></i></a>
             </div>
         </div>
 
@@ -419,27 +438,39 @@ $systemPendingRepairsFormatted = number_format($systemPendingRepairs);
             </div>
             <div class="table-responsive">
                 <table class="table">
-                    <thead><tr><th>Serial</th><th>Model</th><th>Status</th><th>Date</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Serial</th>
+                            <th>Model</th>
+                            <th>Client</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         <?php if(!empty($recentRepairs)): ?>
                             <?php foreach($recentRepairs as $r): ?>
                             <tr>
-                                <td><code><?= htmlspecialchars($r['serial_number']) ?></code></td>
-                                <td><?= htmlspecialchars($r['model_name'] ?? '-') ?></td>
+                                <td><code><?= safe($r['serial_number'] ?? '') ?></code></td>
+                                <td><?= safe($r['model_name'] ?? '-') ?></td>
+                                <td><?= safe($r['client_name'] ?? 'N/A') ?></td>
                                 <td>
-                                    <?php if ($r['fix_status'] === 'Fixed'): ?>
+                                    <?php if (($r['fix_status'] ?? '') === 'Fixed'): ?>
                                         <span class="status-indicator status-fixed"></span>
                                         <span class="text-success">Fixed</span>
+                                    <?php elseif (($r['fix_status'] ?? '') === 'pending'): ?>
+                                        <span class="status-indicator status-pending"></span>
+                                        <span class="text-warning">Pending</span>
                                     <?php else: ?>
                                         <span class="status-indicator status-pending"></span>
                                         <span class="text-warning">Pending</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= date('M j, Y', strtotime($r['date_added'])) ?></td>
+                                <td><?= date('M j, Y', strtotime($r['date_added'] ?? 'now')) ?></td>
                             </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <tr><td colspan="4" class="text-muted" style="text-align:center; padding:1.5rem;">No recent repairs</td></tr>
+                            <tr><td colspan="5" class="text-muted" style="text-align:center; padding:1.5rem;">No recent repairs</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -472,7 +503,7 @@ $systemPendingRepairsFormatted = number_format($systemPendingRepairs);
                 <div class="icon"><i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i></div>
                 <div class="info">
                     <div class="label">System Common Issue</div>
-                    <div class="value"><?= $systemMostCommonIssue ? htmlspecialchars(substr($systemMostCommonIssue, 0, 30)) : 'None' ?></div>
+                    <div class="value"><?= !empty($systemMostCommonIssue) ? safe(substr($systemMostCommonIssue, 0, 30)) : 'None' ?></div>
                 </div>
             </div>
             <div class="stat-card-extra">
@@ -489,7 +520,7 @@ $systemPendingRepairsFormatted = number_format($systemPendingRepairs);
     <div class="actions-row">
         <a href="/inventory_system/repairs/add_repair.php" class="link-btn"><i class="fas fa-plus-circle"></i> Add New Repair</a>
         <a href="/inventory_system/repairs/repair_logs.php" class="link-btn"><i class="fas fa-list"></i> View All Repairs</a>
-        <a href="/inventory_system/repairs/repair_logs.php?filter=mine" class="link-btn link-btn-sm"><i class="fas fa-user-cog"></i> My Repairs</a>
+        <a href="/inventory_system/repairs/under_repair.php" class="link-btn link-btn-sm"><i class="fas fa-user-cog"></i> My Pending Repairs</a>
     </div>
 
     <footer>

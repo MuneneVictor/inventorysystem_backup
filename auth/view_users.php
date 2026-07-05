@@ -1,9 +1,21 @@
 <?php
 session_start();
 
+// Generate CSRF token if not exists
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 // ========== HANDLE TOGGLE USER STATUS (Restrict/Activate) ==========
 // Must be at the very top, before any output
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_id']) && isset($_POST['toggle_action'])) {
+    // CSRF validation
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $_SESSION['error'] = "Security validation failed. Please try again.";
+        header("Location: view_users.php");
+        exit();
+    }
+    
     require_once "../config/db.php";
     
     $toggle_id = (int)$_POST['toggle_user_id'];
@@ -38,6 +50,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_id']) && 
     
     // Preserve filters when redirecting
     $query_params = [];
+    if (!empty($_GET['search'])) $query_params['search'] = $_GET['search'];
+    if (!empty($_GET['branch'])) $query_params['branch'] = $_GET['branch'];
+    if (!empty($_GET['role'])) $query_params['role'] = $_GET['role'];
+    if (!empty($_GET['status'])) $query_params['status'] = $_GET['status'];
+    $redirect_url = "view_users.php" . (empty($query_params) ? "" : "?" . http_build_query($query_params));
+    
+    header("Location: " . $redirect_url);
+    exit();
+}
+
+// ========== HANDLE UNLOCK USER (reset failed attempts and lock) ==========
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['unlock_user_id'])) {
+    // CSRF validation
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $_SESSION['error'] = "Security validation failed. Please try again.";
+        header("Location: view_users.php");
+        exit();
+    }
+    
+    require_once "../config/db.php";
+    
+    $unlock_id = (int)$_POST['unlock_user_id'];
+    
+    // Prevent self unlock (though you can unlock yourself if needed)
+    if ($unlock_id == $_SESSION['user_id']) {
+        $_SESSION['error'] = "You can unlock your own account from the login page.";
+        header("Location: view_users.php");
+        exit();
+    }
+    
+    try {
+        $stmt = $conn->prepare("UPDATE users SET failed_attempts = 0, account_locked_until = NULL WHERE id = :id");
+        $stmt->execute(['id' => $unlock_id]);
+        
+        // Log activity
+        $logStmt = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (:uid, :action, :details)");
+        $logStmt->execute([
+            'uid' => $_SESSION['user_id'],
+            'action' => 'User Unlocked',
+            'details' => "User ID $unlock_id has been unlocked by " . ($_SESSION['full_name'] ?? $_SESSION['name'] ?? 'Admin') . " - Failed attempts reset and lock removed"
+        ]);
+        
+        $_SESSION['success'] = "User account unlocked successfully. Login attempts reset.";
+    } catch (Exception $e) {
+        $_SESSION['error'] = "Database error: " . $e->getMessage();
+    }
+    
+    // Preserve filters when redirecting
+    $query_params = [];
+    if (!empty($_GET['search'])) $query_params['search'] = $_GET['search'];
     if (!empty($_GET['branch'])) $query_params['branch'] = $_GET['branch'];
     if (!empty($_GET['role'])) $query_params['role'] = $_GET['role'];
     if (!empty($_GET['status'])) $query_params['status'] = $_GET['status'];
@@ -61,6 +123,7 @@ if ($role !== 'super_admin') {
 }
 
 // Get filters from GET
+$filterSearch = trim($_GET['search'] ?? '');
 $filterBranch = $_GET['branch'] ?? '';
 $filterRole = $_GET['role'] ?? '';
 $filterStatus = $_GET['status'] ?? '';
@@ -77,10 +140,17 @@ function safeQuery($conn, $sql, $params = []) {
 }
 
 // Build dynamic query with prepared statements
-$sql = "SELECT id, full_name, role, email, branch, created_at, last_login, is_active 
+$sql = "SELECT id, full_name, role, email, branch, created_at, last_login, is_active, 
+               failed_attempts, account_locked_until
         FROM users WHERE 1=1";
 
 $params = [];
+
+// Search by name
+if (!empty($filterSearch)) {
+    $sql .= " AND (full_name LIKE :search OR email LIKE :search)";
+    $params['search'] = "%$filterSearch%";
+}
 
 if (!empty($filterBranch)) {
     $sql .= " AND branch = :branch";
@@ -109,6 +179,7 @@ $roles = safeQuery($conn, "SELECT DISTINCT role FROM users ORDER BY role ASC");
 $total_users = count($users);
 $active_users = count(array_filter($users, fn($u) => $u['is_active'] == 1));
 $inactive_users = $total_users - $active_users;
+$locked_users = count(array_filter($users, fn($u) => !empty($u['account_locked_until']) && strtotime($u['account_locked_until']) > time()));
 
 // Display success/error messages (from session)
 $success_msg = $_SESSION['success'] ?? '';
@@ -268,6 +339,12 @@ require_once "../includes/sidebar.php";
             margin-top: 0.25rem;
         }
 
+        .stat-card .stat-sub {
+            font-size: 0.75rem;
+            color: var(--gray-400);
+            margin-top: 0.2rem;
+        }
+
         .search-section {
             background: white;
             padding: 1.5rem;
@@ -289,7 +366,7 @@ require_once "../includes/sidebar.php";
 
         .filter-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 1rem;
             align-items: flex-end;
         }
@@ -306,6 +383,7 @@ require_once "../includes/sidebar.php";
             color: var(--gray-600);
         }
 
+        .filter-group input,
         .filter-group select {
             padding: 0.625rem 0.875rem;
             border: 1px solid var(--gray-300);
@@ -313,13 +391,18 @@ require_once "../includes/sidebar.php";
             font-size: 0.9rem;
             background: white;
             font-family: var(--font-sans);
-            cursor: pointer;
+            width: 100%;
         }
 
+        .filter-group input:focus,
         .filter-group select:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(26, 75, 42, 0.1);
+        }
+
+        .filter-group input::placeholder {
+            color: var(--gray-400);
         }
 
         .filter-actions {
@@ -382,9 +465,23 @@ require_once "../includes/sidebar.php";
             background: #059669;
         }
 
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
         .btn-sm {
             padding: 0.375rem 0.875rem;
             font-size: 0.8rem;
+        }
+
+        .btn-xs {
+            padding: 0.25rem 0.625rem;
+            font-size: 0.7rem;
         }
 
         .table-wrapper {
@@ -404,7 +501,7 @@ require_once "../includes/sidebar.php";
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
-            min-width: 700px;
+            min-width: 750px;
         }
 
         th {
@@ -481,6 +578,11 @@ require_once "../includes/sidebar.php";
             color: white;
         }
 
+        .badge-locked {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
         .branch-kimathi {
             color: #059669;
             font-weight: 500;
@@ -516,6 +618,17 @@ require_once "../includes/sidebar.php";
             font-size: 0.85rem;
             color: var(--gray-400);
             border-top: 1px solid var(--gray-200);
+        }
+
+        .locked-indicator {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            background: #fef3c7;
+            color: #92400e;
+            border-radius: 9999px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            margin-left: 0.3rem;
         }
 
         @media (max-width: 1200px) {
@@ -647,9 +760,10 @@ require_once "../includes/sidebar.php";
             <div class="stat-label">Inactive Users</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-store"></i></div>
-            <div class="stat-value"><?= number_format(count($branches)) ?></div>
-            <div class="stat-label">Branches</div>
+            <div class="stat-icon"><i class="fas fa-lock"></i></div>
+            <div class="stat-value"><?= number_format($locked_users) ?></div>
+            <div class="stat-label">Locked Users</div>
+            <div class="stat-sub">Failed login attempts</div>
         </div>
     </div>
 
@@ -658,6 +772,11 @@ require_once "../includes/sidebar.php";
             <i class="fas fa-filter"></i> Filter Users
         </div>
         <form method="GET" id="filterForm" class="filter-grid">
+            <div class="filter-group">
+                <label><i class="fas fa-search"></i> Search</label>
+                <input type="text" name="search" placeholder="Search by name or email..." value="<?= htmlspecialchars($filterSearch) ?>">
+            </div>
+
             <div class="filter-group">
                 <label><i class="fas fa-store"></i> Branch</label>
                 <select name="branch" id="filter-branch">
@@ -723,8 +842,13 @@ require_once "../includes/sidebar.php";
                 </div>
             <?php else: ?>
                 <form method="POST" id="toggleForm" style="display: none;">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                     <input type="hidden" name="toggle_user_id" id="toggle_user_id">
                     <input type="hidden" name="toggle_action" id="toggle_action">
+                </form>
+                <form method="POST" id="unlockForm" style="display: none;">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                    <input type="hidden" name="unlock_user_id" id="unlock_user_id">
                 </form>
                 <table>
                     <thead>
@@ -742,6 +866,10 @@ require_once "../includes/sidebar.php";
                     </thead>
                     <tbody>
                     <?php $i = 1; foreach($users as $u): ?>
+                        <?php 
+                        $is_locked = !empty($u['account_locked_until']) && strtotime($u['account_locked_until']) > time();
+                        $failed_attempts = (int)($u['failed_attempts'] ?? 0);
+                        ?>
                         <tr>
                             <td><?= $i++ ?></td>
                             <td><strong><?= htmlspecialchars($u['full_name'] ?? 'N/A') ?></strong></td>
@@ -775,6 +903,10 @@ require_once "../includes/sidebar.php";
                                         $role_class = 'badge-manager';
                                         $role_display = 'Manager';
                                         break;
+                                    case 'cashier':
+                                        $role_class = 'badge-sales';
+                                        $role_display = 'Cashier';
+                                        break;
                                     default:
                                         $role_class = '';
                                         $role_display = ucfirst($u['role']);
@@ -790,7 +922,16 @@ require_once "../includes/sidebar.php";
                             </td>
                             <td>
                                 <?php if ($u['is_active'] == 1): ?>
-                                    <span class="badge badge-active"><i class="fas fa-check-circle"></i> Active</span>
+                                    <?php if ($is_locked): ?>
+                                        <span class="badge badge-locked">
+                                            <i class="fas fa-lock"></i> Locked
+                                            <?php if ($failed_attempts > 0): ?>
+                                                <span class="locked-indicator"><?= $failed_attempts ?> attempts</span>
+                                            <?php endif; ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge badge-active"><i class="fas fa-check-circle"></i> Active</span>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <span class="badge badge-inactive"><i class="fas fa-ban"></i> Inactive</span>
                                 <?php endif; ?>
@@ -803,6 +944,11 @@ require_once "../includes/sidebar.php";
                                         <i class="fas fa-edit"></i> Edit
                                     </a>
                                     <?php if ($u['id'] != $_SESSION['user_id']): ?>
+                                        <?php if ($is_locked && $u['is_active'] == 1): ?>
+                                            <button type="button" class="btn btn-warning btn-sm" onclick="unlockUser(<?= $u['id'] ?>, '<?= htmlspecialchars($u['full_name']) ?>')">
+                                                <i class="fas fa-unlock"></i> Unlock
+                                            </button>
+                                        <?php endif; ?>
                                         <?php if ($u['is_active'] == 1): ?>
                                             <button type="button" class="btn btn-danger btn-sm" onclick="toggleUserStatus(<?= $u['id'] ?>, '<?= htmlspecialchars($u['full_name']) ?>', 'restrict')">
                                                 <i class="fas fa-ban"></i> Restrict
@@ -832,11 +978,12 @@ require_once "../includes/sidebar.php";
 </div>
 
 <script>
-// Auto-submit form when dropdowns change
+// Auto-submit form when dropdowns change, but not for text input
 document.addEventListener('DOMContentLoaded', function() {
     const branchSelect = document.getElementById('filter-branch');
     const roleSelect = document.getElementById('filter-role');
     const statusSelect = document.getElementById('filter-status');
+    const searchInput = document.querySelector('input[name="search"]');
 
     function autoSubmit() {
         document.getElementById('filterForm').submit();
@@ -845,6 +992,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (branchSelect) branchSelect.addEventListener('change', autoSubmit);
     if (roleSelect) roleSelect.addEventListener('change', autoSubmit);
     if (statusSelect) statusSelect.addEventListener('change', autoSubmit);
+    
+    // Search input - submit on Enter key
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                autoSubmit();
+            }
+        });
+    }
 });
 
 // Confirm password reset
@@ -853,6 +1010,11 @@ function confirmReset(userId, userName) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = 'reset_password.php';
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '<?= htmlspecialchars($_SESSION['csrf_token']) ?>';
+        form.appendChild(csrfInput);
         const input = document.createElement('input');
         input.type = 'hidden';
         input.name = 'user_id';
@@ -876,6 +1038,15 @@ function toggleUserStatus(userId, userName, action) {
         const form = document.getElementById('toggleForm');
         document.getElementById('toggle_user_id').value = userId;
         document.getElementById('toggle_action').value = action;
+        form.submit();
+    }
+}
+
+// Unlock user (reset failed attempts and lock)
+function unlockUser(userId, userName) {
+    if (confirm(`Are you sure you want to UNLOCK "${userName}"? This will reset their failed login attempts and remove the lock.`)) {
+        const form = document.getElementById('unlockForm');
+        document.getElementById('unlock_user_id').value = userId;
         form.submit();
     }
 }

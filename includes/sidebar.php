@@ -288,6 +288,7 @@ body {
             ?>" class="logo-link">
                 <img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasa Computers" class="logo-img">
             </a>
+            
         </div>
 
         <div class="sidebar-menu">
@@ -307,6 +308,7 @@ body {
                 $sections['REPORTS'] = [
                     'icon' => 'fas fa-chart-line',
                     'items' => [
+                        ['Daily Report', '/inventory_system/reports/daily_report.php', 'fas fa-calendar-day'],
                         ['Sales Report', '/inventory_system/sales/sales_logs.php', 'fas fa-chart-line'],
                         ['Sales Team', '/inventory_system/reports/sales_team.php', 'fas fa-users'],
                         ['Inventory Overview', '/inventory_system/reports/overview.php', 'fas fa-warehouse'],
@@ -454,7 +456,7 @@ body {
             }
 
             // Chargers
-            if (in_array($role, ['super_admin','manager','inventory_admin','software'])) {
+            if (in_array($role, ['super_admin','manager','inventory_admin'])) {
                 $charger_items = [];
                 if (in_array($role, ['super_admin','manager','inventory_admin'])) {
                     $charger_items[] = ['Add Charger', '/inventory_system/chargers/add_charger.php', 'fas fa-plus'];
@@ -566,12 +568,12 @@ body {
                     ]
                 ];
             }
-              if ($role === 'cashier') {
-                $sections['RETURNS'] = [
-                    'icon' => 'fas fa-undo',
+              if (in_array($role, ['cashier', 'super_admin', 'manager'])) {
+                $sections['EXPENSES'] = [
+                    'icon' => 'fas fa-money-bill-wave',
                     'items' => [
-                        ['Process Return', '/inventory_system/sales/process_return.php', 'fas fa-undo'],
-                        ['Return Logs', '/inventory_system/sales/return_logs.php', 'fas fa-chart-bar'],
+                        ['Add Expense', '/inventory_system/sales/add_expense.php', 'fas fa-money-bill-wave'],
+                        ['Expense Logs', '/inventory_system/sales/expenses_logs.php', 'fas fa-chart-bar'],
                     ]
                 ];
             }

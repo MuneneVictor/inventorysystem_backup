@@ -3,15 +3,19 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
-
-
-// STRICT ROLE CHECK - DIE IMMEDIATELY (Role changed to 'software')
+// STRICT ROLE CHECK - Only software role
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'software') {
     die("ACCESS DENIED: You do not have permission to access this page.");
 }
 
 $user_id = (int)($_SESSION['user_id'] ?? 0);
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
+
+// Get user branch
+$user_branch = null;
+$stmt = $conn->prepare("SELECT branch FROM users WHERE id = ?");
+$stmt->execute([$user_id]);
+$user_branch = $stmt->fetchColumn();
 
 function safeQuery($conn, $sql, $params = []) {
     try {
@@ -24,82 +28,99 @@ function safeQuery($conn, $sql, $params = []) {
     }
 }
 
-// Maintenance/Software statistics
-$myUpdatedTotal = 0;
-$myUpdatedToday = 0;
-$myRecentUpdates = [];
-$totalMaintenanceTasks = 0;
-$mostCommonUpdate = '';
-$recentChargersGivenByMe = [];
+// Helper function to safely escape HTML
+function safe($value) {
+    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+}
 
-$s = safeQuery($conn, "SELECT COUNT(*) FROM maintenance WHERE performed_by = :uid", ['uid' => $user_id]);
-$myUpdatedTotal = $s ? (int)$s->fetchColumn() : 0;
+// ============================================================
+// MAINTENANCE/SOFTWARE STATISTICS
+// ============================================================
 
-$s = safeQuery($conn, "SELECT COUNT(*) FROM maintenance WHERE performed_by = :uid AND DATE(date_performed) = CURDATE()", ['uid' => $user_id]);
-$myUpdatedToday = $s ? (int)$s->fetchColumn() : 0;
+// 1. Total updates performed by this user (current month)
+$s = safeQuery($conn, "SELECT COUNT(*) FROM maintenance WHERE performed_by = ? AND MONTH(date_performed) = MONTH(CURDATE()) AND YEAR(date_performed) = YEAR(CURDATE())", [$user_id]);
+$myTotalUpdates = $s ? (int)$s->fetchColumn() : 0;
 
-$s = safeQuery($conn, "SELECT COUNT(*) FROM maintenance");
-$totalMaintenanceTasks = $s ? (int)$s->fetchColumn() : 0;
+// 2. Today's updates
+$s = safeQuery($conn, "SELECT COUNT(*) FROM maintenance WHERE performed_by = ? AND DATE(date_performed) = CURDATE()", [$user_id]);
+$myTodayUpdates = $s ? (int)$s->fetchColumn() : 0;
 
-// Most common update type
+// 3. This week's updates
+$s = safeQuery($conn, "SELECT COUNT(*) FROM maintenance WHERE performed_by = ? AND YEARWEEK(date_performed) = YEARWEEK(CURDATE())", [$user_id]);
+$thisWeekUpdates = $s ? (int)$s->fetchColumn() : 0;
+
+// 4. Total system maintenance tasks (current month)
+$s = safeQuery($conn, "SELECT COUNT(*) FROM maintenance WHERE MONTH(date_performed) = MONTH(CURDATE()) AND YEAR(date_performed) = YEAR(CURDATE())");
+$totalSystemUpdates = $s ? (int)$s->fetchColumn() : 0;
+
+// 5. Most common update type (current month)
 $s = safeQuery($conn, "SELECT 
     CASE 
         WHEN new_ram > old_ram AND new_storage > old_storage THEN 'RAM + Storage'
         WHEN new_ram > old_ram THEN 'RAM Upgrade'
         WHEN new_storage > old_storage THEN 'Storage Upgrade'
+        WHEN new_graphics != old_graphics AND old_graphics IS NOT NULL AND new_graphics IS NOT NULL THEN 'Graphics Upgrade'
         ELSE 'Other'
     END as update_type, 
     COUNT(*) as count 
     FROM maintenance 
+    WHERE performed_by = ? AND MONTH(date_performed) = MONTH(CURDATE()) AND YEAR(date_performed) = YEAR(CURDATE())
     GROUP BY update_type 
-    ORDER BY count DESC LIMIT 1");
+    ORDER BY count DESC LIMIT 1", [$user_id]);
+$mostCommonUpdate = 'N/A';
+$mostCommonCount = 0;
 if ($s && $row = $s->fetch(PDO::FETCH_ASSOC)) {
-    $mostCommonUpdate = $row['update_type'] . ' (' . $row['count'] . ')';
+    $mostCommonUpdate = $row['update_type'];
+    $mostCommonCount = (int)$row['count'];
 }
 
-$s = safeQuery($conn, "SELECT m.*, d.model_name FROM maintenance m LEFT JOIN devices d ON m.device_serial = d.serial_number WHERE m.performed_by = :uid ORDER BY m.date_performed DESC LIMIT 6", ['uid' => $user_id]);
+// 6. Device with most updates (by this user, current month)
+$s = safeQuery($conn, "SELECT device_serial, COUNT(*) as count FROM maintenance WHERE performed_by = ? AND MONTH(date_performed) = MONTH(CURDATE()) AND YEAR(date_performed) = YEAR(CURDATE()) GROUP BY device_serial ORDER BY count DESC LIMIT 1", [$user_id]);
+$mostUpdatedDevice = '';
+$mostUpdatedDeviceCount = 0;
+if ($s && $row = $s->fetch(PDO::FETCH_ASSOC)) {
+    $mostUpdatedDevice = $row['device_serial'];
+    $mostUpdatedDeviceCount = (int)$row['count'];
+}
+
+// 7. Average updates per day (current month)
+$s = safeQuery($conn, "SELECT COUNT(*) / DAY(LAST_DAY(CURDATE())) as avg_per_day FROM maintenance WHERE performed_by = ? AND MONTH(date_performed) = MONTH(CURDATE()) AND YEAR(date_performed) = YEAR(CURDATE())", [$user_id]);
+$avgUpdatesPerDay = 0;
+if ($s && $row = $s->fetch(PDO::FETCH_ASSOC)) {
+    $avgUpdatesPerDay = round($row['avg_per_day'] ?? 0, 1);
+}
+
+// ============================================================
+// RECENT UPDATES (LIMIT 10)
+// ============================================================
+$s = safeQuery($conn, "SELECT m.*, d.model_name, d.branch 
+    FROM maintenance m 
+    LEFT JOIN devices d ON m.device_serial = d.serial_number 
+    WHERE m.performed_by = ? 
+    ORDER BY m.date_performed DESC 
+    LIMIT 10", [$user_id]);
 $myRecentUpdates = $s ? $s->fetchAll(PDO::FETCH_ASSOC) : [];
 
-// Get chargers given by software user
-$chargerLogQuery = "
-    SELECT 
-        cl.*,
-        c.charger_type,
-        c.watts,
-        c.charger_condition,
-        u.full_name AS given_to_name
-    FROM charger_logs cl 
-    LEFT JOIN chargers c ON cl.charger_id = c.id 
-    LEFT JOIN users u ON cl.given_to = u.id 
-    WHERE cl.given_by = :uid
-    ORDER BY cl.date_given DESC 
-    LIMIT 10
-";
-
-$chargerStmt = safeQuery($conn, $chargerLogQuery, ['uid' => $user_id]);
-if ($chargerStmt !== false) {
-    $chargerRows = $chargerStmt->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($chargerRows as $row) {
-        $recentChargersGivenByMe[] = [
-            'id' => $row['id'] ?? null,
-            'charger_label' => trim(($row['charger_type'] ?? 'Charger') . ($row['watts'] ? " {$row['watts']}W" : '')),
-            'quantity_given' => (int)($row['quantity'] ?? 0),
-            'given_to_name' => $row['given_to_name'] ?? '-',
-            'branch' => $row['branch'] ?? null,
-            'date_given' => $row['date_given'] ?? null,
-            'charger_condition' => $row['charger_condition'] ?? '-',
-            'raw' => $row
-        ];
-    }
-}
-
-// Get current time greeting
-date_default_timezone_set('Africa/Nairobi'); 
+// ============================================================
+// TIME GREETING
+// ============================================================
+date_default_timezone_set('Africa/Nairobi');
 $hour = date('G');
 if ($hour < 12) $greeting = 'Good morning';
 elseif ($hour < 17) $greeting = 'Good afternoon';
 else $greeting = 'Good evening';
+
+// Format numbers
+$myTotalUpdatesFormatted = number_format($myTotalUpdates);
+$myTodayUpdatesFormatted = number_format($myTodayUpdates);
+$thisWeekUpdatesFormatted = number_format($thisWeekUpdates);
+$totalSystemUpdatesFormatted = number_format($totalSystemUpdates);
+$avgUpdatesPerDayFormatted = number_format($avgUpdatesPerDay, 1);
+
+// Current month name
+$currentMonth = date('F Y');
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -202,6 +223,17 @@ else $greeting = 'Good evening';
         margin-top: 0.25rem;
     }
 
+    .month-badge {
+        display: inline-block;
+        background: var(--primary);
+        color: white;
+        padding: 0.15rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-left: 0.5rem;
+    }
+
     .logo img {
         height: 48px;
         width: auto;
@@ -211,13 +243,13 @@ else $greeting = 'Good evening';
 
     .card-row { 
         display: grid; 
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 1.5rem; 
-        margin-bottom: 2rem; 
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem; 
+        margin-bottom: 1.5rem; 
     }
 
     .card { 
-        padding: 1.5rem; 
+        padding: 1.25rem 1.5rem; 
         border-radius: var(--radius-xl); 
         color: white; 
         box-shadow: var(--shadow-md);
@@ -241,34 +273,34 @@ else $greeting = 'Good evening';
     }
 
     .card:hover { 
-        transform: translateY(-4px);
+        transform: translateY(-3px);
         box-shadow: var(--shadow-lg);
     }
 
     .card h3 { 
-        margin: 0 0 0.75rem 0; 
-        font-size: 0.9rem; 
-        font-weight: 500;
+        margin: 0 0 0.5rem 0; 
+        font-size: 0.75rem; 
+        font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        opacity: 0.9;
+        opacity: 0.85;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.4rem;
         flex-wrap: wrap;
     }
 
     .card .big { 
-        font-size: 2.25rem; 
+        font-size: 1.75rem; 
         font-weight: 700;
         line-height: 1.2;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.25rem;
         word-break: break-word;
     }
 
     .card .small { 
-        font-size: 0.85rem; 
-        opacity: 0.9;
+        font-size: 0.75rem; 
+        opacity: 0.85;
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -295,6 +327,10 @@ else $greeting = 'Good evening';
         background: linear-gradient(145deg, var(--info), #1e40af);
     }
 
+    .card.danger { 
+        background: linear-gradient(145deg, var(--danger), #b91c1c);
+    }
+
     .card.light { 
         background: white; 
         color: var(--gray-700); 
@@ -311,9 +347,9 @@ else $greeting = 'Good evening';
     }
 
     .section { 
-        margin-bottom: 2rem; 
+        margin-bottom: 1.5rem; 
         background: white; 
-        padding: 1.75rem; 
+        padding: 1.5rem; 
         border-radius: var(--radius-xl); 
         box-shadow: var(--shadow-sm);
         border: 1px solid var(--gray-200);
@@ -326,30 +362,62 @@ else $greeting = 'Good evening';
         border-color: var(--gray-300);
     }
 
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
     .section h4 { 
-        margin: 0 0 1.5rem 0; 
+        margin: 0; 
         color: var(--gray-800); 
-        font-size: 1.25rem;
+        font-size: 1.1rem;
         font-weight: 600;
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.5rem;
         letter-spacing: -0.01em;
         flex-wrap: wrap;
     }
 
     .section h4 i {
         color: var(--primary);
-        font-size: 1.5rem;
+        font-size: 1.2rem;
     }
 
-    .section h4::after {
-        content: '';
-        flex: 1;
-        height: 2px;
-        background: linear-gradient(90deg, var(--primary-light) 0%, var(--gray-200) 100%);
-        margin-left: 1rem;
-        min-width: 50px;
+    .section h4 .badge-count {
+        background: var(--primary);
+        color: white;
+        padding: 0.15rem 0.6rem;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        margin-left: 0.5rem;
+    }
+
+    .view-all-link {
+        color: var(--primary);
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.3rem 0.8rem;
+        border-radius: var(--radius-md);
+        transition: all 0.2s ease;
+    }
+
+    .view-all-link:hover {
+        background: var(--gray-50);
+        text-decoration: underline;
+    }
+
+    .view-all-link i {
+        font-size: 0.75rem;
     }
 
     .table-responsive {
@@ -362,16 +430,16 @@ else $greeting = 'Good evening';
     .table { 
         width: 100%; 
         border-collapse: collapse; 
-        font-size: 0.95rem;
-        min-width: 600px;
+        font-size: 0.9rem;
+        min-width: 700px;
     }
 
     .table th { 
-        padding: 1rem 1rem; 
+        padding: 0.7rem 0.8rem; 
         background: var(--gray-50); 
         color: var(--gray-600); 
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         border-bottom: 2px solid var(--gray-300);
@@ -380,11 +448,12 @@ else $greeting = 'Good evening';
     }
 
     .table td { 
-        padding: 1rem; 
+        padding: 0.7rem 0.8rem; 
         border-bottom: 1px solid var(--gray-200); 
         color: var(--gray-700);
         vertical-align: middle;
         word-break: break-word;
+        font-size: 0.85rem;
     }
 
     .table tbody tr:hover {
@@ -393,20 +462,20 @@ else $greeting = 'Good evening';
 
     .table code {
         background: var(--gray-100);
-        padding: 0.2rem 0.4rem;
+        padding: 0.15rem 0.4rem;
         border-radius: var(--radius-sm);
         font-family: monospace;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         color: var(--primary-dark);
         word-break: break-all;
     }
 
     .badge {
         display: inline-block;
-        padding: 0.25rem 0.75rem;
+        padding: 0.2rem 0.6rem;
         border-radius: 9999px;
-        font-size: 0.85rem;
-        font-weight: 500;
+        font-size: 0.7rem;
+        font-weight: 600;
         background: var(--gray-100);
         color: var(--gray-700);
         white-space: nowrap;
@@ -427,6 +496,16 @@ else $greeting = 'Good evening';
         color: white;
     }
 
+    .badge-warning {
+        background: var(--warning);
+        color: white;
+    }
+
+    .badge-danger {
+        background: var(--danger);
+        color: white;
+    }
+
     .trend-up { 
         color: var(--success);
         display: inline-flex;
@@ -435,16 +514,16 @@ else $greeting = 'Good evening';
     }
 
     .link-btn { 
-        padding: 0.625rem 1.25rem; 
+        padding: 0.5rem 1rem; 
         background: var(--primary); 
         color: white !important; 
         border-radius: var(--radius-md); 
         text-decoration: none; 
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.4rem;
         font-weight: 500;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
         border: none;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -457,13 +536,35 @@ else $greeting = 'Good evening';
         box-shadow: var(--shadow-md);
     }
 
+    .link-btn-sm {
+        padding: 0.35rem 0.7rem;
+        font-size: 0.75rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--gray-500);
+    }
+
+    .empty-state i {
+        font-size: 2.5rem;
+        color: var(--gray-300);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
     footer {
         text-align: center;
-        padding: 2rem 0 0.5rem;
-        margin-top: 2rem;
-        font-size: 0.9rem;
-        color: var(--gray-500);
+        padding: 1.5rem 0 0.5rem;
+        margin-top: 1.5rem;
+        font-size: 0.85rem;
+        color: var(--gray-400);
         border-top: 1px solid var(--gray-200);
+    }
+
+    footer span {
+        color: var(--primary);
     }
 
     @keyframes fadeIn {
@@ -515,12 +616,12 @@ else $greeting = 'Good evening';
         }
         
         .card-row {
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
-            gap: 1rem !important;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+            gap: 0.75rem !important;
         }
         
         .section {
-            padding: 1.5rem !important;
+            padding: 1.25rem !important;
         }
     }
 
@@ -539,16 +640,25 @@ else $greeting = 'Good evening';
         }
         
         .card .big {
-            font-size: 1.75rem !important;
+            font-size: 1.5rem !important;
+        }
+        
+        .card-row {
+            grid-template-columns: repeat(2, 1fr) !important;
         }
         
         .table td,
         .table th {
-            padding: 0.75rem !important;
+            padding: 0.5rem !important;
         }
         
         .table {
-            min-width: 550px;
+            min-width: 600px;
+        }
+        
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
         }
     }
 
@@ -563,8 +673,24 @@ else $greeting = 'Good evening';
         }
         
         .card-row {
-            grid-template-columns: 1fr !important;
-            gap: 0.75rem !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 0.5rem !important;
+        }
+        
+        .card {
+            padding: 0.75rem 1rem !important;
+        }
+        
+        .card .big {
+            font-size: 1.25rem !important;
+        }
+        
+        .card h3 {
+            font-size: 0.6rem !important;
+        }
+        
+        .card .small {
+            font-size: 0.6rem !important;
         }
         
         .table {
@@ -572,8 +698,8 @@ else $greeting = 'Good evening';
         }
         
         .badge {
-            font-size: 0.75rem !important;
-            padding: 0.2rem 0.5rem !important;
+            font-size: 0.6rem !important;
+            padding: 0.15rem 0.4rem !important;
         }
         
         .header-row {
@@ -583,10 +709,15 @@ else $greeting = 'Good evening';
         .header-row .logo img {
             height: 35px !important;
         }
+        
+        .view-all-link {
+            font-size: 0.75rem;
+        }
     }
 
     .text-success { color: var(--success); }
     .text-muted { color: var(--gray-400); }
+    .text-warning { color: var(--warning); }
     </style>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -599,7 +730,15 @@ else $greeting = 'Good evening';
             <div class="page-title">Software Dashboard</div>
             <div class="welcome-text">
                 <i class="fas fa-hand-wave" style="color: var(--accent); margin-right: 0.5rem;"></i>
-                <?= $greeting ?>, <?= htmlspecialchars(explode(' ', $user_name)[0]) ?> • <?= date('l, F j, Y') ?>
+                <?= safe($greeting) ?>, <?= safe(explode(' ', $user_name)[0]) ?> • <?= date('l, F j, Y') ?>
+                <?php if ($user_branch): ?>
+                    <span style="margin-left: 1rem;">
+                        <i class="fas fa-store"></i> <?= safe($user_branch) ?>
+                    </span>
+                <?php endif; ?>
+                <span class="month-badge">
+                    <i class="fas fa-calendar-alt"></i> <?= $currentMonth ?>
+                </span>
             </div>
         </div>
         <div class="logo">
@@ -612,123 +751,155 @@ else $greeting = 'Good evening';
         </div>
     </div>
 
-    <!-- Software Metrics -->
+    <!-- Software Metrics Cards -->
     <div class="card-row">
         <div class="card primary">
-            <h3><i class="fas fa-tasks"></i> Your Updates</h3>
-            <div class="big"><?= number_format($myUpdatedTotal) ?></div>
-            <div class="small">All-time updates</div>
+            <h3><i class="fas fa-tasks"></i> This Month</h3>
+            <div class="big"><?= $myTotalUpdatesFormatted ?></div>
+            <div class="small">Updates in <?= $currentMonth ?></div>
         </div>
         <div class="card success">
-            <h3><i class="fas fa-calendar-day"></i> Today's Updates</h3>
-            <div class="big"><?= number_format($myUpdatedToday) ?></div>
+            <h3><i class="fas fa-calendar-day"></i> Today</h3>
+            <div class="big"><?= $myTodayUpdatesFormatted ?></div>
             <div class="small">
                 <span class="trend-up">
-                    <i class="fas fa-arrow-up"></i> +<?= number_format($myUpdatedToday) ?> today
+                    <i class="fas fa-arrow-up"></i> <?= $myTodayUpdatesFormatted ?> today
                 </span>
             </div>
         </div>
         <div class="card info">
-            <h3><i class="fas fa-database"></i> System Total</h3>
-            <div class="big"><?= number_format($totalMaintenanceTasks) ?></div>
-            <div class="small">Total maintenance tasks</div>
+            <h3><i class="fas fa-calendar-week"></i> This Week</h3>
+            <div class="big"><?= $thisWeekUpdatesFormatted ?></div>
+            <div class="small">Updates this week</div>
         </div>
         <div class="card warning">
-            <h3><i class="fas fa-chart-bar"></i> Common Update</h3>
-            <div class="big" style="font-size: 1.2rem;"><?= htmlspecialchars($mostCommonUpdate) ?></div>
-            <div class="small">Most frequent type</div>
+            <h3><i class="fas fa-chart-bar"></i> Most Common</h3>
+            <div class="big" style="font-size: 1.2rem;">
+                <?php if ($mostCommonUpdate !== 'N/A'): ?>
+                    <?= safe($mostCommonUpdate) ?>
+                    <span style="font-size: 0.7rem; opacity: 0.7;">(<?= $mostCommonCount ?>)</span>
+                <?php else: ?>
+                    N/A
+                <?php endif; ?>
+            </div>
+            <div class="small">Most frequent update type</div>
+        </div>
+        <div class="card secondary">
+            <h3><i class="fas fa-database"></i> System Total</h3>
+            <div class="big"><?= $totalSystemUpdatesFormatted ?></div>
+            <div class="small">All tasks this month</div>
+        </div>
+        <div class="card light">
+            <h3><i class="fas fa-calculator"></i> Avg / Day</h3>
+            <div class="big" style="color: var(--primary);"><?= $avgUpdatesPerDayFormatted ?></div>
+            <div class="small">Daily average this month</div>
+        </div>
+    </div>
+
+    <!-- Most Updated Device -->
+    <div class="section" style="padding: 1rem 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <span style="font-size: 0.8rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="fas fa-medal" style="color: var(--accent);"></i> Most Updated Device (<?= $currentMonth ?>)
+                </span>
+                <div style="font-weight: 600; font-size: 1.1rem; margin-top: 0.2rem;">
+                    <?php if ($mostUpdatedDevice): ?>
+                        <code><?= safe($mostUpdatedDevice) ?></code>
+                        <span class="badge badge-primary" style="margin-left: 0.5rem;"><?= $mostUpdatedDeviceCount ?> updates</span>
+                    <?php else: ?>
+                        <span class="text-muted">No updates this month</span>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <a href="/inventory_system/software/update_specs.php" class="link-btn link-btn-sm">
+                <i class="fas fa-plus"></i> New Update
+            </a>
         </div>
     </div>
 
     <!-- Recent Updates -->
     <div class="section">
-        <h4>
-            <i class="fas fa-history"></i>
-            Your Recent Updates
-        </h4>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Serial</th>
-                        <th>Model</th>
-                        <th>Change</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if(!empty($myRecentUpdates)): ?>
-                        <?php foreach($myRecentUpdates as $u): ?>
-                            <tr>
-                                <td><code><?= htmlspecialchars($u['device_serial']) ?></code></td>
-                                <td><strong><?= htmlspecialchars($u['model_name'] ?? '-') ?></strong></td>
-                                <td>
-                                    <span class="badge badge-success">RAM: <?= htmlspecialchars($u['old_ram'] ?? 'N/A') ?>GB → <?= htmlspecialchars($u['new_ram'] ?? 'N/A') ?>GB</span><br>
-                                    <span class="badge badge-info" style="margin-top: 0.25rem;">Storage: <?= htmlspecialchars($u['old_storage'] ?? 'N/A') ?>GB → <?= htmlspecialchars($u['new_storage'] ?? 'N/A') ?>GB</span>
-                                </td>
-                                <td><?= htmlspecialchars(date('M j, Y H:i', strtotime($u['date_performed'] ?? $u['created_at'] ?? ''))) ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="4" class="text-muted" style="text-align:center; padding: 2.5rem;">No recent updates.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+        <div class="section-header">
+            <h4>
+                <i class="fas fa-history"></i>
+                Recent Updates
+                <span class="badge-count"><?= count($myRecentUpdates) ?></span>
+            </h4>
+            <a href="/inventory_system/software/software_logs.php" class="view-all-link">
+                <i class="fas fa-arrow-right"></i> View All
+            </a>
         </div>
-    </div>
-
-    <!-- Recently Given Chargers -->
-    <div class="section">
-        <h4>
-            <i class="fas fa-bolt"></i>
-            Recently Given Chargers
-        </h4>
         <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Charger</th>
-                        <th>Condition</th>
-                        <th>Qty</th>
-                        <th>Given To</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if(!empty($recentChargersGivenByMe)): ?>
-                        <?php foreach(array_slice($recentChargersGivenByMe, 0, 6) as $c): ?>
+            <?php if(!empty($myRecentUpdates)): ?>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Serial</th>
+                            <th>Model</th>
+                            <th>Branch</th>
+                            <th>Changes</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php $i = 1; foreach($myRecentUpdates as $u): ?>
                             <tr>
-                                <td><strong><?= htmlspecialchars($c['charger_label']) ?></strong></td>
-                                <td><span class="badge"><?= htmlspecialchars($c['charger_condition'] ?? '-') ?></span></td>
-                                <td><span class="badge badge-primary"><?= (int)$c['quantity_given'] ?></span></td>
-                                <td><i class="fas fa-user" style="margin-right: 0.25rem;"></i><?= htmlspecialchars($c['given_to_name']) ?></td>
-                                <td><?= htmlspecialchars(date('M j, Y', strtotime($c['date_given'] ?? ''))) ?></td>
+                                <td><?= $i++ ?></td>
+                                <td><code><?= safe($u['device_serial']) ?></code></td>
+                                <td><strong><?= safe($u['model_name'] ?? '-') ?></strong></td>
+                                <td><span class="badge"><?= safe($u['branch'] ?? 'N/A') ?></span></td>
+                                <td>
+                                    <?php if (($u['new_ram'] ?? 0) > ($u['old_ram'] ?? 0)): ?>
+                                        <span class="badge badge-success">RAM: <?= safe($u['old_ram'] ?? 'N/A') ?>GB → <?= safe($u['new_ram'] ?? 'N/A') ?>GB</span>
+                                    <?php endif; ?>
+                                    <?php if (($u['new_storage'] ?? 0) > ($u['old_storage'] ?? 0)): ?>
+                                        <span class="badge badge-info" style="margin-top: 0.2rem;">Storage: <?= safe($u['old_storage'] ?? 'N/A') ?>GB → <?= safe($u['new_storage'] ?? 'N/A') ?>GB</span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($u['notes'])): ?>
+                                        <span class="badge badge-warning" style="margin-top: 0.2rem;">
+                                            <i class="fas fa-sticky-note"></i> <?= safe(substr($u['notes'], 0, 30)) ?>
+                                        </span>
+                                    <?php endif; ?>
+                                    <?php if (($u['new_ram'] ?? 0) <= ($u['old_ram'] ?? 0) && ($u['new_storage'] ?? 0) <= ($u['old_storage'] ?? 0) && empty($u['notes'])): ?>
+                                        <span class="badge">No significant changes</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= date('M j, Y H:i', strtotime($u['date_performed'])) ?></td>
                             </tr>
                         <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="5" class="text-muted" style="text-align:center; padding: 2.5rem;">No chargers given by you recently.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>No updates performed yet.</p>
+                    <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--gray-400);">
+                        <a href="/inventory_system/software/update_specs.php" style="color: var(--primary); text-decoration: none;">
+                            <i class="fas fa-plus-circle"></i> Perform your first update
+                        </a>
+                    </p>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 
     <!-- Quick Action Links -->
-    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
         <a href="/inventory_system/software/update_specs.php" class="link-btn">
             <i class="fas fa-microchip"></i> Update Device Specs
         </a>
-        <a href="/inventory_system/chargers/give_charger.php" class="link-btn">
-            <i class="fas fa-bolt"></i> Give Charger
+        <a href="/inventory_system/software/software_logs.php" class="link-btn link-btn-sm">
+            <i class="fas fa-history"></i> View All History
+        </a>
+        <a href="/inventory_system/search/search_device.php" class="link-btn link-btn-sm">
+            <i class="fas fa-search"></i> Search Device
         </a>
     </div>
 
     <footer>
-        <i class="fas fa-copyright"></i> <?= date('Y'); ?> Mombasa Computers. All rights reserved. 
+        <i class="fas fa-copyright"></i> <?= date('Y'); ?> <span>Mombasa Computers</span>. All rights reserved. 
         <span style="margin: 0 0.5rem;">•</span> 
         <span>v2.0.0</span>
     </footer>

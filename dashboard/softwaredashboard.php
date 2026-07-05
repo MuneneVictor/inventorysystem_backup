@@ -2,8 +2,8 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
+
 
 // STRICT ROLE CHECK - DIE IMMEDIATELY (Role changed to 'software')
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'software') {
@@ -592,7 +592,7 @@ else $greeting = 'Good evening';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-
+    <?php include "../includes/sidebar.php" ?>
 <div class="main-content">
     <div class="header-row">
         <div>
@@ -738,7 +738,7 @@ else $greeting = 'Good evening';
 document.addEventListener('DOMContentLoaded', function() {
     function adjustDashboardForMobile() {
         const mainContent = document.querySelector('.main-content');
-        const sidebar = document.getElementById('sidebar');
+        const sidebar = document.querySelector('.sidebar');
         
         if (window.innerWidth <= 1200) {
             if (mainContent) {

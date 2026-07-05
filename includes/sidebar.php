@@ -524,7 +524,7 @@ body {
                     ]
                 ];
             }
-                 if ($role === 'sales') {
+                 if (in_array($role, ['sales', 'super_admin', 'manager', 'technician'])) {
                 $sections['QUOTATIONS'] = [
                     'icon' => 'fas fa-file-invoice',
                     'items' => [
@@ -534,7 +534,7 @@ body {
                 ];
             }
 
-              if ($role === 'sales') {
+              if (in_array($role, ['sales', 'super_admin', 'manager', 'technician'])) {
                 $sections['INVOICES'] = [
                     'icon' => 'fas fa-file-invoice-dollar',
                     'items' => [

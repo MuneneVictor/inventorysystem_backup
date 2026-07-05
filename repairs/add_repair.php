@@ -179,7 +179,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
             <?php elseif ($user_role === 'inventory_admin'): ?>
                 <a href="/inventory_system/dashboard/inventorydashboard.php">Dashboard</a>
             <?php else: ?>
-                <a href="/inventory_system/dashboard/techniaciandashboard.php">Dashboard</a>
+                <a href="/inventory_system/dashboard/techniciandashboard.php">Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <a href="under_repair.php">Under Repair</a>

@@ -2,8 +2,7 @@
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 
 $user_role = $_SESSION['role'];
 $user_id = (int) $_SESSION['user_id'];
@@ -112,6 +111,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     </style>
 </head>
 <body>
+    <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-search"></i> Search Device (Repair)</h1>
@@ -123,7 +123,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
             <?php elseif ($user_role === 'inventory_admin'): ?>
                 <a href="/inventory_system/dashboard/inventorydashboard.php">Dashboard</a>
             <?php else: ?>
-                <a href="/inventory_system/dashboard/techniaciandashboard.php">Dashboard</a>
+                <a href="/inventory_system/dashboard/techniciandashboard.php">Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <span>Search Device</span>

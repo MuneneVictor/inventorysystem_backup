@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 05, 2026 at 11:30 PM
+-- Generation Time: Jul 05, 2026 at 11:48 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.30
 
@@ -1503,26 +1503,6 @@ CREATE TABLE `repairs` (
   `source_device` enum('instock','return','client') DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
---
--- Dumping data for table `repairs`
---
-
-INSERT INTO `repairs` (`id`, `serial_number`, `problem_description`, `added_by`, `given_by`, `branch`, `fix_status`, `date_added`, `date_fixed`, `category_id`, `model_name`, `client_name`, `client_phone`, `client_email`, `sales_person`, `parts_used`, `repair_cost`, `source_device`) VALUES
-(1, 'TGBHJJRQW4', 'Faulty keyboard', 4, 1, 'KIMATHI', 'Fixed', '2025-12-16 18:34:43', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(2, '5CG09OPL34', 'faulty keyboard', 16, 1, 'KIMATHI', 'Fixed', '2025-12-18 02:16:11', '2025-12-18 02:16:32', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(3, 'MXHT89YU7', 'Faulty keyboard', 14, 8, 'MOI', 'Fixed', '2026-01-02 13:00:33', '2026-01-02 13:00:54', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(4, 'MXHT89YU7', 'Speaker issue', 14, 8, 'MOI', 'Fixed', '2026-01-02 13:30:36', '2026-01-02 13:31:10', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(5, 'MXFGHGFH', 'FAULTY KEYBOARD', 4, 1, 'KIMATHI', 'Fixed', '2026-03-03 15:44:11', '2026-03-03 15:45:10', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(6, '5CG12465TG09', 'Battery issue', 4, 7, 'KIMATHI', 'Fixed', '2026-07-05 15:03:26', '2026-07-05 18:37:47', 1, 'HP EliteBook 840 G6', NULL, NULL, NULL, NULL, 'New battery', NULL, NULL),
-(7, '5CG09OZXE36', 'broken screnn', 4, NULL, 'KIMATHI', 'Not Fixed', '2026-07-05 15:39:58', NULL, 1, 'HP ELITEBOOK 840 G6', 'Munene victor', '0703646909', NULL, 7, NULL, NULL, NULL),
-(8, NULL, 'Faulty battery', 4, NULL, 'KIMATHI', 'Fixed', '2026-07-05 15:59:10', '2026-07-05 18:38:37', NULL, 'HP ELITEBOOK 840 G6', 'Victor', '0711529618', 'victormunene207@gmail.com', NULL, 'New battery', 4000.00, 'client'),
-(9, NULL, 'Not powering', 4, NULL, 'KIMATHI', 'Fixed', '2026-07-05 16:06:35', '2026-07-05 18:39:41', NULL, 'HP ELITEDESK 705 G5', 'munene', '0711529618', NULL, NULL, 'None', 2000.00, 'client'),
-(10, NULL, 'Not powering', 4, NULL, 'KIMATHI', 'Fixed', '2026-07-05 16:20:05', '2026-07-05 16:41:22', NULL, 'HP ELITEDESK 705 G5', 'Victor', '0711529618', 'victormunene207@gmail.com', NULL, 'new battery', 3500.00, 'client'),
-(11, '5CG0302X7Y', 'faulty keyboard', 4, 8, 'KIMATHI', 'Fixed', '2026-07-05 18:05:20', '2026-07-05 18:16:08', 1, 'HP ELITEBOOK 745 G6', NULL, NULL, NULL, NULL, 'new keyboard', NULL, 'instock'),
-(12, '5CG0302X7Y', 'not powering', 4, 8, 'KIMATHI', 'Fixed', '2026-07-05 18:19:37', '2026-07-05 18:35:31', 1, 'HP ELITEBOOK 745 G6', NULL, NULL, NULL, NULL, 'None', NULL, 'instock'),
-(13, 'TGBHJJRQW4', 'Broken screen', 4, NULL, 'KIMATHI', 'pending', '2026-07-05 19:04:38', NULL, 2, 'HP ELITEBOOK 840 G6', 'munene', '0703646909', 'victormunene207@gmail.com', NULL, NULL, NULL, 'client'),
-(14, '5CGHJJB3623W', 'Casing replacement', 4, NULL, 'KIMATHI', 'pending', '2026-07-05 19:06:20', NULL, NULL, 'HP PRO ONE ALL IN ONE', 'Victor', '0711529618', 'vdebmunene207@gmail.com', NULL, NULL, NULL, 'client');
-
 -- --------------------------------------------------------
 
 --
@@ -1852,7 +1832,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `username`, `password`, `role`, `is_active`, `full_name`, `created_at`, `last_login`, `branch`, `failed_attempts`, `account_locked_until`) VALUES
-(1, 'victormunene207@gmail.com', 'vic', '$2a$12$q5sPMKAfYhS0AMXRm6BpI.W7flz8n0wmcUbBJ45BAnOa8BsxgYKSK', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-07-05 23:26:40', 'KIMATHI', 0, NULL),
+(1, 'victormunene207@gmail.com', 'vic', '$2a$12$q5sPMKAfYhS0AMXRm6BpI.W7flz8n0wmcUbBJ45BAnOa8BsxgYKSK', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-07-05 23:33:53', 'KIMATHI', 0, NULL),
 (4, 'munene@gmail.com', 'Vdeb', '$2y$10$m9PnQbD9v1ZY50s14T45MOV2n4bdaty74/2Y8rBlOuRY56.4OdlGi', 'cashier', 1, 'Munene vicky', '2025-12-03 12:39:40', '2026-07-05 19:50:14', 'KIMATHI', 0, NULL),
 (7, 'peninahkalundi@gmail.com', 'pesh', '$2y$10$cS2ZivexM3srJGrkihxPnumRp0RNDgdHDTX8bkGuUXphAbd9ZJSc.', 'sales', 1, 'Peninah Kalundi', '2025-12-04 18:01:17', '2026-07-05 21:32:00', 'KIMATHI', 0, NULL),
 (8, 'munene23.v@student.cuk.ac.ke', 'syovata', '$2a$12$/VBwYZBkXo6VuCCFIPFWDeLBJ5Ewbo.Z.lALJgWmckCUeT5PFmJ5.', 'inventory_admin', 1, 'Victor Syovata', '2025-12-05 22:19:21', '2026-07-05 23:05:10', 'KIMATHI', 0, NULL);
@@ -1886,7 +1866,7 @@ CREATE TABLE `user_devices` (
 --
 
 INSERT INTO `user_devices` (`id`, `user_id`, `device_id`, `device_name`, `browser_info`, `ip_address`, `last_seen`, `first_seen`, `times_seen`, `is_verified`, `verification_code`, `code_expires_at`, `failed_attempts`, `locked_until`, `created_at`) VALUES
-(1, 1, '9434825922fdab2488a47e149a22fbf60d1d4c55e549294e745f9529fc04e74b', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '::1', '2026-07-06 02:26:40', '2026-07-06 01:27:11', 9, 1, NULL, NULL, 0, NULL, '2026-07-05 22:27:11'),
+(1, 1, '9434825922fdab2488a47e149a22fbf60d1d4c55e549294e745f9529fc04e74b', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '::1', '2026-07-06 02:33:53', '2026-07-06 01:27:11', 10, 1, NULL, NULL, 0, NULL, '2026-07-05 22:27:11'),
 (2, 1, '7bf794ddcdd385a20dcfe4191602f784e955a98a8d503d652715ca10e7c188e2', 'Android Device - Google Chrome', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', '192.168.0.127', '2026-07-06 01:44:12', '2026-07-06 01:31:15', 2, 1, NULL, NULL, 0, NULL, '2026-07-05 22:31:15'),
 (3, 8, '7bf794ddcdd385a20dcfe4191602f784e955a98a8d503d652715ca10e7c188e2', 'Android Device - Google Chrome', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', '192.168.0.127', '2026-07-06 01:58:37', '2026-07-06 01:56:14', 2, 1, NULL, NULL, 0, NULL, '2026-07-05 22:56:14'),
 (4, 8, '9434825922fdab2488a47e149a22fbf60d1d4c55e549294e745f9529fc04e74b', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '::1', '2026-07-06 02:05:10', '2026-07-06 02:03:33', 2, 1, NULL, NULL, 0, NULL, '2026-07-05 23:03:33');
@@ -1901,7 +1881,13 @@ INSERT INTO `user_devices` (`id`, `user_id`, `device_id`, `device_name`, `browse
 ALTER TABLE `accessories`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_accessories_users` (`added_by`),
-  ADD KEY `fk_updated_accessories` (`updated_by`);
+  ADD KEY `fk_updated_accessories` (`updated_by`),
+  ADD KEY `idx_accessories_name` (`name`),
+  ADD KEY `idx_accessories_branch` (`branch`),
+  ADD KEY `idx_accessories_place` (`place`),
+  ADD KEY `idx_accessories_status` (`status`),
+  ADD KEY `idx_accessories_date_added` (`date_added`),
+  ADD KEY `idx_accessories_name_branch` (`name`,`branch`);
 
 --
 -- Indexes for table `accessories_logs`
@@ -1911,14 +1897,22 @@ ALTER TABLE `accessories_logs`
   ADD KEY `fk_accessories_id` (`accessory_id`),
   ADD KEY `fk_given_by_id` (`given_by`),
   ADD KEY `fk_given_to_id` (`given_to`),
-  ADD KEY `fk_accessories_logs_sale_items` (`sale_item_id`);
+  ADD KEY `fk_accessories_logs_sale_items` (`sale_item_id`),
+  ADD KEY `idx_acc_logs_branch` (`branch`),
+  ADD KEY `idx_acc_logs_status` (`status`),
+  ADD KEY `idx_acc_logs_date_given` (`date_given`),
+  ADD KEY `idx_acc_logs_accessory_name` (`accessory_name`);
 
 --
 -- Indexes for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `idx_activity_logs_action` (`action`),
+  ADD KEY `idx_activity_logs_created_at` (`created_at`),
+  ADD KEY `idx_activity_logs_user_id` (`user_id`);
+ALTER TABLE `activity_logs` ADD FULLTEXT KEY `ft_activity_search` (`action`,`details`);
 
 --
 -- Indexes for table `categories`
@@ -1933,7 +1927,11 @@ ALTER TABLE `categories`
 ALTER TABLE `chargers`
   ADD PRIMARY KEY (`id`),
   ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `fk_chargers_added_by` (`added_by`);
+  ADD KEY `fk_chargers_added_by` (`added_by`),
+  ADD KEY `idx_chargers_charger_type` (`charger_type`),
+  ADD KEY `idx_chargers_branch` (`branch`),
+  ADD KEY `idx_chargers_condition` (`charger_condition`),
+  ADD KEY `idx_chargers_type_branch` (`charger_type`,`branch`);
 
 --
 -- Indexes for table `charger_logs`
@@ -1943,14 +1941,22 @@ ALTER TABLE `charger_logs`
   ADD KEY `given_by` (`given_by`),
   ADD KEY `given_to` (`given_to`),
   ADD KEY `fk_charger_logs_chargers` (`charger_id`),
-  ADD KEY `fk_charger_logs_sale_items` (`sale_item_id`);
+  ADD KEY `fk_charger_logs_sale_items` (`sale_item_id`),
+  ADD KEY `idx_charger_logs_branch` (`branch`),
+  ADD KEY `idx_charger_logs_status` (`status`),
+  ADD KEY `idx_charger_logs_date_given` (`date_given`);
 
 --
 -- Indexes for table `clients`
 --
 ALTER TABLE `clients`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_sales_person_clients` (`sales_person`);
+  ADD KEY `fk_sales_person_clients` (`sales_person`),
+  ADD KEY `idx_clients_client_name` (`client_name`),
+  ADD KEY `idx_clients_phone` (`client_phone`),
+  ADD KEY `idx_clients_email` (`client_email`),
+  ADD KEY `idx_clients_branch` (`branch`),
+  ADD KEY `idx_clients_sales_person` (`sales_person`);
 
 --
 -- Indexes for table `devices`
@@ -1960,7 +1966,23 @@ ALTER TABLE `devices`
   ADD UNIQUE KEY `serial_number` (`serial_number`),
   ADD KEY `category_id` (`category_id`),
   ADD KEY `added_by` (`added_by`),
-  ADD KEY `sold_by` (`sold_by`);
+  ADD KEY `sold_by` (`sold_by`),
+  ADD KEY `idx_devices_model_name` (`model_name`),
+  ADD KEY `idx_devices_branch` (`branch`),
+  ADD KEY `idx_devices_status` (`status`),
+  ADD KEY `idx_devices_condition` (`device_condition`),
+  ADD KEY `idx_devices_category` (`category_id`),
+  ADD KEY `idx_devices_place` (`place`),
+  ADD KEY `idx_devices_processor` (`processor`),
+  ADD KEY `idx_devices_ram` (`ram`),
+  ADD KEY `idx_devices_storage_type` (`storage_type`),
+  ADD KEY `idx_devices_storage_capacity` (`storage_capacity`),
+  ADD KEY `idx_devices_cargo_number` (`cargo_number`),
+  ADD KEY `idx_devices_date_added` (`date_added`),
+  ADD KEY `idx_devices_status_branch` (`status`,`branch`),
+  ADD KEY `idx_devices_model_branch` (`model_name`,`branch`),
+  ADD KEY `idx_devices_status_category` (`status`,`category_id`);
+ALTER TABLE `devices` ADD FULLTEXT KEY `ft_devices_search` (`model_name`,`processor`);
 
 --
 -- Indexes for table `devices_logs`
@@ -1970,7 +1992,12 @@ ALTER TABLE `devices_logs`
   ADD KEY `fk_category_id_devices_logs` (`category_id`),
   ADD KEY `fk_taken_by_devices_logs` (`given_by`),
   ADD KEY `fk_given_to_device_devices_logs` (`given_to`),
-  ADD KEY `fk_taken_by_devices` (`taken_by`);
+  ADD KEY `fk_taken_by_devices` (`taken_by`),
+  ADD KEY `idx_devices_logs_serial` (`serial_number`),
+  ADD KEY `idx_devices_logs_action` (`action`),
+  ADD KEY `idx_devices_logs_branch` (`branch`),
+  ADD KEY `idx_devices_logs_status` (`status`),
+  ADD KEY `idx_devices_logs_date_given` (`date_given`);
 
 --
 -- Indexes for table `device_updates`
@@ -1978,21 +2005,32 @@ ALTER TABLE `devices_logs`
 ALTER TABLE `device_updates`
   ADD PRIMARY KEY (`id`),
   ADD KEY `serial_number` (`serial_number`),
-  ADD KEY `updated_by` (`updated_by`);
+  ADD KEY `updated_by` (`updated_by`),
+  ADD KEY `idx_device_updates_serial` (`serial_number`),
+  ADD KEY `idx_device_updates_action` (`action`),
+  ADD KEY `idx_device_updates_updated_at` (`updated_at`);
 
 --
 -- Indexes for table `expenses`
 --
 ALTER TABLE `expenses`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_created_by_expenses` (`created_by`);
+  ADD KEY `fk_created_by_expenses` (`created_by`),
+  ADD KEY `idx_expenses_branch` (`branch`),
+  ADD KEY `idx_expenses_expense_date` (`expense_date`),
+  ADD KEY `idx_expenses_payment_method` (`payment_method`),
+  ADD KEY `idx_expenses_expense_name` (`expense_name`);
 
 --
 -- Indexes for table `graphic_cards`
 --
 ALTER TABLE `graphic_cards`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_added_by_user` (`added_by`);
+  ADD KEY `fk_added_by_user` (`added_by`),
+  ADD KEY `idx_graphic_type` (`type`),
+  ADD KEY `idx_graphic_branch` (`branch`),
+  ADD KEY `idx_graphic_status` (`status`),
+  ADD KEY `idx_graphic_storage` (`storage_capacity`);
 
 --
 -- Indexes for table `graphic_cards_logs`
@@ -2002,7 +2040,10 @@ ALTER TABLE `graphic_cards_logs`
   ADD KEY `fk_given_by_graphics_logs` (`given_by`),
   ADD KEY `fk_given_to_graphics_logs` (`given_to`),
   ADD KEY `fk_grahpic_card_id_logs` (`graphic_card_id`),
-  ADD KEY `fk_graphic_cards_logs_sale_items` (`sale_item_id`);
+  ADD KEY `fk_graphic_cards_logs_sale_items` (`sale_item_id`),
+  ADD KEY `idx_graphic_logs_branch` (`branch`),
+  ADD KEY `idx_graphic_logs_status` (`status`),
+  ADD KEY `idx_graphic_logs_date` (`date_given`);
 
 --
 -- Indexes for table `hdds`
@@ -2010,7 +2051,11 @@ ALTER TABLE `graphic_cards_logs`
 ALTER TABLE `hdds`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_added_by` (`added_by`),
-  ADD KEY `fk_updated_by` (`updated_by`);
+  ADD KEY `fk_updated_by` (`updated_by`),
+  ADD KEY `idx_hdds_type` (`type`),
+  ADD KEY `idx_hdds_storage` (`storage`),
+  ADD KEY `idx_hdds_branch` (`branch`),
+  ADD KEY `idx_hdds_type_storage` (`type`,`storage`);
 
 --
 -- Indexes for table `hdd_logs`
@@ -2020,7 +2065,10 @@ ALTER TABLE `hdd_logs`
   ADD KEY `fk_hdd_logs` (`hdd_id`),
   ADD KEY `fk_logs_given_to` (`given_to`),
   ADD KEY `fk_logs_given_by` (`given_by`),
-  ADD KEY `fk_hdd_logs_sale_items` (`sale_item_id`);
+  ADD KEY `fk_hdd_logs_sale_items` (`sale_item_id`),
+  ADD KEY `idx_hdd_logs_branch` (`branch`),
+  ADD KEY `idx_hdd_logs_status` (`status`),
+  ADD KEY `idx_hdd_logs_date` (`date_given`);
 
 --
 -- Indexes for table `invoices`
@@ -2029,14 +2077,25 @@ ALTER TABLE `invoices`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `invoice_number` (`invoice_number`),
   ADD KEY `quotation_id` (`quotation_id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `idx_invoices_invoice_number` (`invoice_number`),
+  ADD KEY `idx_invoices_client_name` (`client_name`),
+  ADD KEY `idx_invoices_status` (`status`),
+  ADD KEY `idx_invoices_payment_status` (`payment_status`),
+  ADD KEY `idx_invoices_invoice_date` (`invoice_date`),
+  ADD KEY `idx_invoices_user_id` (`user_id`),
+  ADD KEY `idx_invoices_created_at` (`created_at`);
+ALTER TABLE `invoices` ADD FULLTEXT KEY `ft_invoices_search` (`client_name`,`notes`);
 
 --
 -- Indexes for table `invoice_items`
 --
 ALTER TABLE `invoice_items`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `invoice_id` (`invoice_id`);
+  ADD KEY `invoice_id` (`invoice_id`),
+  ADD KEY `idx_invoice_items_invoice_id` (`invoice_id`),
+  ADD KEY `idx_invoice_items_item_type` (`item_type`),
+  ADD KEY `idx_invoice_items_description` (`description`);
 
 --
 -- Indexes for table `invoice_payments`
@@ -2052,7 +2111,10 @@ ALTER TABLE `invoice_payments`
 ALTER TABLE `maintenance`
   ADD PRIMARY KEY (`id`),
   ADD KEY `device_serial` (`device_serial`),
-  ADD KEY `performed_by` (`performed_by`);
+  ADD KEY `performed_by` (`performed_by`),
+  ADD KEY `idx_maintenance_device_serial` (`device_serial`),
+  ADD KEY `idx_maintenance_date_performed` (`date_performed`),
+  ADD KEY `idx_maintenance_performed_by` (`performed_by`);
 
 --
 -- Indexes for table `monitors`
@@ -2060,7 +2122,11 @@ ALTER TABLE `maintenance`
 ALTER TABLE `monitors`
   ADD PRIMARY KEY (`serial_number`),
   ADD KEY `added_by` (`added_by`),
-  ADD KEY `sold_by` (`sold_by`);
+  ADD KEY `sold_by` (`sold_by`),
+  ADD KEY `idx_monitors_model_name` (`model_name`),
+  ADD KEY `idx_monitors_branch` (`branch`),
+  ADD KEY `idx_monitors_status` (`status`),
+  ADD KEY `idx_monitors_size` (`size_inches`);
 
 --
 -- Indexes for table `phones`
@@ -2068,7 +2134,12 @@ ALTER TABLE `monitors`
 ALTER TABLE `phones`
   ADD PRIMARY KEY (`serial_number`),
   ADD KEY `fk_phones_users` (`sold_by`),
-  ADD KEY `fk_phones_added_by` (`added_by`);
+  ADD KEY `fk_phones_added_by` (`added_by`),
+  ADD KEY `idx_phones_brand` (`brand`),
+  ADD KEY `idx_phones_model` (`model`),
+  ADD KEY `idx_phones_branch` (`branch`),
+  ADD KEY `idx_phones_status` (`status`),
+  ADD KEY `idx_phones_brand_model` (`brand`,`model`);
 
 --
 -- Indexes for table `printers`
@@ -2076,7 +2147,10 @@ ALTER TABLE `phones`
 ALTER TABLE `printers`
   ADD PRIMARY KEY (`serial_number`),
   ADD KEY `added_by` (`added_by`),
-  ADD KEY `sold_by` (`sold_by`);
+  ADD KEY `sold_by` (`sold_by`),
+  ADD KEY `idx_printers_model_name` (`model_name`),
+  ADD KEY `idx_printers_branch` (`branch`),
+  ADD KEY `idx_printers_status` (`status`);
 
 --
 -- Indexes for table `quotations`
@@ -2084,14 +2158,24 @@ ALTER TABLE `printers`
 ALTER TABLE `quotations`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `quotation_number` (`quotation_number`),
-  ADD KEY `user_id` (`user_id`);
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `idx_quotations_number` (`quotation_number`),
+  ADD KEY `idx_quotations_client_name` (`client_name`),
+  ADD KEY `idx_quotations_status` (`status`),
+  ADD KEY `idx_quotations_date` (`quotation_date`),
+  ADD KEY `idx_quotations_user_id` (`user_id`),
+  ADD KEY `idx_quotations_created_at` (`created_at`);
+ALTER TABLE `quotations` ADD FULLTEXT KEY `ft_quotations_search` (`client_name`,`notes`);
 
 --
 -- Indexes for table `quotation_items`
 --
 ALTER TABLE `quotation_items`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `quotation_id` (`quotation_id`);
+  ADD KEY `quotation_id` (`quotation_id`),
+  ADD KEY `idx_quotation_items_quotation_id` (`quotation_id`),
+  ADD KEY `idx_quotation_items_item_type` (`item_type`),
+  ADD KEY `idx_quotation_items_description` (`description`);
 
 --
 -- Indexes for table `rams_ssds`
@@ -2099,7 +2183,12 @@ ALTER TABLE `quotation_items`
 ALTER TABLE `rams_ssds`
   ADD PRIMARY KEY (`id`),
   ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `fk_rams_ssds_added_by` (`added_by`);
+  ADD KEY `fk_rams_ssds_added_by` (`added_by`),
+  ADD KEY `idx_rams_ssds_category` (`category`),
+  ADD KEY `idx_rams_ssds_type` (`type`),
+  ADD KEY `idx_rams_ssds_branch` (`branch`),
+  ADD KEY `idx_rams_ssds_storage` (`storage`),
+  ADD KEY `idx_rams_ssds_category_type` (`category`,`type`);
 
 --
 -- Indexes for table `rams_ssds_logs`
@@ -2109,7 +2198,11 @@ ALTER TABLE `rams_ssds_logs`
   ADD KEY `ram_ssd_id` (`ram_ssd_id`),
   ADD KEY `given_to` (`given_to`),
   ADD KEY `given_by` (`given_by`),
-  ADD KEY `fk_rams_ssds_logs_sale_items` (`sale_item_id`);
+  ADD KEY `fk_rams_ssds_logs_sale_items` (`sale_item_id`),
+  ADD KEY `idx_rams_logs_category` (`category`),
+  ADD KEY `idx_rams_logs_branch` (`branch`),
+  ADD KEY `idx_rams_logs_status` (`status`),
+  ADD KEY `idx_rams_logs_date` (`date_given`);
 
 --
 -- Indexes for table `registration_codes`
@@ -2129,14 +2222,28 @@ ALTER TABLE `repairs`
   ADD KEY `added_by` (`added_by`),
   ADD KEY `given_by` (`given_by`),
   ADD KEY `category_id` (`category_id`),
-  ADD KEY `sales_person` (`sales_person`);
+  ADD KEY `sales_person` (`sales_person`),
+  ADD KEY `idx_repairs_serial_number` (`serial_number`),
+  ADD KEY `idx_repairs_branch` (`branch`),
+  ADD KEY `idx_repairs_fix_status` (`fix_status`),
+  ADD KEY `idx_repairs_date_added` (`date_added`),
+  ADD KEY `idx_repairs_source_device` (`source_device`),
+  ADD KEY `idx_repairs_client_name` (`client_name`),
+  ADD KEY `idx_repairs_model_name` (`model_name`);
+ALTER TABLE `repairs` ADD FULLTEXT KEY `ft_repairs_search` (`problem_description`,`serial_number`,`client_name`);
 
 --
 -- Indexes for table `sales`
 --
 ALTER TABLE `sales`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_solb_by_sales` (`sold_by`);
+  ADD KEY `fk_solb_by_sales` (`sold_by`),
+  ADD KEY `idx_sales_client_name` (`client_name`),
+  ADD KEY `idx_sales_status` (`sale_status`),
+  ADD KEY `idx_sales_payment_status` (`payment_status`),
+  ADD KEY `idx_sales_created_at` (`created_at`),
+  ADD KEY `idx_sales_sold_by` (`sold_by`),
+  ADD KEY `idx_sales_completed_at` (`completed_at`);
 
 --
 -- Indexes for table `sale_items`
@@ -2144,7 +2251,11 @@ ALTER TABLE `sales`
 ALTER TABLE `sale_items`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_sales_saleitems` (`sale_id`),
-  ADD KEY `saleitems_saleperson` (`sales_person`);
+  ADD KEY `saleitems_saleperson` (`sales_person`),
+  ADD KEY `idx_sale_items_sale_id` (`sale_id`),
+  ADD KEY `idx_sale_items_item_type` (`item_type`),
+  ADD KEY `idx_sale_items_description` (`description`),
+  ADD KEY `idx_sale_items_sales_person` (`sales_person`);
 
 --
 -- Indexes for table `smartboards`
@@ -2152,7 +2263,11 @@ ALTER TABLE `sale_items`
 ALTER TABLE `smartboards`
   ADD PRIMARY KEY (`serial_number`),
   ADD KEY `fk_users_smartboards` (`added_by`),
-  ADD KEY `fk_sales_smartboards` (`sold_by`);
+  ADD KEY `fk_sales_smartboards` (`sold_by`),
+  ADD KEY `idx_smartboards_model` (`model`),
+  ADD KEY `idx_smartboards_branch` (`branch`),
+  ADD KEY `idx_smartboards_status` (`status`),
+  ADD KEY `idx_smartboards_size` (`size_inches`);
 
 --
 -- Indexes for table `sold_accessories`
@@ -2161,7 +2276,9 @@ ALTER TABLE `sold_accessories`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_accessories_sold` (`accessory_id`),
   ADD KEY `fk_sold_accessories_users` (`sold_by`),
-  ADD KEY `fk_sold_accessories_sale_items` (`sale_item_id`);
+  ADD KEY `fk_sold_accessories_sale_items` (`sale_item_id`),
+  ADD KEY `idx_sold_acc_branch` (`branch`),
+  ADD KEY `idx_sold_acc_date_sold` (`date_sold`);
 
 --
 -- Indexes for table `sold_chargers`
@@ -2170,7 +2287,9 @@ ALTER TABLE `sold_chargers`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_sold_chargers` (`charger_id`),
   ADD KEY `fk_user_sold_chargers` (`sold_by`),
-  ADD KEY `fk_sold_chargers_sale_items` (`sale_item_id`);
+  ADD KEY `fk_sold_chargers_sale_items` (`sale_item_id`),
+  ADD KEY `idx_sold_chargers_branch` (`branch`),
+  ADD KEY `idx_sold_chargers_date_sold` (`date_sold`);
 
 --
 -- Indexes for table `sold_graphics_cards`
@@ -2205,14 +2324,24 @@ ALTER TABLE `sold_rams_ssds`
 ALTER TABLE `ups`
   ADD PRIMARY KEY (`serial_number`),
   ADD KEY `fk_ups_users` (`added_by`),
-  ADD KEY `fk_ups_users_sales` (`sold_by`);
+  ADD KEY `fk_ups_users_sales` (`sold_by`),
+  ADD KEY `idx_ups_model` (`model`),
+  ADD KEY `idx_ups_branch` (`branch`),
+  ADD KEY `idx_ups_status` (`status`),
+  ADD KEY `idx_ups_capacity` (`capacity`);
 
 --
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`);
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `idx_users_email` (`email`),
+  ADD KEY `idx_users_username` (`username`),
+  ADD KEY `idx_users_role` (`role`),
+  ADD KEY `idx_users_branch` (`branch`),
+  ADD KEY `idx_users_is_active` (`is_active`),
+  ADD KEY `idx_users_full_name` (`full_name`);
 
 --
 -- Indexes for table `user_devices`
@@ -2220,7 +2349,11 @@ ALTER TABLE `users`
 ALTER TABLE `user_devices`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`),
-  ADD KEY `device_id` (`device_id`);
+  ADD KEY `device_id` (`device_id`),
+  ADD KEY `idx_user_devices_user_id` (`user_id`),
+  ADD KEY `idx_user_devices_device_id` (`device_id`),
+  ADD KEY `idx_user_devices_is_verified` (`is_verified`),
+  ADD KEY `idx_user_devices_last_seen` (`last_seen`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -2368,7 +2501,7 @@ ALTER TABLE `registration_codes`
 -- AUTO_INCREMENT for table `repairs`
 --
 ALTER TABLE `repairs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `sales`

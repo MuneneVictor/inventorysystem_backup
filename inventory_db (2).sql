@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 04, 2026 at 04:06 PM
+-- Generation Time: Jul 05, 2026 at 09:04 AM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.30
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `inventory_system`
+-- Database: `inventory_db`
 --
 
 -- --------------------------------------------------------
@@ -48,14 +48,15 @@ CREATE TABLE `accessories` (
 
 INSERT INTO `accessories` (`id`, `name`, `quantity`, `added_by`, `place`, `branch`, `price`, `date_added`, `status`, `updated_by`, `updated_at`) VALUES
 (1, 'DELL optical mouse', 21, 1, 'display', 'MOI', NULL, '2026-06-17 15:07:59', 'instock', 1, '2026-06-22 13:34:24'),
-(2, 'JBL essential 2 speaker', 14, 1, 'display', 'KIMATHI', NULL, '2026-06-22 08:38:12', 'instock', 1, '2026-07-02 11:51:11'),
+(2, 'JBL essential 2 speaker', 13, 1, 'display', 'KIMATHI', NULL, '2026-06-22 08:38:12', 'instock', 1, '2026-07-05 07:47:21'),
 (3, 'power cable', 5, 1, 'display', 'MOI', 500.00, '2026-03-17 09:51:07', 'instock', NULL, NULL),
 (4, 'power cable', 22, 1, 'store', 'KIMATHI', 600.00, '2026-03-15 10:29:47', 'instock', 1, '2026-07-04 16:41:13'),
 (5, 'HP Keyboard', 5, 1, 'store', 'MOI', NULL, '2026-06-22 10:34:24', 'instock', 1, '2026-06-22 13:34:24'),
 (6, 'USB-C Adapter', 3, 1, 'warehouse', 'MOI', NULL, '2026-06-22 10:34:24', 'instock', 1, '2026-06-22 13:34:24'),
 (7, 'power cable', 6, 1, 'store', 'KIMATHI', 500.00, '2026-03-19 08:15:54', 'instock', 1, '2026-06-26 11:16:06'),
 (8, 'power cable', 1, 8, 'display', 'MOI', NULL, '2026-03-17 09:22:16', 'instock', NULL, NULL),
-(9, 'power cable', 10, 1, 'store', 'MOI', 600.00, '2026-07-04 13:41:13', 'instock', 1, '2026-07-04 16:41:13');
+(9, 'power cable', 10, 1, 'store', 'MOI', 600.00, '2026-07-04 13:41:13', 'instock', 1, '2026-07-04 16:41:13'),
+(10, 'JBL essential 2 speaker', 1, 1, 'display', 'MOI', NULL, '2026-07-05 04:47:21', 'instock', 1, '2026-07-05 07:47:21');
 
 -- --------------------------------------------------------
 
@@ -544,7 +545,8 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `created_at`)
 (438, 1, 'Give out device', 'Gave device SN: 5CG12465TG09 to salesperson Peninah Kalundi (Branch: KIMATHI)', '2026-07-04 12:53:54'),
 (439, 8, 'Transfer smartboard', 'Transferred smartboard SN: SRTF556DCGF from KIMATHI to MOI (Delivered by: victor)', '2026-07-04 13:17:47'),
 (440, 1, 'Transfer accessories', 'Transferred 1 accessory type(s) (10 total items) from KIMATHI (store) to MOI (store): power cable x10 (Delivered by: victor)', '2026-07-04 13:41:13'),
-(441, 1, 'Transfer HDDs', 'Transferred 1 HDD type(s) (1 total items) from KIMATHI to MOI: SATA 2TB x1 (Delivered by: victor)', '2026-07-04 13:49:40');
+(441, 1, 'Transfer HDDs', 'Transferred 1 HDD type(s) (1 total items) from KIMATHI to MOI: SATA 2TB x1 (Delivered by: victor)', '2026-07-04 13:49:40'),
+(442, 1, 'Transfer accessories', 'Transferred 1 accessory type(s) (1 total items) from KIMATHI (display) to MOI (display): JBL essential 2 speaker x1 (Delivered by: munene)', '2026-07-05 04:47:21');
 
 -- --------------------------------------------------------
 
@@ -615,7 +617,7 @@ CREATE TABLE `charger_logs` (
   `given_to` int NOT NULL,
   `branch` enum('KIMATHI','MOI') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `date_given` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `status` enum('sold','pending_sale','returned') COLLATE utf8mb4_general_ci DEFAULT 'pending_sale',
+  `status` enum('sold','pending_sale','returned') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'pending_sale',
   `sale_item_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -651,7 +653,7 @@ CREATE TABLE `clients` (
 --
 
 INSERT INTO `clients` (`id`, `client_name`, `client_phone`, `client_box`, `client_email`, `sales_person`, `date_added`, `branch`) VALUES
-(1, 'Munene', '0711529618', 'P.O. BOX 25-90500', 'victormunene207@gmail.com', 7, '2026-06-29 09:41:42', 'KIMATHI'),
+(1, 'Munene', '0711529618', '', '', 7, '2026-06-29 09:41:42', 'KIMATHI'),
 (2, 'peninah', '0703646909', NULL, 'vdebmunene207@gmail.com', 7, '2026-06-29 10:33:17', 'KIMATHI'),
 (7, 'Munene victor', '0711529618', 'P.O. BOX 12-95400', 'victormunene207@gmail.com', 8, '2026-06-29 14:55:01', NULL),
 (8, 'Musili Homes Limited', '0711529618', NULL, 'victormunene207@gmail.com', 7, '2026-07-02 08:18:58', 'KIMATHI'),
@@ -659,7 +661,11 @@ INSERT INTO `clients` (`id`, `client_name`, `client_phone`, `client_box`, `clien
 (10, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:04', 'KIMATHI'),
 (11, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:09', 'KIMATHI'),
 (12, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:09', 'KIMATHI'),
-(13, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:09', 'KIMATHI');
+(13, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:09', 'KIMATHI'),
+(14, 'munene', '', '', '', 7, '2026-07-04 21:09:11', 'KIMATHI'),
+(15, 'munene Limited', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 21:20:30', 'KIMATHI'),
+(16, 'Victor', '0703646909', '', '', 7, '2026-07-05 06:11:15', 'KIMATHI'),
+(17, 'peninah kalundi', '0727 733 795', '', '', 7, '2026-07-05 07:54:30', 'KIMATHI');
 
 -- --------------------------------------------------------
 
@@ -688,7 +694,7 @@ CREATE TABLE `devices` (
   `selling_price` decimal(10,2) DEFAULT NULL,
   `sold_at` datetime DEFAULT NULL,
   `sold_by` int DEFAULT NULL,
-  `place` enum('store','display','warehouse') COLLATE utf8mb4_general_ci DEFAULT NULL
+  `place` enum('store','display','warehouse') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -1015,6 +1021,98 @@ INSERT INTO `hdd_logs` (`id`, `hdd_id`, `type`, `quantity_given`, `given_to`, `g
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `invoices`
+--
+
+CREATE TABLE `invoices` (
+  `id` int NOT NULL,
+  `invoice_number` varchar(20) NOT NULL,
+  `quotation_id` int DEFAULT NULL,
+  `client_name` varchar(100) NOT NULL,
+  `client_phone` varchar(20) DEFAULT NULL,
+  `client_box` varchar(100) DEFAULT NULL,
+  `client_email` varchar(100) DEFAULT NULL,
+  `invoice_date` date NOT NULL,
+  `payment_due_date` date NOT NULL,
+  `subtotal` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `vat` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `grand_total` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `amount_paid` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `balance_due` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `payment_status` enum('paid','partial','unpaid') DEFAULT 'unpaid',
+  `payment_method` enum('cash','mpesa-till','mpesa-pochi','bank-transfer') DEFAULT NULL,
+  `payment_date` datetime DEFAULT NULL,
+  `status` enum('draft','sent','paid','cancelled') DEFAULT 'draft',
+  `notes` text,
+  `user_id` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `invoices`
+--
+
+INSERT INTO `invoices` (`id`, `invoice_number`, `quotation_id`, `client_name`, `client_phone`, `client_box`, `client_email`, `invoice_date`, `payment_due_date`, `subtotal`, `vat`, `grand_total`, `amount_paid`, `balance_due`, `payment_status`, `payment_method`, `payment_date`, `status`, `notes`, `user_id`, `created_at`, `updated_at`) VALUES
+(1, 'INV00001', 12, 'Munene victor', '0711529618', 'P.O. BOX 12-95400', 'victormunene207@gmail.com', '2026-07-05', '2026-08-04', 25000.00, 4000.00, 29000.00, 29000.00, 0.00, 'paid', NULL, NULL, 'sent', '', 7, '2026-07-05 08:27:18', '2026-07-05 08:52:33'),
+(2, 'INV00002', NULL, 'munene', '', '', '', '2026-07-05', '2026-08-04', 0.00, 0.00, 0.00, 0.00, 0.00, 'unpaid', NULL, NULL, 'draft', '', 7, '2026-07-05 09:02:42', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `invoice_items`
+--
+
+CREATE TABLE `invoice_items` (
+  `id` int NOT NULL,
+  `invoice_id` int NOT NULL,
+  `item_type` varchar(50) DEFAULT NULL,
+  `item_id` varchar(50) DEFAULT NULL,
+  `description` varchar(255) NOT NULL,
+  `specs` text,
+  `quantity` int NOT NULL DEFAULT '1',
+  `unit_price` decimal(10,2) NOT NULL,
+  `total_price` decimal(10,2) NOT NULL,
+  `vat_rate` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `vat_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `total_with_vat` decimal(10,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `invoice_items`
+--
+
+INSERT INTO `invoice_items` (`id`, `invoice_id`, `item_type`, `item_id`, `description`, `specs`, `quantity`, `unit_price`, `total_price`, `vat_rate`, `vat_amount`, `total_with_vat`) VALUES
+(1, 1, 'manual', '', 'EPSON PRINTER', '', 1, 25000.00, 25000.00, 16.00, 4000.00, 29000.00);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `invoice_payments`
+--
+
+CREATE TABLE `invoice_payments` (
+  `id` int NOT NULL,
+  `invoice_id` int NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `payment_method` enum('cash','mpesa-till','mpesa-pochi','bank-transfer') NOT NULL,
+  `payment_date` datetime NOT NULL,
+  `reference_number` varchar(50) DEFAULT NULL,
+  `notes` text,
+  `created_by` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `invoice_payments`
+--
+
+INSERT INTO `invoice_payments` (`id`, `invoice_id`, `amount`, `payment_method`, `payment_date`, `reference_number`, `notes`, `created_by`, `created_at`) VALUES
+(1, 1, 29000.00, 'mpesa-till', '2026-07-05 11:51:36', '', '', 7, '2026-07-05 08:51:36');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `maintenance`
 --
 
@@ -1166,15 +1264,27 @@ CREATE TABLE `quotations` (
   `status` enum('draft','sent','cancelled') DEFAULT 'draft',
   `user_id` int NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `notes` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `quotations`
 --
 
-INSERT INTO `quotations` (`id`, `quotation_number`, `client_name`, `client_phone`, `client_box`, `client_email`, `quotation_date`, `payment_due_date`, `subtotal`, `vat`, `grand_total`, `status`, `user_id`, `created_at`, `updated_at`) VALUES
-(1, 'MC01', 'Vimark Tech', '', '', '', '2026-07-04', '2026-07-11', 210000.00, 11200.00, 221200.00, 'draft', 7, '2026-07-04 15:36:38', NULL);
+INSERT INTO `quotations` (`id`, `quotation_number`, `client_name`, `client_phone`, `client_box`, `client_email`, `quotation_date`, `payment_due_date`, `subtotal`, `vat`, `grand_total`, `status`, `user_id`, `created_at`, `updated_at`, `notes`) VALUES
+(1, 'MC01', 'Vimark Tech', '', '', '', '2026-07-04', '2026-07-11', 210000.00, 11200.00, 221200.00, 'sent', 7, '2026-07-04 15:36:38', '2026-07-05 05:46:49', NULL),
+(2, 'MC02', 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', '2026-07-04', '2026-07-11', 142500.00, 22800.00, 165300.00, 'sent', 7, '2026-07-04 21:03:10', '2026-07-05 06:57:03', NULL),
+(3, 'MC03', 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', '2026-07-05', '2026-07-05', 10500.00, 1680.00, 12180.00, 'sent', 7, '2026-07-05 05:12:14', '2026-07-05 07:36:42', ''),
+(4, 'MC04', 'munene', '', '', '', '2026-07-05', '2026-07-12', 15000.00, 1600.00, 16600.00, 'sent', 7, '2026-07-05 05:42:02', '2026-07-05 05:43:35', ''),
+(5, 'MC05', 'Victor', '0703646909', '', '', '2026-07-05', '2026-07-12', 140000.00, 22400.00, 162400.00, 'sent', 7, '2026-07-05 06:11:15', '2026-07-05 06:16:35', 'The prices are exclusive VAT'),
+(6, 'MC06', 'munene', '', '', '', '2026-07-05', '2026-07-08', 0.00, 0.00, 0.00, 'sent', 7, '2026-07-05 06:41:40', '2026-07-05 07:16:47', ''),
+(7, 'MC07', 'Musili homes limited', '0711529618', '0711529618', 'victormunene207@gmail.com', '2026-07-05', '2026-07-12', 26000.00, 4160.00, 30160.00, 'sent', 7, '2026-07-05 06:58:20', '2026-07-05 07:00:24', 'The prices are exclusive VAT'),
+(8, 'MC08', 'Munene victor', '', '', '', '2026-07-05', '2026-07-08', 26000.00, 0.00, 26000.00, 'sent', 7, '2026-07-05 07:02:14', '2026-07-05 07:03:16', ''),
+(9, 'MC09', 'Musili Homes Limited', '0711529618', '', 'victormunene207@gmail.com', '2026-07-05', '2026-07-12', 35000.00, 5600.00, 40600.00, 'draft', 7, '2026-07-05 07:48:21', '2026-07-05 08:05:43', ''),
+(10, 'MC10', 'Munene', '0711529618', '0711529618', 'victormunene207@gmail.com', '2026-07-05', '2026-07-12', 0.00, 0.00, 0.00, 'draft', 7, '2026-07-05 07:53:21', NULL, ''),
+(11, 'MC11', 'peninah kalundi', '0727 733 795', '', '', '2026-07-05', '2026-07-08', 0.00, 0.00, 0.00, 'draft', 7, '2026-07-05 07:54:30', NULL, ''),
+(12, 'MC12', 'Munene victor', '0711529618', 'P.O. BOX 12-95400', 'victormunene207@gmail.com', '2026-07-05', '2026-07-08', 25000.00, 4000.00, 29000.00, 'sent', 7, '2026-07-05 07:57:15', '2026-07-05 08:09:50', 'The prices are exclusive VAT');
 
 -- --------------------------------------------------------
 
@@ -1204,7 +1314,23 @@ CREATE TABLE `quotation_items` (
 INSERT INTO `quotation_items` (`id`, `quotation_id`, `item_type`, `item_id`, `description`, `specs`, `quantity`, `unit_price`, `total_price`, `vat_rate`, `vat_amount`, `total_with_vat`) VALUES
 (1, 1, 'manual', '', 'Hp elitebook 840 g9', '8gb ram 256gb ssd i7 12th gen', 1, 70000.00, 70000.00, 0.00, 0.00, 70000.00),
 (2, 1, 'manual', '', 'Hp elitebook 840 g9', '8gb ram 256gb ssd i7 12th gen', 1, 70000.00, 70000.00, 0.00, 0.00, 70000.00),
-(3, 1, 'manual', '', 'Hp elitebook 840 g9', '8gb ram 256gb ssd i7 12th gen', 1, 70000.00, 70000.00, 16.00, 11200.00, 81200.00);
+(3, 1, 'manual', '', 'Hp elitebook 840 g9', '8gb ram 256gb ssd i7 12th gen', 1, 70000.00, 70000.00, 16.00, 11200.00, 81200.00),
+(4, 2, 'manual', '', 'Hp elitebook 840 g9', 'i7 12th gen 16gb Ram 512gb ssd', 1, 70000.00, 70000.00, 16.00, 11200.00, 81200.00),
+(5, 2, 'manual', '', 'Hp elitebook 840 g9', 'i7 12th gen 16gb Ram 512gb ssd', 1, 70000.00, 70000.00, 16.00, 11200.00, 81200.00),
+(6, 2, 'manual', '', 'power cable', '', 1, 500.00, 500.00, 16.00, 80.00, 580.00),
+(7, 2, 'manual', '', 'Power Cable', '', 1, 500.00, 500.00, 16.00, 80.00, 580.00),
+(8, 2, 'manual', '', 'Power Cable', '', 1, 500.00, 500.00, 16.00, 80.00, 580.00),
+(9, 2, 'manual', '', 'Power Cable', '', 1, 500.00, 500.00, 16.00, 80.00, 580.00),
+(10, 2, 'manual', '', 'Power Cable', '', 1, 500.00, 500.00, 16.00, 80.00, 580.00),
+(13, 3, 'manual', '', 'power cable', '', 1, 500.00, 500.00, 16.00, 80.00, 580.00),
+(14, 4, 'manual', '', 'Ram', '16GB', 1, 10000.00, 10000.00, 16.00, 1600.00, 11600.00),
+(15, 4, 'manual', '', 'Ram', '8GB', 1, 5000.00, 5000.00, 0.00, 0.00, 5000.00),
+(16, 5, 'manual', '', 'Hp Elitebook 840 G9 New', 'i7 12th Gen 16GB Ram 1TB', 1, 140000.00, 140000.00, 16.00, 22400.00, 162400.00),
+(19, 7, 'manual', '', 'Epson printer L3250', '', 1, 26000.00, 26000.00, 16.00, 4160.00, 30160.00),
+(20, 8, 'manual', '', 'Epson printer L3250', '', 1, 26000.00, 26000.00, 0.00, 0.00, 26000.00),
+(21, 3, 'manual', '', 'Ram', '16GB', 1, 10000.00, 10000.00, 16.00, 1600.00, 11600.00),
+(23, 9, 'manual', '', 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN | 8GB RAM | SSD 256GB', 1, 35000.00, 35000.00, 16.00, 5600.00, 40600.00),
+(25, 12, 'manual', '', 'EPSON PRINTER', '', 1, 25000.00, 25000.00, 16.00, 4000.00, 29000.00);
 
 -- --------------------------------------------------------
 
@@ -1259,7 +1385,7 @@ CREATE TABLE `rams_ssds_logs` (
   `branch` enum('KIMATHI','MOI') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `date_given` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `storage` int NOT NULL,
-  `status` enum('pending_sale','sold','returned') COLLATE utf8mb4_general_ci DEFAULT 'pending_sale',
+  `status` enum('pending_sale','sold','returned') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'pending_sale',
   `sale_item_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -1655,9 +1781,9 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `username`, `password`, `role`, `is_active`, `full_name`, `created_at`, `last_login`, `branch`, `failed_attempts`, `account_locked_until`) VALUES
-(1, 'victormunene207@gmail.com', 'vic', '$2a$12$q5sPMKAfYhS0AMXRm6BpI.W7flz8n0wmcUbBJ45BAnOa8BsxgYKSK', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-07-04 13:27:09', 'KIMATHI', 0, NULL),
+(1, 'victormunene207@gmail.com', 'vic', '$2a$12$q5sPMKAfYhS0AMXRm6BpI.W7flz8n0wmcUbBJ45BAnOa8BsxgYKSK', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-07-05 07:07:07', 'KIMATHI', 0, NULL),
 (4, 'munene@gmail.com', 'Vdeb', '$2y$10$m9PnQbD9v1ZY50s14T45MOV2n4bdaty74/2Y8rBlOuRY56.4OdlGi', 'sales', 1, 'Munene vicky', '2025-12-03 12:39:40', '2026-07-03 07:01:47', 'KIMATHI', 0, NULL),
-(7, 'peninahkalundi@gmail.com', 'pesh', '$2y$10$cS2ZivexM3srJGrkihxPnumRp0RNDgdHDTX8bkGuUXphAbd9ZJSc.', 'sales', 1, 'Peninah Kalundi', '2025-12-04 18:01:17', '2026-07-04 14:03:47', 'KIMATHI', 0, NULL),
+(7, 'peninahkalundi@gmail.com', 'pesh', '$2y$10$cS2ZivexM3srJGrkihxPnumRp0RNDgdHDTX8bkGuUXphAbd9ZJSc.', 'sales', 1, 'Peninah Kalundi', '2025-12-04 18:01:17', '2026-07-05 08:50:38', 'KIMATHI', 0, NULL),
 (8, 'munene23.v@student.cuk.ac.ke', 'syovata', '$2a$12$/VBwYZBkXo6VuCCFIPFWDeLBJ5Ewbo.Z.lALJgWmckCUeT5PFmJ5.', 'inventory_admin', 1, 'Victor Syovata', '2025-12-05 22:19:21', '2026-07-04 12:59:13', 'KIMATHI', 0, NULL);
 
 --
@@ -1790,6 +1916,30 @@ ALTER TABLE `hdd_logs`
   ADD KEY `fk_logs_given_to` (`given_to`),
   ADD KEY `fk_logs_given_by` (`given_by`),
   ADD KEY `fk_hdd_logs_sale_items` (`sale_item_id`);
+
+--
+-- Indexes for table `invoices`
+--
+ALTER TABLE `invoices`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `invoice_number` (`invoice_number`),
+  ADD KEY `quotation_id` (`quotation_id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `invoice_items`
+--
+ALTER TABLE `invoice_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `invoice_id` (`invoice_id`);
+
+--
+-- Indexes for table `invoice_payments`
+--
+ALTER TABLE `invoice_payments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `invoice_id` (`invoice_id`),
+  ADD KEY `created_by` (`created_by`);
 
 --
 -- Indexes for table `maintenance`
@@ -1965,7 +2115,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `accessories`
 --
 ALTER TABLE `accessories`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `accessories_logs`
@@ -1977,7 +2127,7 @@ ALTER TABLE `accessories_logs`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=442;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=443;
 
 --
 -- AUTO_INCREMENT for table `categories`
@@ -2001,7 +2151,7 @@ ALTER TABLE `charger_logs`
 -- AUTO_INCREMENT for table `clients`
 --
 ALTER TABLE `clients`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `devices_logs`
@@ -2046,6 +2196,24 @@ ALTER TABLE `hdd_logs`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
+-- AUTO_INCREMENT for table `invoices`
+--
+ALTER TABLE `invoices`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `invoice_items`
+--
+ALTER TABLE `invoice_items`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `invoice_payments`
+--
+ALTER TABLE `invoice_payments`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `maintenance`
 --
 ALTER TABLE `maintenance`
@@ -2055,13 +2223,13 @@ ALTER TABLE `maintenance`
 -- AUTO_INCREMENT for table `quotations`
 --
 ALTER TABLE `quotations`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `quotation_items`
 --
 ALTER TABLE `quotation_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `rams_ssds`
@@ -2239,6 +2407,26 @@ ALTER TABLE `hdd_logs`
   ADD CONSTRAINT `fk_hdd_logs_sale_items` FOREIGN KEY (`sale_item_id`) REFERENCES `sale_items` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_logs_given_by` FOREIGN KEY (`given_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_logs_given_to` FOREIGN KEY (`given_to`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `invoices`
+--
+ALTER TABLE `invoices`
+  ADD CONSTRAINT `invoices_ibfk_1` FOREIGN KEY (`quotation_id`) REFERENCES `quotations` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `invoices_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `invoice_items`
+--
+ALTER TABLE `invoice_items`
+  ADD CONSTRAINT `invoice_items_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `invoice_payments`
+--
+ALTER TABLE `invoice_payments`
+  ADD CONSTRAINT `invoice_payments_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `invoice_payments_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
 
 --
 -- Constraints for table `monitors`

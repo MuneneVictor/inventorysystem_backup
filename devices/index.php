@@ -1,6 +1,4 @@
-<?php 
-require_once "vimarktech/includes/header.php";
-?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -50,14 +48,14 @@ require_once "vimarktech/includes/header.php";
         {
           "@type": "Offer",
           "name": "Cloud Plan",
-          "price": "4000",
+          "price": "3000",
           "priceCurrency": "KES",
           "availability": "https://schema.org/InStock"
         },
         {
           "@type": "Offer",
           "name": "Standalone System",
-          "price": "60000",
+          "price": "40000",
           "priceCurrency": "KES",
           "availability": "https://schema.org/InStock"
         }
@@ -124,7 +122,7 @@ require_once "vimarktech/includes/header.php";
         "addressLocality": "Nairobi",
         "addressCountry": "KE"
       },
-      "priceRange": "KES 4,000 - KES 60,000",
+      "priceRange": "KES 3,000 - KES 40,000",
       "areaServed": {
         "@type": "Country",
         "name": "Kenya"
@@ -140,7 +138,7 @@ require_once "vimarktech/includes/header.php";
               "name": "Cloud POS System",
               "description": "Monthly subscription business management system"
             },
-            "price": "4000",
+            "price": "3000",
             "priceCurrency": "KES"
           },
           {
@@ -150,7 +148,7 @@ require_once "vimarktech/includes/header.php";
               "name": "Standalone System",
               "description": "One-time purchase with full ownership"
             },
-            "price": "60000",
+            "price": "40000",
             "priceCurrency": "KES"
           }
         ]
@@ -213,7 +211,7 @@ require_once "vimarktech/includes/header.php";
           "name": "Can I purchase the standalone system?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Yes, we offer a standalone business management system for KES 60,000 one-time payment with full ownership, unlimited users, and free installation in Nairobi."
+            "text": "Yes, we offer a standalone business management system for KES 40,000 one-time payment with full ownership, unlimited users, and free installation in Nairobi."
           }
         },
         {
@@ -1625,7 +1623,7 @@ require_once "vimarktech/includes/header.php";
             </div>
             <div class="modal-body">
                 <h4>Own the Complete System</h4>
-                <p>For businesses that prefer full control over their data and infrastructure, we offer a standalone version of Vimark Tech. This is a one-time purchase with no recurring fees. <strong>KES 60,000 One-Time Payment.</strong></p>
+                <p>For businesses that prefer full control over their data and infrastructure, we offer a standalone version of Vimark Tech. This is a one-time purchase with no recurring fees. <strong>KES 40,000 One-Time Payment.</strong></p>
                 <h4>What's Included:</h4>
                 <ul>
                     <li><i class="fas fa-check-circle" style="color:#27ae60;"></i> Complete system installation on your own server (local or cloud)</li>
@@ -1934,8 +1932,8 @@ require_once "vimarktech/includes/header.php";
             </div>
             <div class="comparison-row">
                 <div class="comparison-feature">Pricing Model</div>
-                <div class="comparison-option">From KES 4,000/month</div>
-                <div class="comparison-option">KES 60,000 One-Time Payment</div>
+                <div class="comparison-option">From KES 3,000/month</div>
+                <div class="comparison-option">KES 40,000 One-Time Payment</div>
             </div>
             <div class="comparison-row">
                 <div class="comparison-feature">Hosting</div>
@@ -2036,9 +2034,9 @@ require_once "vimarktech/includes/header.php";
         <div class="about-content">
             <div class="about-text reveal">
                 <h3><i class="fas fa-cloud"></i> Option 1: Cloud System</h3>
-                <p>Pay a monthly subscription and access your business dashboard from any browser, anywhere. Perfect for shops that want to get started quickly. Starts at KES 4,000/month with a 7-day free trial. No credit card required.</p>
+                <p>Pay a monthly subscription and access your business dashboard from any browser, anywhere. Perfect for shops that want to get started quickly. Starts at KES 3,000/month with a 7-day free trial. No credit card required.</p>
                 <h3><i class="fas fa-database"></i> Option 2: Standalone System</h3>
-                <p>Pay once (KES 60,000) and own the full system forever. Install it on your own computer or server with no monthly fees. Best for established businesses that want full data control. Free installation included for Nairobi businesses. <strong>Complete ownership with unlimited users.</strong></p>
+                <p>Pay once (KES 40,000) and own the full system forever. Install it on your own computer or server with no monthly fees. Best for established businesses that want full data control. Free installation included for Nairobi businesses. <strong>Complete ownership with unlimited users.</strong></p>
                 <ul class="about-list">
                     <li><i class="fas fa-check-circle"></i> Built for Kenya — M-Pesa payments, Nairobi support, KES pricing</li>
                     <li><i class="fas fa-check-circle"></i> No auto-renewals — you control when you pay</li>
@@ -2066,7 +2064,7 @@ require_once "vimarktech/includes/header.php";
         <div class="pricing-grid">
             <div class="price-card reveal">
                 <h3>Basic Plan</h3>
-                <div class="price">KES 4,000</div>
+                <div class="price">KES 3,000</div>
                 <div class="price-period">per month</div>
                 <ul>
                     <li><i class="fas fa-check"></i> Full system access</li>
@@ -2081,7 +2079,7 @@ require_once "vimarktech/includes/header.php";
             <div class="price-card featured reveal reveal-delay-1">
                 <div class="popular-badge">Best Value</div>
                 <h3>Standard Plan</h3>
-                <div class="price">KES 7,000</div>
+                <div class="price">KES 5,000</div>
                 <div class="price-period">for 2 months</div>
                 <div class="price-save">Save KES 1,000</div>
                 <ul>
@@ -2096,7 +2094,7 @@ require_once "vimarktech/includes/header.php";
             </div>
             <div class="price-card reveal reveal-delay-2">
                 <h3>Advanced Plan</h3>
-                <div class="price">KES 10,500</div>
+                <div class="price">KES 7,500</div>
                 <div class="price-period">for 3 months</div>
                 <div class="price-save">Save KES 1,500</div>
                 <ul>
@@ -2136,7 +2134,7 @@ require_once "vimarktech/includes/header.php";
             </div>
             <div class="faq-item reveal reveal-delay-3">
                 <div class="faq-question" onclick="toggleFAQ(this)"><span>Can I purchase the standalone system?</span><i class="fas fa-chevron-down"></i></div>
-                <div class="faq-answer">Yes, we offer a standalone business management system for KES 60,000 one-time payment with full ownership, unlimited users, complete database control, and free installation.</div>
+                <div class="faq-answer">Yes, we offer a standalone business management system for KES 40,000 one-time payment with full ownership, unlimited users, complete database control, and free installation.</div>
             </div>
             <div class="faq-item reveal reveal-delay-4">
                 <div class="faq-question" onclick="toggleFAQ(this)"><span>Do you offer installation in Kenya?</span><i class="fas fa-chevron-down"></i></div>
@@ -2180,7 +2178,7 @@ require_once "vimarktech/includes/header.php";
                 <p>The complete business management solution for computer sales, repairs, and all IT products businesses in Kenya and beyond. Available as cloud or standalone system.</p>
                 <div class="social-links">
                     <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                    <a href="https://www.instagram.com/_vic.mn" target="_blank"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.instagram.com/vimark_tech" target="_blank"><i class="fab fa-instagram"></i></a>
                 </div>
             </div>
             <div class="footer-col reveal reveal-delay-1">

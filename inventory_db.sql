@@ -32,15 +32,15 @@ CREATE TABLE `accessories` (
   `name` varchar(100) NOT NULL,
   `quantity` int NOT NULL,
   `added_by` int DEFAULT NULL,
-  `place` enum('display','store','warehouse') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'display',
-  `branch` enum('MOI','KIMATHI') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'MOI',
+  `place` enum('display','store','warehouse') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'display',
+  `branch` enum('MOI','KIMATHI') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'MOI',
   `price` decimal(10,2) DEFAULT NULL,
   `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `price`)) STORED,
   `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `status` enum('instock','sold') DEFAULT 'instock',
   `updated_by` int DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `accessories`
@@ -75,7 +75,7 @@ CREATE TABLE `accessories_logs` (
   `status` enum('sold','pending_sale','returned') DEFAULT 'pending_sale',
   `date_given` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `sale_item_id` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `accessories_logs`
@@ -671,7 +671,7 @@ CREATE TABLE `clients` (
   `sales_person` int DEFAULT NULL,
   `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `clients`
@@ -853,8 +853,8 @@ CREATE TABLE `devices_logs` (
   `taken_by` int DEFAULT NULL,
   `date_taken` datetime DEFAULT NULL,
   `id` int NOT NULL,
-  `status` enum('instock','returned','sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'instock'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `status` enum('instock','returned','sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'instock'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `devices_logs`
@@ -909,7 +909,7 @@ CREATE TABLE `expenses` (
   `created_by` int DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
   `given_to` varchar(50) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `expenses`
@@ -936,8 +936,8 @@ CREATE TABLE `graphic_cards` (
   `price` decimal(10,2) DEFAULT NULL,
   `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `price`)) STORED,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `status` enum('instock','sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'instock'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `status` enum('instock','sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'instock'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `graphic_cards`
@@ -966,7 +966,7 @@ CREATE TABLE `graphic_cards_logs` (
   `status` enum('sold','pending_sale','returned') DEFAULT 'pending_sale',
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
   `sale_item_id` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `graphic_cards_logs`
@@ -993,7 +993,7 @@ CREATE TABLE `hdds` (
   `date_updated` datetime DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
   `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `price`)) STORED
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `hdds`
@@ -1024,7 +1024,7 @@ CREATE TABLE `hdd_logs` (
   `storage` varchar(50) DEFAULT NULL,
   `status` enum('sold','pending_sale','returned') DEFAULT 'pending_sale',
   `sale_item_id` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `hdd_logs`
@@ -1075,7 +1075,7 @@ CREATE TABLE `invoices` (
   `user_id` int NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `invoices`
@@ -1105,7 +1105,7 @@ CREATE TABLE `invoice_items` (
   `vat_rate` decimal(5,2) NOT NULL DEFAULT '0.00',
   `vat_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
   `total_with_vat` decimal(10,2) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `invoice_items`
@@ -1134,7 +1134,7 @@ CREATE TABLE `invoice_payments` (
   `notes` text,
   `created_by` int NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `invoice_payments`
@@ -1221,7 +1221,7 @@ CREATE TABLE `phones` (
   `model` varchar(50) DEFAULT NULL,
   `ram` int DEFAULT NULL,
   `storage_capacity` int DEFAULT NULL,
-  `status` enum('instock','sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'instock',
+  `status` enum('instock','sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'instock',
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
   `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `price` decimal(10,2) DEFAULT NULL,
@@ -1231,7 +1231,7 @@ CREATE TABLE `phones` (
   `price_updated_at` datetime DEFAULT NULL,
   `added_by` int DEFAULT NULL,
   `phone_condition` enum('New','Ex-Uk') DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `phones`
@@ -1301,7 +1301,7 @@ CREATE TABLE `quotations` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `notes` text
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `quotations`
@@ -1341,7 +1341,7 @@ CREATE TABLE `quotation_items` (
   `vat_rate` decimal(5,2) NOT NULL DEFAULT '0.00',
   `vat_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
   `total_with_vat` decimal(10,2) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `quotation_items`
@@ -1484,12 +1484,12 @@ INSERT INTO `registration_codes` (`id`, `code`, `email`, `role`, `created_by`, `
 
 CREATE TABLE `repairs` (
   `id` int NOT NULL,
-  `serial_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'Not provided',
+  `serial_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'Not provided',
   `problem_description` text NOT NULL,
   `added_by` int NOT NULL,
   `given_by` int DEFAULT NULL,
   `branch` enum('KIMATHI','MOI') NOT NULL,
-  `fix_status` enum('Not Fixed','Fixed','pending') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'pending',
+  `fix_status` enum('Not Fixed','Fixed','pending') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'pending',
   `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `date_fixed` timestamp NULL DEFAULT NULL,
   `category_id` int DEFAULT NULL,
@@ -1501,7 +1501,7 @@ CREATE TABLE `repairs` (
   `parts_used` varchar(100) DEFAULT NULL,
   `repair_cost` decimal(10,2) DEFAULT NULL,
   `source_device` enum('instock','return','client') DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1521,7 +1521,7 @@ CREATE TABLE `sales` (
   `payment_method` enum('cash','mpesa-till','mpesa-pochi','bank-transfer') DEFAULT NULL,
   `payment_status` enum('paid','unpaid') DEFAULT NULL,
   `completion_status` enum('pending','Completed') DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `sales`
@@ -1570,7 +1570,7 @@ CREATE TABLE `sale_items` (
   `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `unit_price`)) STORED,
   `sales_person` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `sale_items`
@@ -1602,12 +1602,12 @@ CREATE TABLE `smartboards` (
   `status` enum('instock','sold') DEFAULT 'instock',
   `added_by` int DEFAULT NULL,
   `branch` enum('KIMATHI','MOI') DEFAULT NULL,
-  `place` enum('store','warehouse','sold','display') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `place` enum('store','warehouse','sold','display') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
   `sold_at` datetime DEFAULT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
   `sold_by` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `smartboards`
@@ -1641,7 +1641,7 @@ CREATE TABLE `sold_accessories` (
   `sold_by` int NOT NULL,
   `date_sold` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `sale_item_id` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `sold_accessories`
@@ -1664,7 +1664,7 @@ CREATE TABLE `sold_chargers` (
   `id` int NOT NULL,
   `charger_id` int NOT NULL,
   `charger_type` varchar(100) NOT NULL,
-  `charger_condition` enum('New','ex-uk') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `charger_condition` enum('New','ex-uk') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `quantity` int NOT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
@@ -1672,7 +1672,7 @@ CREATE TABLE `sold_chargers` (
   `date_sold` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED,
   `sale_item_id` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `sold_chargers`
@@ -1702,7 +1702,7 @@ CREATE TABLE `sold_graphics_cards` (
   `sold_by` int DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
   `sale_item_id` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `sold_graphics_cards`
@@ -1729,7 +1729,7 @@ CREATE TABLE `sold_hdds` (
   `date_sold` datetime DEFAULT NULL,
   `sold_by` int DEFAULT NULL,
   `sale_item_id` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `sold_hdds`
@@ -1760,7 +1760,7 @@ CREATE TABLE `sold_rams_ssds` (
   `date_sold` datetime DEFAULT NULL,
   `sold_by` int DEFAULT NULL,
   `sale_item_id` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `sold_rams_ssds`
@@ -1794,7 +1794,7 @@ CREATE TABLE `ups` (
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
   `ups_condition` enum('New','Ex-UK','Refurbished') DEFAULT 'New',
   `price_updated_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `ups`
@@ -1859,7 +1859,7 @@ CREATE TABLE `user_devices` (
   `failed_attempts` int DEFAULT '0',
   `locked_until` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `user_devices`

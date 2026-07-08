@@ -27,13 +27,17 @@ $filter_source = trim($_GET['source'] ?? '');
 $filter_status = trim($_GET['status'] ?? '');
 $filter_has_cost = isset($_GET['has_cost']) ? (int)$_GET['has_cost'] : '';
 
-// Build query with all filters
-$sql = "SELECT r.*, d.model_name, d.processor, d.ram, d.storage_type, d.storage_capacity, d.touch, d.graphics,
-               c.category_name, u1.full_name AS fixed_by_name, u2.full_name AS given_by_name,
+// Build query with all filters – FIX: use COALESCE for model and category
+$sql = "SELECT r.*, 
+               COALESCE(d.model_name, r.model_name) AS model_name,
+               c.category_name,
+               d.processor, d.ram, d.storage_type, d.storage_capacity, d.touch, d.graphics,
+               u1.full_name AS added_by_name,
+               u2.full_name AS given_by_name,
                r.source_device
         FROM repairs r
         LEFT JOIN devices d ON r.serial_number COLLATE utf8mb4_general_ci = d.serial_number
-        LEFT JOIN categories c ON d.category_id = c.id
+        LEFT JOIN categories c ON COALESCE(d.category_id, r.category_id) = c.id
         LEFT JOIN users u1 ON r.added_by = u1.id
         LEFT JOIN users u2 ON r.given_by = u2.id
         WHERE 1=1";
@@ -538,7 +542,7 @@ $query_string = http_build_query([
                         <td><?= safe(substr($r['problem_description'] ?? '', 0, 40)) . (strlen($r['problem_description'] ?? '') > 40 ? '...' : '') ?></td>
                         <td><?= safe($r['client_name'] ?? 'N/A') ?></td>
                         <td><?= safe($r['given_by_name'] ?? 'N/A') ?></td>
-                        <td><?= safe($r['fixed_by_name'] ?? 'Unknown') ?></td>
+                        <td><?= safe($r['added_by_name'] ?? 'Unknown') ?></td>
                         <td><span class="badge"><?= safe($r['branch'] ?? 'N/A') ?></span></td>
                         <td>
                             <?php if (!empty($r['repair_cost']) && $r['repair_cost'] > 0): ?>

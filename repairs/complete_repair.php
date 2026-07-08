@@ -29,13 +29,18 @@ if (!$id) {
     die("Invalid repair ID.");
 }
 
-// Fetch repair details
+// ============================================================
+// FIXED QUERY: Use COALESCE to get model_name and category_name
+// from repair record if device doesn't exist (e.g., client repairs)
+// ============================================================
 $stmt = $conn->prepare("
-    SELECT r.*, d.model_name, d.category_id, 
-           c.category_name, u.full_name AS added_by_name
+    SELECT r.*, 
+           COALESCE(d.model_name, r.model_name) AS model_name,
+           c.category_name,
+           u.full_name AS added_by_name
     FROM repairs r
     LEFT JOIN devices d ON r.serial_number COLLATE utf8mb4_general_ci = d.serial_number
-    LEFT JOIN categories c ON d.category_id = c.id
+    LEFT JOIN categories c ON COALESCE(d.category_id, r.category_id) = c.id
     LEFT JOIN users u ON r.added_by = u.id
     WHERE r.id = ? AND r.added_by = ?
 ");
@@ -50,8 +55,13 @@ if ($repair['fix_status'] === 'Fixed') {
     die("This repair has already been completed.");
 }
 
+// Determine source type
+$sourceType = $repair['source_device'] ?? 'instock';
+
 // Determine if repair cost is required (only for client devices)
-$isClientDevice = ($repair['source_device'] === 'client');
+$isClientDevice = ($sourceType === 'client');
+$showClientInfo = ($sourceType !== 'instock');
+$showCostField = ($sourceType !== 'instock');
 
 // PHPMailer configuration
 use PHPMailer\PHPMailer\PHPMailer;
@@ -219,8 +229,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $conn->beginTransaction();
 
-            // Only set repair_cost if it was provided and device is from client
-            $finalRepairCost = ($isClientDevice && !empty($repair_cost) && $repair_cost > 0) ? $repair_cost : NULL;
+            // Only set repair_cost if it was provided and device is from client (or any source that has cost)
+            $finalRepairCost = (!empty($repair_cost) && $repair_cost > 0) ? $repair_cost : NULL;
 
             // Update repair
             $update = $conn->prepare("
@@ -732,37 +742,39 @@ else $greeting = 'Good evening';
                 </div>
             <?php endif; ?>
 
-            <?php if($isClientDevice): ?>
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i>
-                <span><strong>Client Device:</strong> Repair cost is required for client devices.</span>
-            </div>
-            <?php endif; ?>
+            <!-- No generic alert; per‑source info is shown inline below -->
 
             <div class="repair-info">
-                <p>
-                    <strong><i class="fas fa-user"></i> Client:</strong> 
-                    <span><?= htmlspecialchars($repair['client_name'] ?? 'N/A') ?></span>
-                </p>
-                <p>
-                    <strong><i class="fas fa-phone"></i> Phone:</strong> 
-                    <span><?= htmlspecialchars($repair['client_phone'] ?? 'N/A') ?></span>
-                </p>
-                <p>
-                    <strong><i class="fas fa-envelope"></i> Email:</strong> 
-                    <span>
-                        <?php 
-                        $clientEmail = isset($repair['client_email']) ? $repair['client_email'] : null;
-                        if (!empty($clientEmail)): 
-                        ?>
-                            <?= htmlspecialchars($clientEmail) ?>
-                            <span class="email-badge"><i class="fas fa-envelope"></i> Notification will be sent</span>
-                        <?php else: ?>
-                            N/A
-                            <span class="no-email-badge"><i class="fas fa-exclamation-triangle"></i> No email - notify manually</span>
-                        <?php endif; ?>
-                    </span>
-                </p>
+                <?php if ($showClientInfo): ?>
+                    <p>
+                        <strong><i class="fas fa-user"></i> Client:</strong> 
+                        <span><?= htmlspecialchars($repair['client_name'] ?? 'N/A') ?></span>
+                    </p>
+                    <p>
+                        <strong><i class="fas fa-phone"></i> Phone:</strong> 
+                        <span><?= htmlspecialchars($repair['client_phone'] ?? 'N/A') ?></span>
+                    </p>
+                    <p>
+                        <strong><i class="fas fa-envelope"></i> Email:</strong> 
+                        <span>
+                            <?php 
+                            $clientEmail = isset($repair['client_email']) ? $repair['client_email'] : null;
+                            if (!empty($clientEmail)): 
+                            ?>
+                                <?= htmlspecialchars($clientEmail) ?>
+                                <span class="email-badge"><i class="fas fa-envelope"></i> Notification will be sent</span>
+                            <?php else: ?>
+                                N/A
+                                <span class="no-email-badge"><i class="fas fa-exclamation-triangle"></i> No email - notify manually</span>
+                            <?php endif; ?>
+                        </span>
+                    </p>
+                <?php else: ?>
+                    <p style="color: var(--gray-500); font-style: italic;">
+                        <i class="fas fa-warehouse"></i> This is an <strong>in‑stock</strong> device repair. No client details are associated.
+                    </p>
+                <?php endif; ?>
+
                 <p>
                     <strong><i class="fas fa-laptop"></i> Device:</strong> 
                     <span><?= htmlspecialchars($repair['category_name'] ?? $repair['model_name'] ?? 'N/A') ?> - <?= htmlspecialchars($repair['model_name'] ?? 'N/A') ?></span>
@@ -794,11 +806,6 @@ else $greeting = 'Good evening';
                         <span class="source-badge <?= $src['class'] ?>">
                             <?= $src['label'] ?>
                         </span>
-                        <?php if ($isClientDevice): ?>
-                            <span style="color: #1e40af; font-size: 0.8rem; margin-left: 0.5rem;">
-                                <i class="fas fa-info-circle"></i> Cost required
-                            </span>
-                        <?php endif; ?>
                     </span>
                 </p>
             </div>
@@ -810,25 +817,27 @@ else $greeting = 'Good evening';
                     <div class="info-text"><i class="fas fa-info-circle"></i> List all replacement parts used for this repair</div>
                 </div>
 
-                <div class="form-group">
-                    <label>
-                        <i class="fas fa-money-bill-wave"></i> Repair Cost (KES)
-                        <?php if ($isClientDevice): ?>
-                            <span class="required">*</span>
-                        <?php else: ?>
-                            <span class="optional">(Optional - Only for client devices)</span>
-                        <?php endif; ?>
-                    </label>
-                    <input type="number" name="repair_cost" step="0.01" placeholder="Enter total repair cost" <?= $isClientDevice ? 'required' : '' ?>>
-                    <div class="info-text <?= $isClientDevice ? 'warning' : '' ?>">
-                        <i class="fas <?= $isClientDevice ? 'fa-exclamation-circle' : 'fa-info-circle' ?>"></i>
-                        <?php if ($isClientDevice): ?>
-                            <strong>Required:</strong> Enter the total amount the client will pay for this repair.
-                        <?php else: ?>
-                            <strong>Optional:</strong> Only required for <span class="highlight">Client</span> source devices.
-                        <?php endif; ?>
+                <?php if ($showCostField): ?>
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-money-bill-wave"></i> Repair Cost (KES)
+                            <?php if ($isClientDevice): ?>
+                                <span class="required">*</span>
+                            <?php else: ?>
+                                <span class="optional">(Optional)</span>
+                            <?php endif; ?>
+                        </label>
+                        <input type="number" name="repair_cost" step="0.01" placeholder="Enter total repair cost" <?= $isClientDevice ? 'required' : '' ?>>
+                        <div class="info-text <?= $isClientDevice ? 'warning' : '' ?>">
+                            <i class="fas <?= $isClientDevice ? 'fa-exclamation-circle' : 'fa-info-circle' ?>"></i>
+                            <?php if ($isClientDevice): ?>
+                                <strong>Required:</strong> Enter the total amount the client will pay for this repair.
+                            <?php else: ?>
+                                Enter the cost if applicable (e.g., for warranty billing).
+                            <?php endif; ?>
+                        </div>
                     </div>
-                </div>
+                <?php endif; ?>
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">

@@ -475,7 +475,7 @@ $branches = array_unique(array_column($phones, 'branch'));
                                     <div class="action-links">
                                         <?php if (in_array($role, ['super_admin', 'manager'])): ?>
                                             <?php if ($p['price'] === null): ?>
-                                                <a href="add_price_phone.php?id=<?= urlencode($p['id']) ?>" class="action-link">
+                                                <a href="add_price_phone.php?id=<?= urlencode($p['serial_number']) ?>" class="action-link">
                                                     <i class="fas fa-tag"></i> Add Price
                                                 </a>
                                             <?php else: ?>

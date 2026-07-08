@@ -309,23 +309,23 @@ function sendVerificationEmail($toEmail, $full_name, $device_info, $ip, $code) {
                     <div class="device-details">
                         <div class="detail-title"> Device Information</div>
                         <div class="detail-row">
-                            <span class="detail-label">Device Type</span>
+                            <span class="detail-label">Device Type:</span>
                             <span class="detail-value">' . htmlspecialchars($device_info['device_name']) . '</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Browser</span>
+                            <span class="detail-label">Browser:</span>
                             <span class="detail-value">' . htmlspecialchars($device_info['browser']) . '</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Operating System</span>
+                            <span class="detail-label">Operating System:</span>
                             <span class="detail-value">' . htmlspecialchars($device_info['os']) . '</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">IP Address</span>
+                            <span class="detail-label">IP Address:</span>
                             <span class="detail-value">' . htmlspecialchars($ip) . '</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Date &amp; Time</span>
+                            <span class="detail-label">Date &amp; Time:</span>
                             <span class="detail-value">' . date('F j, Y g:i A') . '</span>
                         </div>
                     </div>

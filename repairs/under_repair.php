@@ -736,12 +736,12 @@ $hasFilters = !empty($filter_serial) || !empty($filter_client) || !empty($filter
                     if ($user_role === 'technician') echo 'My Repairs';
                     elseif ($user_role === 'inventory_admin') echo 'Given By Me';
                     elseif ($user_role === 'manager') echo 'Branch: ' . safe($user_branch);
-                    elseif ($user_role === 'super_admin') echo 'All (Excluding Client)';
+                    elseif ($user_role === 'super_admin') echo 'All';
                     else echo 'All Repairs';
                     ?>
                 </span>
                 <?php if ($user_role === 'super_admin'): ?>
-                    <span class="role-view-only"><i class="fas fa-eye"></i> View Only (No Client Repairs)</span>
+                    <span class="role-view-only"><i class="fas fa-eye"></i> View Only</span>
                 <?php endif; ?>
             </div>
         </div>
@@ -1018,12 +1018,7 @@ $hasFilters = !empty($filter_serial) || !empty($filter_client) || !empty($filter
 
         <!-- ===== INFO BOXES ===== -->
         <?php if ($user_role === 'super_admin' && !empty($repairs)): ?>
-        <div style="margin-top:1rem; padding:0.75rem 1rem; background:#dbeafe; border-radius:var(--radius-lg); border:1px solid #bfdbfe; display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
-            <i class="fas fa-info-circle" style="color:#1e40af;"></i>
-            <span style="color:#1e40af; font-size:0.85rem;">
-                <i class="fas fa-eye"></i> You are viewing all repairs except client-source ones. Only technicians can mark repairs as fixed.
-            </span>
-        </div>
+       
         <?php endif; ?>
 
         <?php if (!empty($repairs) && $user_role === 'technician'): ?>

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,22 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     
     <!-- SEO Meta Tags -->
-    <meta name="description" content="Vimark Tech - The #1 POS system for computer shops and repair centers in Kenya. Cloud-based and standalone inventory management software. Free installation in Nairobi. Start 7-day trial.">
-    <meta name="keywords" content="POS system Kenya, inventory management software Kenya, computer shop management system, repair shop software Kenya, IT business management system, business management software Kenya, spare parts management system, sales and inventory system Kenya">
+    <meta name="description" content="Vimark Tech - The #1 POS system for computer shops and repair centers in Kenya. Also offering custom POS software development for restaurants, retail, pharmacies, supermarkets, and more. Cloud-based and standalone inventory management software. Free installation in Nairobi. Start 7-day trial.">
+    <meta name="keywords" content="POS system Kenya, inventory management software Kenya, computer shop management system, repair shop software Kenya, IT business management system, business management software Kenya, spare parts management system, sales and inventory system Kenya, custom POS development, restaurant POS, retail POS, pharmacy POS, supermarket POS">
     <meta name="author" content="Vimark Tech">
     <meta name="robots" content="index, follow">
     
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     
     <!-- SEO-Optimized Title (under 60 chars) -->
-    <title>Vimark Tech - #1 POS & Inventory Management System for Computer Shops in Kenya</title>
+    <title>Vimark Tech - #1 POS & Inventory System | Custom POS Development Kenya</title>
     
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="canonical" href="https://vimarktech.com/" />
     
     <!-- Open Graph tags for social sharing -->
-    <meta property="og:title" content="Vimark Tech - #1 POS & Business Management System for Kenyan Computer Shops" />
-    <meta property="og:description" content="Cloud-based and standalone POS system for computer shops, repair centers, and IT businesses in Kenya. Free installation in Nairobi. Start free trial." />
+    <meta property="og:title" content="Vimark Tech - #1 POS & Business Management System for Kenyan Computer Shops & More" />
+    <meta property="og:description" content="Cloud-based and standalone POS system for computer shops, repair centers, and IT businesses in Kenya. We also develop custom POS software for restaurants, retail, pharmacies, supermarkets, and hotels. Free installation in Nairobi. Start free trial." />
     <meta property="og:image" content="https://vimarktech.com/assets/og-image.jpg" />
     <meta property="og:url" content="https://vimarktech.com/" />
     <meta property="og:type" content="website" />
@@ -29,8 +28,8 @@
     
     <!-- Twitter Card tags -->
     <meta name="twitter:card" content="summary_large_image"/>
-    <meta name="twitter:title" content="Vimark Tech - #1 POS & Inventory System for Computer Shops in Kenya" />
-    <meta name="twitter:description" content="Manage inventory, sales, and repairs in one place. Cloud or standalone system. Free installation in Nairobi." />
+    <meta name="twitter:title" content="Vimark Tech - #1 POS & Inventory System for Computer Shops & Custom POS Development" />
+    <meta name="twitter:description" content="Manage inventory, sales, and repairs in one place. Cloud or standalone system. Free installation in Nairobi. Custom POS for any business." />
     <meta name="twitter:image" content="https://vimarktech.com/assets/og-image.jpg" />
     
     <!-- Schema Markup (Structured Data) -->
@@ -41,7 +40,7 @@
       "name": "Vimark Tech",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web, Windows, Linux",
-      "description": "Complete POS system, inventory management software, and repair shop management system for computer shops, repair centers, and IT businesses in Kenya.",
+      "description": "Complete POS system, inventory management software, and repair shop management system for computer shops, repair centers, and IT businesses in Kenya. Also offers custom POS development for restaurants, retail, pharmacies, supermarkets, and hotels.",
       "url": "https://vimarktech.com",
       "softwareVersion": "2.0",
       "offers": [
@@ -113,7 +112,7 @@
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
       "name": "Vimark Tech",
-      "description": "POS system, inventory management software, repair shop management system and business management software for computer shops, repair centers and IT businesses in Kenya. Includes POS, inventory control, repair tracking, spare parts management and analytics.",
+      "description": "POS system, inventory management software, repair shop management system and business management software for computer shops, repair centers and IT businesses in Kenya. Includes POS, inventory control, repair tracking, spare parts management and analytics. Custom POS software development for restaurants, retail, pharmacies, supermarkets, and hotels.",
       "url": "https://vimarktech.com",
       "telephone": "+254711529618",
       "email": "support@vimarktech.com",
@@ -184,7 +183,7 @@
     }
     </script>
     
-    <!-- FAQ Schema -->
+    <!-- FAQ Schema (updated with custom POS) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -228,6 +227,14 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "text": "Absolutely. Each business has its own isolated account with bank-grade encryption, secure login systems, and automatic backups."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do you develop custom POS systems for other businesses?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes! We specialize in developing custom POS and business management software for restaurants, retail stores, pharmacies, supermarkets, hotels, and many other industries. Contact us to discuss your specific needs."
           }
         }
       ]
@@ -368,6 +375,80 @@
             text-transform: uppercase;
             font-weight: 600;
             white-space: nowrap;
+        }
+
+        /* Reduce logo size on mobile to fit nav items */
+        @media (max-width: 768px) {
+            .logo-img {
+                width: 28px;
+                height: 28px;
+            }
+            .logo-icon-fallback {
+                width: 28px;
+                height: 28px;
+                font-size: 0.7rem;
+            }
+            .logo-text h1 {
+                font-size: 0.85rem;
+            }
+            .logo-text span {
+                font-size: 0.45rem;
+                letter-spacing: 0.5px;
+            }
+            .btn {
+                padding: 6px 12px;
+                font-size: 0.7rem;
+            }
+            .btn-login {
+                padding: 6px 12px;
+            }
+            .btn-register {
+                padding: 6px 12px;
+            }
+            .theme-toggle {
+                width: 32px;
+                height: 32px;
+                font-size: 0.9rem;
+            }
+            .nav-links {
+                gap: 12px;
+            }
+            .nav-links a {
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo-text h1 {
+                font-size: 0.7rem;
+            }
+            .logo-text span {
+                font-size: 0.4rem;
+            }
+            .btn {
+                padding: 4px 8px;
+                font-size: 0.6rem;
+            }
+            .btn-login {
+                padding: 4px 8px;
+            }
+            .btn-register {
+                padding: 4px 8px;
+            }
+            .theme-toggle {
+                width: 28px;
+                height: 28px;
+                font-size: 0.7rem;
+            }
+            .nav-links {
+                gap: 8px;
+            }
+            .nav-links a {
+                font-size: 0.65rem;
+            }
+            .nav-buttons {
+                gap: 4px;
+            }
         }
 
         .nav-links {
@@ -608,17 +689,68 @@
             justify-content: center;
         }
 
+        /* Dashboard Preview Image */
         .dashboard-preview {
             margin-top: 30px;
             text-align: center;
         }
-        .dashboard-img {
+        .dashboard-preview img {
             max-width: 100%;
             border-radius: var(--radius);
             box-shadow: var(--shadow-hover);
             border: 1px solid var(--border);
             background: var(--card);
             padding: 8px;
+            transition: var(--transition);
+        }
+        .dashboard-preview img:hover {
+            transform: scale(1.01);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+        }
+
+        /* Dashboard Screenshots Gallery */
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+        .screenshot-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        .screenshot-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-hover);
+            border-color: transparent;
+        }
+        .screenshot-card img {
+            width: 100%;
+            height: auto;
+            display: block;
+            padding: 8px;
+            background: var(--bg-alt);
+            transition: var(--transition);
+        }
+        .screenshot-card:hover img {
+            transform: scale(1.02);
+        }
+        .screenshot-card .caption {
+            padding: 14px 18px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-light);
+            background: var(--bg-alt);
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+        .screenshot-card .caption i {
+            color: var(--primary, #1a4b2a);
+            margin-right: 6px;
         }
         
         .comparison-table {
@@ -1390,6 +1522,44 @@
             color: var(--text);
         }
 
+        /* Custom POS Solutions Section */
+        .custom-pos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+            margin-top: 30px;
+        }
+        .pos-industry {
+            background: var(--card);
+            padding: 24px 18px;
+            border-radius: var(--radius);
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+        }
+        .pos-industry:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--red);
+        }
+        .pos-industry i {
+            font-size: 2.2rem;
+            color: var(--red);
+            margin-bottom: 12px;
+            display: block;
+        }
+        .pos-industry h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+        .pos-industry p {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
         @media (max-width: 992px) {
             .nav-links {
                 display: none;
@@ -1434,6 +1604,12 @@
             }
             .comparison-option:first-of-type {
                 border-right: none;
+            }
+            .screenshots-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .custom-pos-grid {
+                grid-template-columns: repeat(3, 1fr);
             }
         }
         @media (max-width: 768px) {
@@ -1501,10 +1677,29 @@
             .whatsapp-message {
                 display: none;
             }
+            .screenshots-grid {
+                grid-template-columns: 1fr;
+            }
+            .custom-pos-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
         @media (max-width: 480px) {
             .hero-content h1 {
                 font-size: 1.7rem;
+            }
+            .custom-pos-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+            .pos-industry {
+                padding: 16px 12px;
+            }
+            .pos-industry i {
+                font-size: 1.6rem;
+            }
+            .pos-industry h4 {
+                font-size: 0.85rem;
             }
         }
         @media (max-width: 380px) {
@@ -1517,6 +1712,9 @@
             }
             .nav-phone {
                 padding: 6px 10px;
+            }
+            .custom-pos-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -1733,6 +1931,7 @@
             <a href="#features">Features</a>
             <a href="#why-choose-us">Why Choose Us</a>
             <a href="#pricing">Pricing</a>
+            <a href="#custom-pos">Custom POS</a>
             <a href="#faq">FAQ</a>
             <a href="#contact">Contact</a>
         </div>
@@ -1754,7 +1953,34 @@
                 <button class="btn btn-success" onclick="openModal('purchaseModal')"><i class="fas fa-database"></i> Buy Standalone System</button>
             </div>
             <div class="dashboard-preview">
-                <!-- Dashboard image space preserved -->
+                <img src="vimarktech.jpeg" alt="Vimark Tech Dashboard Overview - POS and Inventory Management System" loading="lazy">
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ DASHBOARD SCREENSHOTS ============ -->
+    <section id="dashboard-screenshots" style="background: var(--bg-alt); padding: 60px 5%;">
+        <div class="section-title reveal">
+            <div class="section-label">Dashboard Preview</div>
+            <h2>See Vimark Tech in Action</h2>
+            <p>Explore our powerful dashboard with real-time insights, sales tracking, inventory management, and repair statistics — all in one place.</p>
+        </div>
+        <div class="screenshots-grid">
+            <div class="screenshot-card reveal">
+                <img src="vimarktech 1.jpeg" alt="Vimark Tech Dashboard - Inventory Value, Today's Sales, and Top Selling Items" loading="lazy">
+                <div class="caption"><i class="fas fa-chart-line"></i> Overview & Analytics</div>
+            </div>
+            <div class="screenshot-card reveal reveal-delay-1">
+                <img src="vimarktech 2.jpeg" alt="Vimark Tech Inventory Summary - Total Devices, Accessories, Smartboards, and More" loading="lazy">
+                <div class="caption"><i class="fas fa-boxes"></i> Inventory Summary</div>
+            </div>
+            <div class="screenshot-card reveal reveal-delay-2">
+                <img src="vimarktech 3.jpeg" alt="Vimark Tech Recent Repairs and Sales Activity Feed" loading="lazy">
+                <div class="caption"><i class="fas fa-clock"></i> Recent Repairs & Sales</div>
+            </div>
+            <div class="screenshot-card reveal reveal-delay-3">
+                <img src="vimarktech 4.jpeg" alt="Vimark Tech Low Stock Alerts and Repair Statistics" loading="lazy">
+                <div class="caption"><i class="fas fa-bell"></i> Low Stock Alerts & Stats</div>
             </div>
         </div>
     </section>
@@ -2025,6 +2251,58 @@
         </div>
     </section>
 
+    <!-- ============ CUSTOM POS SOLUTIONS ============ -->
+    <section id="custom-pos" style="background: var(--bg-alt); padding: 60px 5%;">
+        <div class="section-title reveal">
+            <div class="section-label">Custom POS Development</div>
+            <h2>We Build POS Systems for Any Business</h2>
+            <p>Beyond computer shops, Vimark Tech develops custom Point of Sale and business management software tailored to your specific industry — whether you're in retail, hospitality, healthcare, or any other sector.</p>
+        </div>
+        <div class="custom-pos-grid">
+            <div class="pos-industry reveal">
+                <i class="fas fa-utensils"></i>
+                <h4>Restaurants & Cafes</h4>
+                <p>Order management, table tracking, kitchen display, and payment integration.</p>
+            </div>
+            <div class="pos-industry reveal reveal-delay-1">
+                <i class="fas fa-shopping-bag"></i>
+                <h4>Retail Stores</h4>
+                <p>Inventory management, barcode scanning, customer loyalty, and sales analytics.</p>
+            </div>
+            <div class="pos-industry reveal reveal-delay-2">
+                <i class="fas fa-hospital"></i>
+                <h4>Pharmacies</h4>
+                <p>Medicine inventory, prescription tracking, expiry alerts, and patient records.</p>
+            </div>
+            <div class="pos-industry reveal reveal-delay-3">
+                <i class="fas fa-shopping-cart"></i>
+                <h4>Supermarkets</h4>
+                <p>Bulk inventory, multi-branch management, supplier tracking, and real-time stock updates.</p>
+            </div>
+            <div class="pos-industry reveal reveal-delay-4">
+                <i class="fas fa-hotel"></i>
+                <h4>Hotels & Hospitality</h4>
+                <p>Front desk management, room service, billing, and guest history tracking.</p>
+            </div>
+            <div class="pos-industry reveal reveal-delay-5">
+                <i class="fas fa-tools"></i>
+                <h4>Service Centers</h4>
+                <p>Job tracking, customer management, spare parts inventory, and repair history.</p>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 35px;">
+            <p style="color: var(--text-light); max-width: 700px; margin: 0 auto 20px;">Need a custom POS solution for your unique business? We've got you covered.</p>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="openModal('contactSupportModal')">
+                    <i class="fas fa-envelope"></i> Contact Us for Custom POS
+                </button>
+                <a href="https://wa.me/254711529618" target="_blank" class="btn btn-success">
+                    <i class="fab fa-whatsapp"></i> WhatsApp Us
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- ============ ABOUT (Two Options) ============ -->
     <section id="about">
         <div class="section-title reveal">
@@ -2156,6 +2434,10 @@
                 <div class="faq-question" onclick="toggleFAQ(this)"><span>What payment methods do you accept?</span><i class="fas fa-chevron-down"></i></div>
                 <div class="faq-answer">We accept M-Pesa, bank transfers, and credit or debit cards. All payments are processed securely. For the standalone system purchase, please contact us directly to arrange payment.</div>
             </div>
+            <div class="faq-item reveal reveal-delay-9">
+                <div class="faq-question" onclick="toggleFAQ(this)"><span>Do you develop custom POS systems for other businesses?</span><i class="fas fa-chevron-down"></i></div>
+                <div class="faq-answer">Yes! We specialize in developing custom POS and business management software for restaurants, retail stores, pharmacies, supermarkets, hotels, and many other industries. Our team works with you to understand your unique needs and build a solution that fits perfectly. Contact us to discuss your specific requirements.</div>
+            </div>
         </div>
     </section>
 
@@ -2166,6 +2448,7 @@
         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
             <button class="btn" onclick="location.href='vimarktech/auth/register_business'"><i class="fas fa-cloud"></i> Start Free 7-Day Trial</button>
             <button class="btn" style="background: white; color: #27ae60;" onclick="openModal('purchaseModal')"><i class="fas fa-database"></i> Buy Standalone System</button>
+            <button class="btn" style="background: white; color: #8B0000;" onclick="openModal('contactSupportModal')"><i class="fas fa-code"></i> Custom POS Enquiry</button>
         </div>
         <p style="margin-top: 20px; font-size: 0.8rem;"><i class="fas fa-wifi"></i> Free installation · <i class="fas fa-credit-card"></i> No credit card required for free trial · <i class="fab fa-whatsapp"></i> WhatsApp support available</p>
     </div>
@@ -2175,7 +2458,7 @@
         <div class="footer-grid">
             <div class="footer-col reveal">
                 <h4>VIMARK TECH</h4>
-                <p>The complete business management solution for computer sales, repairs, and all IT products businesses in Kenya and beyond. Available as cloud or standalone system.</p>
+                <p>The complete business management solution for computer sales, repairs, and all IT products businesses in Kenya and beyond. Available as cloud or standalone system. Also offering custom POS development for any business type.</p>
                 <div class="social-links">
                     <a href="https://ke.linkedin.com/in/victor-munene-a8459a338"><i class="fab fa-linkedin-in"></i></a>
                     <a href="https://www.instagram.com/vimark_tech" target="_blank"><i class="fab fa-instagram"></i></a>
@@ -2186,6 +2469,7 @@
                 <a href="#features">Features</a>
                 <a href="#why-choose-us">Why Choose Us</a>
                 <a href="#pricing">Pricing</a>
+                <a href="#custom-pos">Custom POS</a>
                 <a href="#faq">FAQ</a>
             </div>
             <div class="footer-col reveal reveal-delay-2">

@@ -1,12 +1,14 @@
 <?php
+// Enable full error reporting for debugging (remove in production)
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
-
-
-// Only inventory_admin and super_admin can access
-if(!in_array($_SESSION['role'], ['super_admin', 'inventory_admin','manager'])){
+// Only inventory_admin, super_admin, and manager can access
+if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin', 'manager'])) {
     die("Access denied!");
 }
 
@@ -14,64 +16,73 @@ $error = "";
 $success = "";
 
 // Fetch categories for dropdown
-$categoriesStmt = $conn->query("SELECT * FROM categories");
-$categories = $categoriesStmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $categoriesStmt = $conn->query("SELECT * FROM categories");
+    $categories = $categoriesStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    die("Database error fetching categories: " . $e->getMessage());
+}
 
 // Handle form submission
-if($_SERVER['REQUEST_METHOD'] === 'POST'){
-    $serial_number = trim($_POST['serial_number']);
-    $category_id = $_POST['category_id'];
-    $model_name = trim($_POST['model_name']);
-    $processor = trim($_POST['processor']);
-    $graphics = trim($_POST['graphics']) ?: 'None';
-    $ram = $_POST['ram'];
-    $storage_type = $_POST['storage_type'];
-    $storage_capacity = $_POST['storage_capacity'];
-    $status = "In Stock"; // Automatically set to In Stock when adding a new device
-    $branch = $_POST['branch'] ?: null;
-    
-    // Get the selected category name to check if it's Laptop or AIO
-    $category_name = "";
-    foreach($categories as $cat) {
-        if($cat['id'] == $category_id) {
-            $category_name = $cat['category_name'];
-            break;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        // Validate required fields
+        $required = ['serial_number', 'category_id', 'model_name', 'processor', 'ram', 'storage_type', 'storage_capacity', 'branch'];
+        foreach ($required as $field) {
+            if (empty($_POST[$field])) {
+                throw new Exception("Field '$field' is required.");
+            }
         }
-    }
-    
-    // Set touch value: if category is Laptop or AIO, use the selected value, otherwise use "N/A"
-    if($category_name === 'Laptop' || $category_name === 'AIO') {
-        $touch = $_POST['touch'] ?? null;
-    } else {
-        $touch = 'N/A';
-    }
-    if($category_name === 'Laptop' ){
-        $place = 'store';
-    }else{
-        $place = 'display';
-    }
-    
-    // NEW: Get cargo number and condition
-    $cargo_number = trim($_POST['cargo_number']) ?: null;
-    $device_condition = trim($_POST['device_condition']) ?: null;
-    
-    if($cargo_number === null){
-        $cargo_numbervalue = "NO CARGO";
-    }else
-    {
-        $cargo_numbervalue = $cargo_number;
-    }
-    // Get logged-in user ID for added_by
-    $added_by = $_SESSION['user_id'];
 
-    // Check for duplicate serial number
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM devices WHERE serial_number = :sn");
-    $stmt->execute(['sn' => $serial_number]);
-    if($stmt->fetchColumn() > 0){
-        $error = "A device with this serial number already exists!";
-    } else {
+        $serial_number = trim($_POST['serial_number']);
+        $category_id = (int)$_POST['category_id'];
+        $model_name = trim($_POST['model_name']);
+        $processor = trim($_POST['processor']);
+        $graphics = trim($_POST['graphics']) ?: 'None';
+        $ram = (int)$_POST['ram'];
+        $storage_type = $_POST['storage_type'];
+        $storage_capacity = (int)$_POST['storage_capacity'];
+        $branch = $_POST['branch']; // Already validated
+        $added_by = (int)$_SESSION['user_id'];
 
-        // Insert device including added_by, cargo_number, and device_condition
+        // Get category name for touch and place logic
+        $category_name = "";
+        foreach ($categories as $cat) {
+            if ($cat['id'] == $category_id) {
+                $category_name = $cat['category_name'];
+                break;
+            }
+        }
+
+        // Determine touch
+        if (in_array($category_name, ['Laptop', 'AIO'])) {
+            $touch = isset($_POST['touch']) ? $_POST['touch'] : 'Non-touch';
+        } else {
+            $touch = 'N/A';
+        }
+
+        // Determine place
+        $place = ($category_name === 'Laptop') ? 'store' : 'display';
+
+        // Cargo number (default "NO CARGO")
+        $cargo_number = trim($_POST['cargo_number'] ?? '');
+        $cargo_number = empty($cargo_number) ? "NO CARGO" : $cargo_number;
+
+        // Device condition
+        $device_condition = trim($_POST['device_condition'] ?? '');
+        $device_condition = empty($device_condition) ? null : $device_condition;
+
+        // Status is always "In Stock"
+        $status = "In Stock";
+
+        // Check for duplicate serial number
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM devices WHERE serial_number = :sn");
+        $stmt->execute(['sn' => $serial_number]);
+        if ($stmt->fetchColumn() > 0) {
+            throw new Exception("A device with this serial number already exists!");
+        }
+
+        // Insert
         $insert = $conn->prepare("
             INSERT INTO devices
             (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, added_by, cargo_number, device_condition, branch, place)
@@ -90,7 +101,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             'touch' => $touch,
             'status' => $status,
             'added_by' => $added_by,
-            'cargo_number' => $cargo_numbervalue,
+            'cargo_number' => $cargo_number,
             'device_condition' => $device_condition,
             'branch' => $branch,
             'place' => $place
@@ -98,13 +109,23 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
 
         // Log activity
         $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (:uid, 'Added device', :details)");
-        $log->execute(['uid'=>$_SESSION['user_id'], 'details'=>"Added device SN: $serial_number" . ($cargo_number ? ", Cargo: $cargo_number" : "")]);
+        $log->execute([
+            'uid' => $added_by,
+            'details' => "Added device SN: $serial_number" . ($cargo_number !== "NO CARGO" ? ", Cargo: $cargo_number" : "")
+        ]);
 
         $success = "Device added successfully!";
+        // Optionally reset form after success
+        // header("Location: add_device.php?success=1");
+        // exit;
+
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    } catch (PDOException $e) {
+        $error = "Database error: " . $e->getMessage();
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -112,7 +133,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Add Device | Mombasa Computers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- QR Code Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         :root {
@@ -155,7 +175,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             overflow-x: hidden;
         }
 
-        /* Main Content Area */
         .main-content {
             padding: 2rem 2rem 1rem;
             margin-left: 260px;
@@ -167,7 +186,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             max-width: 100%;
         }
 
-        /* Page Header */
         .page-header {
             background: white;
             padding: 1.5rem 2rem;
@@ -206,7 +224,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             text-decoration: underline;
         }
 
-        /* Form Container */
         .form-container {
             background: white;
             border-radius: var(--radius-xl);
@@ -238,7 +255,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             padding: 2rem;
         }
 
-        /* Form Grid */
         .form-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -253,7 +269,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
 
         .form-group.full-width {
             grid-column: span 2;
-            position: relative; /* For absolute positioning of scan button */
+            position: relative;
         }
 
         .form-group label {
@@ -264,7 +280,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            padding-right: 70px; /* Make room for the scan button on mobile */
+            padding-right: 70px;
         }
 
         .form-group label .required {
@@ -302,7 +318,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             color: var(--gray-400);
         }
 
-        /* Serial Input Special */
         .serial-input {
             font-family: 'Courier New', monospace;
             font-size: 1rem !important;
@@ -310,7 +325,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             background: var(--gray-50) !important;
         }
 
-        /* Scan Button – visible only on mobile/tablet */
         .scan-btn-wrapper {
             position: absolute;
             top: -2px;
@@ -340,24 +354,21 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             font-size: 0.9rem;
         }
 
-        /* Hide scan button on screens wider than 1024px (desktops) */
         @media (min-width: 1025px) {
             .scan-btn-wrapper {
                 display: none !important;
             }
             .form-group label {
-                padding-right: 0; /* reset padding on desktop */
+                padding-right: 0;
             }
         }
 
-        /* On mobile, adjust label padding to accommodate the button */
         @media (max-width: 1024px) {
             .form-group label {
                 padding-right: 70px;
             }
         }
 
-        /* Scanner Overlay */
         .scanner-overlay {
             display: none;
             position: fixed;
@@ -415,7 +426,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             }
         }
 
-        /* Alert Messages */
         .alert {
             padding: 1rem 1.25rem;
             border-radius: var(--radius-md);
@@ -438,7 +448,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             font-size: 1.25rem;
         }
 
-        /* Note Box */
         .note-box {
             background: var(--gray-50);
             border-radius: var(--radius-lg);
@@ -459,7 +468,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             color: var(--gray-600);
         }
 
-        /* Submit Button */
         .form-actions {
             margin-top: 2rem;
             padding-top: 1.5rem;
@@ -500,7 +508,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             background: var(--gray-50);
         }
 
-        /* Footer */
         .footer {
             text-align: center;
             padding: 1.5rem 0 0.5rem;
@@ -510,7 +517,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             border-top: 1px solid var(--gray-200);
         }
 
-        /* Responsive */
         @media (max-width: 1200px) {
             .main-content {
                 margin-left: 0 !important;
@@ -555,7 +561,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                 padding: 0.3rem 0.6rem;
             }
             .form-group label {
-                padding-right: 60px; /* adjust for smaller screens */
+                padding-right: 60px;
             }
         }
         @media (max-width: 480px) {
@@ -576,7 +582,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
 <?php include "../includes/sidebar.php"; ?>
 
 <div class="main-content">
-    <!-- Page Header (unchanged) -->
     <div class="page-header">
         <h1>
             <i class="fas fa-plus-circle"></i>
@@ -599,7 +604,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         </div>
     </div>
 
-    <!-- Form Container -->
     <div class="form-container">
         <div class="form-header">
             <h2>
@@ -609,7 +613,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         </div>
         
         <div class="form-body">
-            <!-- Alerts -->
             <?php if($error): ?>
                 <div class="alert alert-error">
                     <i class="fas fa-exclamation-circle"></i>
@@ -634,7 +637,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                                 <span class="optional">(Scan or type)</span>
                             </span>
                         </label>
-                        <!-- Scan button wrapper – visible only on mobile/tablet -->
                         <div class="scan-btn-wrapper">
                             <button type="button" class="scan-btn" onclick="openScanner()">
                                 <i class="fas fa-camera"></i> Scan
@@ -647,7 +649,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                                required 
                                placeholder="Scan barcode or type serial number"
                                autocomplete="off"
-                               autocapitalize="characters">
+                               autocapitalize="characters"
+                               value="<?= isset($_POST['serial_number']) ? htmlspecialchars($_POST['serial_number']) : '' ?>">
                     </div>
 
                     <!-- Cargo Number -->
@@ -658,7 +661,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                                id="cargo_number" 
                                placeholder="e.g., CX37"
                                autocomplete="off"
-                               autocapitalize="characters">
+                               autocapitalize="characters"
+                               value="<?= isset($_POST['cargo_number']) ? htmlspecialchars($_POST['cargo_number']) : '' ?>">
                     </div>
 
                     <!-- Device Condition -->
@@ -666,9 +670,9 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                         <label>Device Condition</label>
                         <select name="device_condition">
                             <option value="">-- Select Condition --</option>
-                            <option value="New">New</option>
-                            <option value="Ex-Uk">Ex-Uk</option>
-                            <option value="Refurbished">Refurbished</option>
+                            <option value="New" <?= isset($_POST['device_condition']) && $_POST['device_condition'] == 'New' ? 'selected' : '' ?>>New</option>
+                            <option value="Ex-Uk" <?= isset($_POST['device_condition']) && $_POST['device_condition'] == 'Ex-Uk' ? 'selected' : '' ?>>Ex-Uk</option>
+                            <option value="Refurbished" <?= isset($_POST['device_condition']) && $_POST['device_condition'] == 'Refurbished' ? 'selected' : '' ?>>Refurbished</option>
                         </select>
                     </div>
 
@@ -678,7 +682,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                         <select name="category_id" id="category_id" onchange="toggleTouch()" required>
                             <option value="">Select Category</option>
                             <?php foreach($categories as $cat): ?>
-                                <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['category_name']) ?></option>
+                                <option value="<?= $cat['id'] ?>" <?= isset($_POST['category_id']) && $_POST['category_id'] == $cat['id'] ? 'selected' : '' ?>><?= htmlspecialchars($cat['category_name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -688,61 +692,60 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                         <label>Branch <span class="required">*</span></label>
                         <select name="branch" required>
                             <option value="">-- Select Branch --</option>
-                            <option value="KIMATHI">KIMATHI</option>
-                            <option value="MOI">MOI</option>
+                            <option value="KIMATHI" <?= isset($_POST['branch']) && $_POST['branch'] == 'KIMATHI' ? 'selected' : '' ?>>KIMATHI</option>
+                            <option value="MOI" <?= isset($_POST['branch']) && $_POST['branch'] == 'MOI' ? 'selected' : '' ?>>MOI</option>
                         </select>
                     </div>
 
                     <!-- Model Name -->
                     <div class="form-group">
                         <label>Model Name <span class="required">*</span></label>
-                        <input type="text" name="model_name" required>
+                        <input type="text" name="model_name" required value="<?= isset($_POST['model_name']) ? htmlspecialchars($_POST['model_name']) : '' ?>">
                     </div>
 
                     <!-- Processor -->
                     <div class="form-group">
                         <label>Processor <span class="required">*</span></label>
-                        <input type="text" name="processor" required placeholder="e.g., Intel Core i5-1135G7">
+                        <input type="text" name="processor" required placeholder="e.g., Intel Core i5-1135G7" value="<?= isset($_POST['processor']) ? htmlspecialchars($_POST['processor']) : '' ?>">
                     </div>
 
                     <!-- Graphics -->
                     <div class="form-group">
                         <label>Graphics</label>
-                        <input type="text" name="graphics" placeholder="e.g., Intel Iris Xe">
+                        <input type="text" name="graphics" placeholder="e.g., Intel Iris Xe" value="<?= isset($_POST['graphics']) ? htmlspecialchars($_POST['graphics']) : '' ?>">
                     </div>
 
                     <!-- RAM -->
                     <div class="form-group">
                         <label>RAM (GB) <span class="required">*</span></label>
-                        <input type="number" name="ram" min="1" required>
+                        <input type="number" name="ram" min="1" required value="<?= isset($_POST['ram']) ? htmlspecialchars($_POST['ram']) : '' ?>">
                     </div>
 
                     <!-- Storage Type -->
                     <div class="form-group">
                         <label>Storage Type <span class="required">*</span></label>
                         <select name="storage_type" required>
-                            <option value="SSD">SSD</option>
-                            <option value="HDD">HDD</option>
+                            <option value="SSD" <?= isset($_POST['storage_type']) && $_POST['storage_type'] == 'SSD' ? 'selected' : '' ?>>SSD</option>
+                            <option value="HDD" <?= isset($_POST['storage_type']) && $_POST['storage_type'] == 'HDD' ? 'selected' : '' ?>>HDD</option>
                         </select>
                     </div>
 
                     <!-- Storage Capacity -->
                     <div class="form-group">
                         <label>Storage Capacity (GB) <span class="required">*</span></label>
-                        <input type="number" name="storage_capacity" min="1" required>
+                        <input type="number" name="storage_capacity" min="1" required value="<?= isset($_POST['storage_capacity']) ? htmlspecialchars($_POST['storage_capacity']) : '' ?>">
                     </div>
 
                     <!-- Touch Screen (Hidden by default) -->
-                    <div id="touch_div" class="form-group" style="display:none;">
+                    <div id="touch_div" class="form-group" style="<?= isset($_POST['category_id']) ? '' : 'display:none;' ?>">
                         <label>Touch Screen</label>
                         <select name="touch">
-                            <option value="Touch">Touch</option>
-                            <option value="Non-touch">Non-touch</option>
+                            <option value="Touch" <?= isset($_POST['touch']) && $_POST['touch'] == 'Touch' ? 'selected' : '' ?>>Touch</option>
+                            <option value="Non-touch" <?= isset($_POST['touch']) && $_POST['touch'] == 'Non-touch' ? 'selected' : '' ?>>Non-touch</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Form Actions -->
                 <div class="form-actions">
                     <a href="device_list.php" class="btn btn-secondary">
                         <i class="fas fa-times"></i> Cancel
@@ -753,7 +756,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                 </div>
             </form>
 
-            <!-- Note Box -->
             <div class="note-box">
                 <i class="fas fa-info-circle"></i>
                 <p><strong>Note:</strong> All newly added devices are automatically set to <strong>"In Stock"</strong> status.</p>
@@ -781,15 +783,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     let html5QrCode = null;
     let scannerActive = false;
 
-    // --- SCANNER-STYLE DOUBLE BEEP (identical to sell_device.php) ---
     function playBeep() {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
-
-            // First beep
             const osc1 = audioCtx.createOscillator();
             const gain1 = audioCtx.createGain();
             osc1.connect(gain1);
@@ -801,7 +800,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             osc1.start(audioCtx.currentTime);
             osc1.stop(audioCtx.currentTime + 0.08);
 
-            // Second beep after short pause
             const osc2 = audioCtx.createOscillator();
             const gain2 = audioCtx.createGain();
             osc2.connect(gain2);
@@ -813,7 +811,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             osc2.start(audioCtx.currentTime + 0.12);
             osc2.stop(audioCtx.currentTime + 0.2);
         } catch (e) {
-            // Silently fail if audio not supported
             console.log('Beep not supported');
         }
     }
@@ -846,23 +843,19 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             closeScanner();
             return;
         }
-
         if (typeof Html5Qrcode === 'undefined') {
             alert('Scanner library not loaded. Please check your internet connection and refresh.');
             closeScanner();
             return;
         }
-
         readerElement.style.width = '100%';
         readerElement.style.minHeight = '300px';
-
         html5QrCode = new Html5Qrcode("reader");
         const config = {
             fps: 15,
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1.0
         };
-
         html5QrCode.start(
             { facingMode: "environment" },
             config,
@@ -892,16 +885,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     }
 
     function onScanSuccess(decodedText, decodedResult) {
-        // Play scanner beep
         playBeep();
-
-        // Fill the serial number input
         const serialInput = document.getElementById('serial_number');
         if (serialInput) {
             serialInput.value = decodedText.trim().toUpperCase();
             serialInput.dispatchEvent(new Event('input'));
         }
-
         closeScanner();
     }
 
@@ -909,14 +898,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         // ignore
     }
 
-    // Clean up
     window.addEventListener('beforeunload', function() {
         if (html5QrCode && scannerActive) {
             html5QrCode.stop().catch(() => {});
         }
     });
 
-    // --- Existing functions from original file ---
     function toggleTouch() {
         var categorySelect = document.getElementById('category_id');
         var touchDiv = document.getElementById('touch_div');
@@ -938,30 +925,23 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         cargoInput.value = cargoInput.value.trim().toUpperCase();
     }
     
-    // Focus on serial number input when page loads
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('serial_number').focus();
-        
-        // Add blur event handlers
         document.getElementById('serial_number').addEventListener('blur', formatSerialNumber);
         document.getElementById('cargo_number').addEventListener('blur', formatCargoNumber);
     });
-    
-    // Scanner detection (original)
+
     (function() {
         const serialInput = document.getElementById('serial_number');
         let isTyping = false;
         let typingTimer;
-        
         serialInput.addEventListener('keydown', function(e) {
             clearTimeout(typingTimer);
             isTyping = true;
-            
             typingTimer = setTimeout(function() {
                 isTyping = false;
             }, 500);
         });
-        
         serialInput.addEventListener('input', function() {
             if(!isTyping) {
                 setTimeout(function() {
@@ -970,13 +950,11 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             }
         });
     })();
-    
-    // Mobile responsive adjustments
+
     document.addEventListener('DOMContentLoaded', function() {
         function adjustMainContent() {
             const mainContent = document.querySelector('.main-content');
             const sidebar = document.querySelector('.sidebar');
-            
             if (window.innerWidth <= 1200) {
                 if (mainContent) {
                     mainContent.style.marginLeft = '0';
@@ -991,7 +969,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                 }
             }
         }
-        
         adjustMainContent();
         window.addEventListener('resize', adjustMainContent);
         window.addEventListener('orientationchange', adjustMainContent);

@@ -1102,7 +1102,7 @@ function safe($value) {
         <a href="/inventory_system/sales/sales_logs.php" class="link-btn btn-outline">
             <i class="fas fa-chart-line"></i> Sales Logs
         </a>
-        <a href="/inventory_system/expenses/add_expense.php" class="link-btn btn-outline" style="border-color: var(--expense); color: var(--expense) !important;">
+        <a href="/inventory_system/sales/add_expense.php" class="link-btn btn-outline" style="border-color: var(--expense); color: var(--expense) !important;">
             <i class="fas fa-receipt"></i> Add Expense
         </a>
     </div>

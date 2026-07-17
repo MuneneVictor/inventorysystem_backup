@@ -38,13 +38,17 @@ $filter_end = trim($_GET['end_date'] ?? '');
 // ============================================================
 // BUILD QUERY BASED ON ROLE AND FILTERS
 // ============================================================
-$sql = "SELECT r.*, d.model_name, d.processor, d.ram, d.storage_type, d.storage_capacity, 
-               d.touch, d.graphics, c.category_name, 
-               u1.full_name AS added_by_name, u2.full_name AS given_by_name,
+$sql = "SELECT r.*, 
+               COALESCE(d.model_name, r.model_name) AS model_name,
+               c.category_name,
+               d.processor, d.ram, d.storage_type, d.storage_capacity, 
+               d.touch, d.graphics,
+               u1.full_name AS added_by_name, 
+               u2.full_name AS given_by_name,
                u3.full_name AS sales_person_name
         FROM repairs r
         LEFT JOIN devices d ON r.serial_number COLLATE utf8mb4_general_ci = d.serial_number
-        LEFT JOIN categories c ON d.category_id = c.id
+        LEFT JOIN categories c ON COALESCE(d.category_id, r.category_id) = c.id
         LEFT JOIN users u1 ON r.added_by = u1.id
         LEFT JOIN users u2 ON r.given_by = u2.id
         LEFT JOIN users u3 ON r.sales_person = u3.id
@@ -64,6 +68,9 @@ if ($user_role === 'technician') {
         $sql .= " AND r.branch = ?";
         $params[] = $user_branch;
     }
+} elseif ($user_role === 'super_admin') {
+    // Super admin: exclude client repairs
+    $sql .= " AND (r.source_device IS NULL OR r.source_device != 'client')";
 }
 
 // Apply filters
@@ -169,7 +176,6 @@ $sourceOptions = [
 $hasFilters = !empty($filter_serial) || !empty($filter_client) || !empty($filter_source) || 
               !empty($filter_branch) || !empty($filter_start) || !empty($filter_end);
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -730,6 +736,7 @@ $hasFilters = !empty($filter_serial) || !empty($filter_client) || !empty($filter
                     if ($user_role === 'technician') echo 'My Repairs';
                     elseif ($user_role === 'inventory_admin') echo 'Given By Me';
                     elseif ($user_role === 'manager') echo 'Branch: ' . safe($user_branch);
+                    elseif ($user_role === 'super_admin') echo 'All';
                     else echo 'All Repairs';
                     ?>
                 </span>
@@ -1011,12 +1018,7 @@ $hasFilters = !empty($filter_serial) || !empty($filter_client) || !empty($filter
 
         <!-- ===== INFO BOXES ===== -->
         <?php if ($user_role === 'super_admin' && !empty($repairs)): ?>
-        <div style="margin-top:1rem; padding:0.75rem 1rem; background:#dbeafe; border-radius:var(--radius-lg); border:1px solid #bfdbfe; display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
-            <i class="fas fa-info-circle" style="color:#1e40af;"></i>
-            <span style="color:#1e40af; font-size:0.85rem;">
-                <i class="fas fa-eye"></i> You are viewing all repairs. Only technicians can mark repairs as fixed.
-            </span>
-        </div>
+       
         <?php endif; ?>
 
         <?php if (!empty($repairs) && $user_role === 'technician'): ?>

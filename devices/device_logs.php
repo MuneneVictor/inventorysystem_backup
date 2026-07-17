@@ -1,13 +1,11 @@
 <?php
+
 // Start output buffering to prevent "headers already sent" errors
 ob_start();
 
 session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
-
-// Include header and sidebar AFTER all processing (moved down)
-// We'll include them after the POST handling and redirect.
 
 $role = $_SESSION['role'];
 $user_id = (int) $_SESSION['user_id'];
@@ -31,9 +29,8 @@ $return_error = '';
 $return_success = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_device'])) {
     $log_id = (int) $_POST['log_id'];
-    $return_qty = 1; // Device logs are per device, quantity is always 1
+    $return_qty = 1;
 
-    // Check if file was uploaded
     if (!isset($_FILES['return_proof']) || $_FILES['return_proof']['error'] !== UPLOAD_ERR_OK) {
         $return_error = "Please take or upload a photo as proof of return.";
     } else {
@@ -43,10 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_device'])) {
 
         if (!in_array($ext, $allowed_exts)) {
             $return_error = "Invalid file type. Please upload an image (JPEG, PNG, GIF, WEBP, HEIF/HEIC).";
-        } elseif ($file['size'] > 5 * 1024 * 1024) { // 5MB max
+        } elseif ($file['size'] > 5 * 1024 * 1024) {
             $return_error = "File size exceeds 5MB limit.";
         } else {
-            // For standard image types, verify MIME type (skip for HEIC/HEIF)
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
             $mime_type = finfo_file($finfo, $file['tmp_name']);
             finfo_close($finfo);
@@ -59,7 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_device'])) {
             }
 
             if (!$return_error) {
-                // Create uploads directory if not exists (with full permissions)
                 $upload_dir = __DIR__ . '/../uploads/device_returns/';
                 if (!is_dir($upload_dir)) {
                     if (!mkdir($upload_dir, 0777, true)) {
@@ -89,7 +84,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_device'])) {
         try {
             $conn->beginTransaction();
 
-            // Lock the log row and fetch current data (status should be 'instock' to allow return)
             $logStmt = $conn->prepare("SELECT * FROM devices_logs WHERE id = ? AND status = 'instock' FOR UPDATE");
             $logStmt->execute([$log_id]);
             $log = $logStmt->fetch(PDO::FETCH_ASSOC);
@@ -97,7 +91,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_device'])) {
                 throw new Exception("Log not found or already returned/sold.");
             }
 
-            // Lock the corresponding device row
             $deviceStmt = $conn->prepare("SELECT * FROM devices WHERE serial_number = ? FOR UPDATE");
             $deviceStmt->execute([$log['serial_number']]);
             $device = $deviceStmt->fetch(PDO::FETCH_ASSOC);
@@ -105,15 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_device'])) {
                 throw new Exception("Device record not found.");
             }
 
-            // Update device place to 'store' (if it was taken to display, this restores it)
             $updateDevice = $conn->prepare("UPDATE devices SET place = 'store' WHERE serial_number = ?");
             $updateDevice->execute([$log['serial_number']]);
 
-            // Update log status to 'returned'
             $updateLog = $conn->prepare("UPDATE devices_logs SET status = 'returned' WHERE id = ?");
             $updateLog->execute([$log_id]);
 
-            // Activity log with proof file info
             $action = "Returned Device";
             $details = "Returned device SN: {$log['serial_number']} from log ID {$log_id}. " .
                        "Action was: {$log['action']}. " .
@@ -124,7 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_device'])) {
             $conn->commit();
             $return_success = "Device returned successfully! Photo uploaded.";
 
-            // Clear output buffer and redirect
             ob_end_clean();
             header("Location: device_logs.php?success=1");
             exit;
@@ -136,16 +125,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_device'])) {
     }
 }
 
-// If success message from redirect, show it
 if (isset($_GET['success'])) {
     $return_success = "Device returned successfully!";
 }
 
-// Now include header and sidebar (after all processing)
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
-
-// --- Build device specifications string (same as sell_device) ---
 function buildDeviceSpecs($log) {
     $specs = "";
     if (!empty($log['model_name'])) $specs .= $log['model_name'];
@@ -163,7 +146,6 @@ function buildDeviceSpecs($log) {
     return trim($specs, " |");
 }
 
-// Get filter inputs
 $filter_branch = trim($_GET['branch'] ?? '');
 $filter_action = trim($_GET['action'] ?? '');
 $filter_status = trim($_GET['status'] ?? '');
@@ -171,7 +153,7 @@ $date_from = trim($_GET['date_from'] ?? '');
 $date_to = trim($_GET['date_to'] ?? '');
 $search = trim($_GET['search'] ?? '');
 
-// Build query – join with users for given_by/given_to/taken_by names, and categories for category name
+// Build query with positional placeholders
 $sql = "SELECT l.*, 
                c.category_name,
                u_given_by.full_name AS given_by_name,
@@ -187,59 +169,59 @@ $params = [];
 
 // Manager restriction
 if ($role === 'manager' && !empty($user_branch)) {
-    $sql .= " AND l.branch = :user_branch";
-    $params['user_branch'] = $user_branch;
+    $sql .= " AND l.branch = ?";
+    $params[] = $user_branch;
 }
 
-// Inventory admin: only see logs they performed (given_by or taken_by = their ID)
+// Inventory admin: only see logs they performed
 if ($role === 'inventory_admin') {
-    $sql .= " AND (l.given_by = :uid OR l.taken_by = :uid)";
-    $params['uid'] = $user_id;
+    $sql .= " AND (l.given_by = ? OR l.taken_by = ?)";
+    $params[] = $user_id;
+    $params[] = $user_id;
 }
 
 // Filters
 if ($filter_branch && $role !== 'manager') {
-    $sql .= " AND l.branch = :branch";
-    $params['branch'] = $filter_branch;
+    $sql .= " AND l.branch = ?";
+    $params[] = $filter_branch;
 }
 if ($filter_action) {
-    $sql .= " AND l.action = :action";
-    $params['action'] = $filter_action;
+    $sql .= " AND l.action = ?";
+    $params[] = $filter_action;
 }
 if ($filter_status) {
-    $sql .= " AND l.status = :status";
-    $params['status'] = $filter_status;
+    $sql .= " AND l.status = ?";
+    $params[] = $filter_status;
 }
 if ($date_from) {
-    // Use date_given or date_taken depending on action? We'll use a COALESCE to pick the appropriate date.
-    $sql .= " AND COALESCE(l.date_given, l.date_taken) >= :date_from";
-    $params['date_from'] = $date_from;
+    $sql .= " AND COALESCE(l.date_given, l.date_taken) >= ?";
+    $params[] = $date_from;
 }
 if ($date_to) {
-    $sql .= " AND COALESCE(l.date_given, l.date_taken) <= :date_to";
-    $params['date_to'] = $date_to;
+    $sql .= " AND COALESCE(l.date_given, l.date_taken) <= ?";
+    $params[] = $date_to;
 }
 if ($search) {
-    $sql .= " AND (l.serial_number LIKE :search OR l.model_name LIKE :search OR c.category_name LIKE :search)";
-    $params['search'] = "%$search%";
+    $sql .= " AND (l.serial_number LIKE ? OR l.model_name LIKE ? OR c.category_name LIKE ?)";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
 }
 
 $sql .= " ORDER BY COALESCE(l.date_given, l.date_taken) DESC";
 
+// Now execute with positional parameters
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
 $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Stats
 $total_logs = count($logs);
 $branches = array_unique(array_column($logs, 'branch'));
 $actions = array_unique(array_column($logs, 'action'));
 $statuses = array_unique(array_column($logs, 'status'));
 
-// Get branch list for filter (only if super_admin or inventory_admin can see all branches; but we'll list all)
 $branches_list = [];
 if (in_array($role, ['super_admin', 'inventory_admin', 'manager'])) {
-    // For manager, we only show their branch; for others we show all distinct from logs
     if ($role === 'manager') {
         $branches_list = [$user_branch];
     } else {
@@ -248,10 +230,7 @@ if (in_array($role, ['super_admin', 'inventory_admin', 'manager'])) {
     }
 }
 
-// Action list for filter
 $action_list = ['take_to_display', 'give_out'];
-
-// Status list (updated: instock, returned, sold)
 $status_list = ['instock', 'returned', 'sold'];
 ?>
 
@@ -482,7 +461,6 @@ $status_list = ['instock', 'returned', 'sold'];
         .branch-kimathi { color: #059669; font-weight: 500; }
         .branch-moi { color: #3b82f6; font-weight: 500; }
 
-        /* ----- Specs column: wrap and limit width ----- */
         .specs-text {
             font-size: 0.8rem;
             color: var(--gray-600);
@@ -509,7 +487,6 @@ $status_list = ['instock', 'returned', 'sold'];
             border-top: 1px solid var(--gray-200);
         }
 
-        /* Modal Styles */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -572,7 +549,6 @@ $status_list = ['instock', 'returned', 'sold'];
         }
         .modal-actions .btn { padding: 0.5rem 1.25rem; }
 
-        /* Alert styles */
         .alert {
             padding: 1rem 1.25rem;
             border-radius: var(--radius-md);
@@ -611,7 +587,7 @@ $status_list = ['instock', 'returned', 'sold'];
     </style>
 </head>
 <body>
-
+    <?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-history"></i> Device Logs</h1>
@@ -755,11 +731,10 @@ $status_list = ['instock', 'returned', 'sold'];
                             elseif ($log['status'] == 'returned') $statusClass = 'badge-returned';
                             elseif ($log['status'] == 'sold') $statusClass = 'badge-sold';
 
-                            // Determine person and date based on action
                             if ($log['action'] == 'take_to_display') {
                                 $person = $log['taken_by_name'] ?? 'Unknown';
                                 $date = $log['date_taken'];
-                            } else { // give_out
+                            } else {
                                 $person = 'Given to: ' . ($log['given_to_name'] ?? 'Unknown') . ' by ' . ($log['given_by_name'] ?? 'Unknown');
                                 $date = $log['date_given'];
                             }
@@ -805,7 +780,7 @@ $status_list = ['instock', 'returned', 'sold'];
     </div>
 </div>
 
-<!-- Return Modal with File Upload and Preview -->
+<!-- Return Modal -->
 <div class="modal-overlay" id="returnModal">
     <div class="modal-box">
         <h3><i class="fas fa-undo-alt"></i> Return Device</h3>
@@ -829,7 +804,6 @@ $status_list = ['instock', 'returned', 'sold'];
 </div>
 
 <script>
-    // Preview image when file is selected
     document.getElementById('returnProof').addEventListener('change', function(e) {
         const preview = document.getElementById('imagePreview');
         const file = this.files[0];
@@ -848,7 +822,6 @@ $status_list = ['instock', 'returned', 'sold'];
 
     function openReturnModal(logId) {
         document.getElementById('returnLogId').value = logId;
-        // Reset preview and file input
         document.getElementById('imagePreview').style.display = 'none';
         document.getElementById('imagePreview').src = '#';
         document.getElementById('returnProof').value = '';
@@ -859,12 +832,10 @@ $status_list = ['instock', 'returned', 'sold'];
         document.getElementById('returnModal').classList.remove('active');
     }
 
-    // Close modal on outside click
     document.getElementById('returnModal').addEventListener('click', function(e) {
         if (e.target === this) closeReturnModal();
     });
 
-    // Ensure file is selected before submitting (client-side double-check)
     document.getElementById('returnForm').addEventListener('submit', function(e) {
         const fileInput = document.getElementById('returnProof');
         if (!fileInput.files || fileInput.files.length === 0) {
@@ -874,7 +845,6 @@ $status_list = ['instock', 'returned', 'sold'];
         }
     });
 
-    // Mobile responsive adjustments
     document.addEventListener('DOMContentLoaded', function() {
         function adjustMainContent() {
             const mainContent = document.querySelector('.main-content');
@@ -901,7 +871,7 @@ $status_list = ['instock', 'returned', 'sold'];
 
 </body>
 </html>
+
 <?php
-// End output buffering and flush
 ob_end_flush();
 ?>

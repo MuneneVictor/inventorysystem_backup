@@ -161,9 +161,7 @@ if (isset($_GET['success'])) {
     $return_success = "Charger returned successfully!";
 }
 
-// Now include header and sidebar (after all processing)
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 
 // Get filter inputs
 $filter_branch = trim($_GET['branch'] ?? '');

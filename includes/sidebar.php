@@ -329,7 +329,7 @@ body {
                     ['Give out Device', '/inventory_system/devices/give_device.php', 'fas fa-gift'],
                     ['Device Logs', '/inventory_system/devices/device_logs.php', 'fas fa-clipboard-list'],
                 ];
-                if ($role === 'super_admin') {
+                if ($role === 'super_admin' || $role === 'manager') {
                     $deviceItems[] = ['Price list', '/inventory_system/devices/price_list.php', 'fas fa-dollar-sign'];
                 }
                 $sections['DEVICES'] = ['icon' => 'fas fa-laptop', 'items' => $deviceItems];

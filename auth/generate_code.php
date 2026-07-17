@@ -35,7 +35,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         $error = "Invalid email format! Please enter a valid email address.";
     } else {
         // Check if email already has a code using prepared statement
-        $check = $conn->prepare("SELECT * FROM registration_codes WHERE email = :email AND is_used = 0");
+        $check = $conn->prepare("SELECT * FROM registration_codes WHERE email = :email AND is_used = 0 AND expiry > NOW()");
         $check->execute(['email'=>$email]);
         if($check->rowCount() > 0){
             $error = "A registration code for this email already exists!";
@@ -125,7 +125,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     }
 }
 
-$roles = ['manager','inventory_admin','technician','maintenance','sales'];
+$roles = ['manager','inventory_admin','technician','software','sales', 'cashier'];
 ?>
 
 <!DOCTYPE html>

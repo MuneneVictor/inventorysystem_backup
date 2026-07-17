@@ -196,6 +196,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['complete_sale']) && $user_role === 'cashier') {
         $payment_status = $_POST['payment_status'] ?? 'unpaid';
         $payment_method = $_POST['payment_method'] ?? null;
+        if ($payment_status !== 'paid' || empty($payment_method)) {
+            $payment_method = null; 
+        }
+
         if ($payment_status === 'paid' && empty($payment_method)) {
             $error = "Please select a payment method for paid status.";
         } else {

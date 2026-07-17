@@ -35,13 +35,17 @@ $filter_source = trim($_GET['source'] ?? '');
 $filter_status = trim($_GET['status'] ?? '');
 $filter_has_cost = isset($_GET['has_cost']) ? (int)$_GET['has_cost'] : '';
 
-// Build query (same as repair_logs.php)
-$sql = "SELECT r.*, d.model_name, d.processor, d.ram, d.storage_type, d.storage_capacity, d.touch, d.graphics,
-               c.category_name, u1.full_name AS fixed_by_name, u2.full_name AS given_by_name,
+// Build query with COALESCE for model and category (same fix as repair_logs.php)
+$sql = "SELECT r.*, 
+               COALESCE(d.model_name, r.model_name) AS model_name,
+               c.category_name,
+               d.processor, d.ram, d.storage_type, d.storage_capacity, d.touch, d.graphics,
+               u1.full_name AS added_by_name,
+               u2.full_name AS given_by_name,
                r.source_device
         FROM repairs r
         LEFT JOIN devices d ON r.serial_number COLLATE utf8mb4_general_ci = d.serial_number
-        LEFT JOIN categories c ON d.category_id = c.id
+        LEFT JOIN categories c ON COALESCE(d.category_id, r.category_id) = c.id
         LEFT JOIN users u1 ON r.added_by = u1.id
         LEFT JOIN users u2 ON r.given_by = u2.id
         WHERE 1=1";
@@ -228,7 +232,7 @@ foreach ($repairs as $r) {
     $sheet->setCellValue($col++ . $dataRow, $r['client_phone'] ?? 'N/A');
     $sheet->setCellValue($col++ . $dataRow, $r['client_email'] ?? 'N/A');
     $sheet->setCellValue($col++ . $dataRow, $r['given_by_name'] ?? 'N/A');
-    $sheet->setCellValue($col++ . $dataRow, $r['fixed_by_name'] ?? 'Unknown');
+    $sheet->setCellValue($col++ . $dataRow, $r['added_by_name'] ?? 'Unknown');
     $sheet->setCellValue($col++ . $dataRow, $r['branch'] ?? 'N/A');
     $sheet->setCellValue($col++ . $dataRow, $r['repair_cost'] ?? '');
     $sheet->setCellValue($col++ . $dataRow, $r['parts_used'] ?? '');

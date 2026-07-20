@@ -347,7 +347,6 @@ $stmt = safeQuery($conn, "
     SELECT 
         cl.*,
         c.charger_type,
-        c.watts,
         c.charger_condition,
         u.full_name AS given_by_name
     FROM charger_logs cl 

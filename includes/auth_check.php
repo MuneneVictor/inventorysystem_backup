@@ -1,5 +1,5 @@
 <?php
-require_once "../includes/header.php";
+require_once __DIR__ . "/header.php";
 // ============================================================
 // SECURE SESSION CONFIGURATION
 // ============================================================
@@ -77,7 +77,7 @@ if (!isset($_SESSION['session_regenerated']) || (time() - $_SESSION['session_reg
 // ============================================================
 // VALIDATE USER EXISTS IN DATABASE
 // ============================================================
-require_once "../config/db.php";
+require_once __DIR__ . "/../config/db.php";
 
 $user_id = (int)$_SESSION['user_id'];
 $stmt = $conn->prepare("SELECT id, role, full_name, is_active, branch FROM users WHERE id = ?");

@@ -496,6 +496,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $update = $conn->prepare("UPDATE users SET failed_attempts = 0, account_locked_until = NULL, last_login = NOW() WHERE id = ?");
                     $update->execute([$user['id']]);
                     
+                    // Clear forgot password flags if any
+                    unset($_SESSION['show_forgot_link']);
+                    unset($_SESSION['forgot_email']);
+                    
                     unset($_SESSION['pending_verification_user_id']);
                     unset($_SESSION['pending_verification_device_id']);
                     
@@ -605,6 +609,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $update = $conn->prepare("UPDATE users SET failed_attempts = 0, account_locked_until = NULL, last_login = NOW() WHERE id = ?");
                     $update->execute([$user['id']]);
                     
+                    // Clear forgot password flags
+                    unset($_SESSION['show_forgot_link']);
+                    unset($_SESSION['forgot_email']);
+                    
                     // Check if there's a redirect URL from session timeout
                     if (isset($_SESSION['redirect_after_login']) && !empty($_SESSION['redirect_after_login'])) {
                         $redirect_url = $_SESSION['redirect_after_login'];
@@ -651,6 +659,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $update = $conn->prepare("UPDATE users SET failed_attempts = 0, account_locked_until = NULL, last_login = NOW() WHERE id = ?");
                     $update->execute([$user['id']]);
+                    
+                    // Clear forgot password flags
+                    unset($_SESSION['show_forgot_link']);
+                    unset($_SESSION['forgot_email']);
                     
                     // Check if there's a redirect URL from session timeout
                     if (isset($_SESSION['redirect_after_login']) && !empty($_SESSION['redirect_after_login'])) {
@@ -755,6 +767,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $update = $conn->prepare("UPDATE users SET failed_attempts = ? WHERE id = ?");
                         $update->execute([$failed_attempts, $user['id']]);
                         $error = "Invalid email or password.";
+                        
+                        // ------------------------------------------
+                        // NEW: Show forgot password link after 3 attempts
+                        // ------------------------------------------
+                        if ($failed_attempts >= 3) {
+                            $_SESSION['show_forgot_link'] = true;
+                            $_SESSION['forgot_email'] = $email;
+                        } else {
+                            $_SESSION['show_forgot_link'] = false;
+                            unset($_SESSION['forgot_email']);
+                        }
                     }
                 } else {
                     $error = "Something went wrong. Please try again.";
@@ -1040,6 +1063,29 @@ $cleanup->execute();
             text-decoration: underline;
         }
 
+        /* NEW: Forgot password link - same style as register section */
+        .forgot-section {
+            text-align: center;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #eef2ef;
+        }
+        .forgot-section p {
+            font-size: 0.85rem;
+            color: #5a6e64;
+        }
+        .forgot-section a {
+            color: #1f5e3a;
+            text-decoration: none;
+            font-weight: 700;
+            margin-left: 5px;
+            transition: color 0.2s;
+        }
+        .forgot-section a:hover {
+            color: #0e3a23;
+            text-decoration: underline;
+        }
+
         .verification-section {
             background: #f0fdf4;
             border: 1px solid #bbf7d0;
@@ -1168,7 +1214,7 @@ $cleanup->execute();
 <div class="login-card">
     <div class="card-header">
         <div class="logo-wrapper">
-            <img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasacomputers Logo">
+            <img src="../assets/MC-LOGO.png" alt="Mombasacomputers Logo">
         </div>
         <h1>Inventory System</h1>
         <p>Secure Access Portal</p>
@@ -1224,7 +1270,7 @@ $cleanup->execute();
                     <label>EMAIL ADDRESS</label>
                     <div class="input-wrapper">
                         <i class="fas fa-envelope"></i>
-                        <input type="email" name="email" placeholder="your@email.com" required autofocus>
+                        <input type="email" name="email" placeholder="your@email.com" required autofocus value="<?php echo htmlspecialchars($_SESSION['forgot_email'] ?? ''); ?>">
                     </div>
                 </div>
 
@@ -1250,6 +1296,14 @@ $cleanup->execute();
             <div class="register-section">
                 <p>Don't have an account? <a href="register.php">Register</a></p>
             </div>
+
+            <!-- NEW: Forgot password link appears after 3 failed attempts -->
+            <?php if (isset($_SESSION['show_forgot_link']) && $_SESSION['show_forgot_link'] === true): ?>
+                <div class="forgot-section">
+                    <p>Forgot your password? <a href="forgot_password.php">Reset it here</a></p>
+                </div>
+            <?php endif; ?>
+            
         <?php endif; ?>
     </div>
 

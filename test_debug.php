@@ -8,8 +8,8 @@ error_reporting(E_ALL);
 // ============================================
 // CONFIGURATION - UPDATE THESE VALUES
 // ============================================
-$username = "YOUR_USERNAME";        // REPLACE with your username
-$password = "YOUR_PASSWORD";        // REPLACE with your password
+$username = "Rce66miWcVEnzfjLbSKp";        // REPLACE with your username
+$password = "npe9cWNlJOz0GZhkWr5Bz5xVpuJPfHF5tOPLMs2B";        // REPLACE with your password
 $channel_id = "10427";
 
 // Test data

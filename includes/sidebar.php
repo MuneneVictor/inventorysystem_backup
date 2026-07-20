@@ -1,7 +1,4 @@
-<?php
-require_once "../includes/auth_check.php";
-// sidebar.php - Green gradient sidebar with collapsible sections
-?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>

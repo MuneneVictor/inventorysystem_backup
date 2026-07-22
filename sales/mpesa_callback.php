@@ -1,5 +1,5 @@
 <?php
-// mpesa_callback.php - Sets payment_status, mpesa_status, and completion_status
+// mpesa_callback.php - Complete sale on successful payment
 
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
@@ -89,12 +89,22 @@ if ($resultCode === 0) {
 if ($sale_id > 0 && $mpesaStatus !== null) {
     try {
         if ($mpesaStatus === 'success') {
-            // Successful: set payment_status = paid, mpesa_status = success, completion_status = Completed
-            $stmt = $conn->prepare("UPDATE sales SET payment_status = ?, mpesa_status = ?, mpesa_receipt = ?, completion_status = 'Completed' WHERE id = ?");
-            $stmt->execute([$paymentStatus, $mpesaStatus, $receipt, $sale_id]);
-            writeLog("✅ Sale #$sale_id updated: payment_status=paid, mpesa_status=success, completion_status=Completed");
+            // ✅ Full completion: set sale_status, completed_at, payment_method, etc.
+            $stmt = $conn->prepare("
+                UPDATE sales SET 
+                    payment_status = 'paid', 
+                    mpesa_status = 'success', 
+                    mpesa_receipt = ?, 
+                    payment_method = 'mpesa-till',
+                    sale_status = 'completed',
+                    completion_status = 'Completed',
+                    completed_at = NOW()
+                WHERE id = ?
+            ");
+            $stmt->execute([$receipt, $sale_id]);
+            writeLog("✅ Sale #$sale_id fully completed: sale_status=completed, completed_at=NOW(), payment_method=mpesa-till");
         } else {
-            // Cancelled or failed: only update mpesa_status and payment_status (keep completion_status as pending)
+            // Cancelled or failed: update only mpesa_status and payment_status
             $stmt = $conn->prepare("UPDATE sales SET payment_status = ?, mpesa_status = ?, mpesa_receipt = ? WHERE id = ?");
             $stmt->execute([$paymentStatus, $mpesaStatus, $receipt, $sale_id]);
             writeLog("✅ Sale #$sale_id updated: payment_status=$paymentStatus, mpesa_status=$mpesaStatus");

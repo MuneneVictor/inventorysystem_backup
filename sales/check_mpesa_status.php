@@ -1,5 +1,5 @@
 <?php
-// check_mpesa_status.php - Check sale payment status and completion status
+// check_mpesa_status.php - Check sale status
 session_start();
 require_once "../config/db.php";
 
@@ -12,7 +12,7 @@ if ($sale_id <= 0) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT payment_status, mpesa_status, mpesa_receipt, completion_status FROM sales WHERE id = ?");
+$stmt = $conn->prepare("SELECT payment_status, mpesa_status, mpesa_receipt, completion_status, sale_status FROM sales WHERE id = ?");
 $stmt->execute([$sale_id]);
 $sale = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$sale) {
@@ -21,20 +21,15 @@ if (!$sale) {
 }
 
 $responseStatus = 'pending';
-$completionStatus = $sale['completion_status'] ?? 'pending';
 
 if ($sale['payment_status'] === 'paid') {
     $responseStatus = 'success';
-    $receipt = $sale['mpesa_receipt'];
 } elseif ($sale['mpesa_status'] === 'cancelled') {
     $responseStatus = 'cancelled';
-    $receipt = null;
 } elseif ($sale['mpesa_status'] === 'failed') {
     $responseStatus = 'failed';
-    $receipt = null;
 } elseif ($sale['mpesa_status'] === 'success') {
     $responseStatus = 'success';
-    $receipt = $sale['mpesa_receipt'];
 }
 
 $statusMap = [
@@ -51,25 +46,29 @@ if ($status === 'success') {
         'status' => 'success',
         'receipt' => $sale['mpesa_receipt'] ?? null,
         'message' => 'Payment confirmed',
-        'completion_status' => $completionStatus
+        'completion_status' => $sale['completion_status'] ?? 'pending',
+        'sale_status' => $sale['sale_status'] ?? 'active'
     ]);
 } elseif ($status === 'cancelled') {
     echo json_encode([
         'status' => 'cancelled',
         'message' => 'Payment was cancelled by customer',
-        'completion_status' => $completionStatus
+        'completion_status' => $sale['completion_status'] ?? 'pending',
+        'sale_status' => $sale['sale_status'] ?? 'active'
     ]);
 } elseif ($status === 'failed') {
     echo json_encode([
         'status' => 'failed',
         'message' => 'Payment failed',
-        'completion_status' => $completionStatus
+        'completion_status' => $sale['completion_status'] ?? 'pending',
+        'sale_status' => $sale['sale_status'] ?? 'active'
     ]);
 } else {
     echo json_encode([
         'status' => 'pending',
         'message' => 'Waiting for payment confirmation',
-        'completion_status' => $completionStatus
+        'completion_status' => $sale['completion_status'] ?? 'pending',
+        'sale_status' => $sale['sale_status'] ?? 'active'
     ]);
 }
 ?>

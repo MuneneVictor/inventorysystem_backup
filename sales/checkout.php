@@ -24,8 +24,13 @@ $stmt = $conn->prepare("SELECT s.*, u.full_name AS salesperson_name FROM sales s
 $stmt->execute([$sale_id]);
 $sale = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$sale || $sale['sale_status'] !== 'active') {
-    header("Location: make_sale.php?error=invalid_sale");
-    exit;
+    // If sale is already completed or cancelled, redirect to make_sale
+    if ($sale && $sale['sale_status'] === 'completed') {
+        // We'll handle this below
+    } else {
+        header("Location: make_sale.php?error=invalid_sale");
+        exit;
+    }
 }
 
 // Fetch sale items
@@ -39,6 +44,20 @@ foreach ($items as $item) {
     $subtotal += $item['total_price'];
 }
 $grand_total = $subtotal;
+
+// -------------------------------------------------------------------
+// If the sale is already completed, show success and redirect
+// -------------------------------------------------------------------
+$error = '';
+$success_message = '';
+$redirect_after = false;
+$redirect_url = '';
+
+if ($sale['sale_status'] === 'completed') {
+    $success_message = "Sale #$sale_id has been completed successfully.";
+    $redirect_after = true;
+    $redirect_url = "make_sale.php";
+}
 
 // -------------------------------------------------------------------
 // Helper: Return item to stock (for cancellation / remove item)
@@ -118,11 +137,6 @@ function returnItemToStock($conn, $item_type, $item_id, $sale_item_id, $quantity
 // -------------------------------------------------------------------
 // Handle POST actions
 // -------------------------------------------------------------------
-$error = '';
-$success_message = '';
-$redirect_after = false;
-$redirect_url = '';
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ---- Remove single item ----
@@ -553,15 +567,17 @@ date_default_timezone_set('Africa/Nairobi');
     <div class="actions">
         <a href="make_sale.php" class="btn btn-info"><i class="fas fa-cart-plus"></i> Add More Items</a>
 
-        <?php if ($user_role === 'cashier' && !empty($items)): ?>
+        <?php if ($user_role === 'cashier' && !empty($items) && $sale['sale_status'] !== 'completed'): ?>
             <button type="submit" form="completeSaleForm" name="complete_sale" class="btn btn-success" onclick="return confirm('Complete this sale? This action cannot be undone.');">
                 <i class="fas fa-check-circle"></i> Complete Sale
             </button>
         <?php endif; ?>
 
+        <?php if ($sale['sale_status'] !== 'completed'): ?>
         <form method="POST" style="display:inline;" onsubmit="return confirm('Cancel this entire sale? ALL items will be returned to stock.');">
             <button type="submit" name="cancel_sale" class="btn btn-danger"><i class="fas fa-times-circle"></i> Cancel Transaction</button>
         </form>
+        <?php endif; ?>
     </div>
 
     <footer>
@@ -719,9 +735,7 @@ date_default_timezone_set('Africa/Nairobi');
             if (data) {
                 document.getElementById('stkRef').textContent = data.reference || 'N/A';
                 document.getElementById('stkCheckoutId').textContent = data.checkout_request_id || 'N/A';
-                // Show completion status if available
-                const completionStatus = data.completion_status || 'Completed';
-                document.getElementById('stkStatus').textContent = completionStatus === 'Completed' ? 'Completed ✓' : 'Paid ✓';
+                document.getElementById('stkStatus').textContent = 'Completed ✓';
                 details.style.display = 'block';
             } else {
                 details.style.display = 'none';
@@ -791,8 +805,7 @@ date_default_timezone_set('Africa/Nairobi');
             if (data) {
                 document.getElementById('stkRef').textContent = data.reference || 'N/A';
                 document.getElementById('stkCheckoutId').textContent = data.checkout_request_id || 'N/A';
-                const completionStatus = data.completion_status || 'Completed';
-                document.getElementById('stkStatus').textContent = completionStatus === 'Completed' ? 'Completed ✓' : 'Paid ✓';
+                document.getElementById('stkStatus').textContent = 'Completed ✓';
                 details.style.display = 'block';
             }
             actions.innerHTML = `

@@ -1,5 +1,5 @@
 <?php
-// check_mpesa_status.php - Check sale payment status
+// check_mpesa_status.php - Check sale payment status and completion status
 session_start();
 require_once "../config/db.php";
 
@@ -12,7 +12,7 @@ if ($sale_id <= 0) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT payment_status, mpesa_status, mpesa_receipt FROM sales WHERE id = ?");
+$stmt = $conn->prepare("SELECT payment_status, mpesa_status, mpesa_receipt, completion_status FROM sales WHERE id = ?");
 $stmt->execute([$sale_id]);
 $sale = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$sale) {
@@ -20,11 +20,10 @@ if (!$sale) {
     exit;
 }
 
-// Determine overall status for the UI
 $responseStatus = 'pending';
+$completionStatus = $sale['completion_status'] ?? 'pending';
 
 if ($sale['payment_status'] === 'paid') {
-    // If payment is paid, it's definitely a success
     $responseStatus = 'success';
     $receipt = $sale['mpesa_receipt'];
 } elseif ($sale['mpesa_status'] === 'cancelled') {
@@ -34,12 +33,10 @@ if ($sale['payment_status'] === 'paid') {
     $responseStatus = 'failed';
     $receipt = null;
 } elseif ($sale['mpesa_status'] === 'success') {
-    // Should not happen if payment_status is not paid, but just in case
     $responseStatus = 'success';
     $receipt = $sale['mpesa_receipt'];
 }
 
-// Map to the frontend expected statuses
 $statusMap = [
     'success' => 'success',
     'cancelled' => 'cancelled',
@@ -53,22 +50,26 @@ if ($status === 'success') {
     echo json_encode([
         'status' => 'success',
         'receipt' => $sale['mpesa_receipt'] ?? null,
-        'message' => 'Payment confirmed'
+        'message' => 'Payment confirmed',
+        'completion_status' => $completionStatus
     ]);
 } elseif ($status === 'cancelled') {
     echo json_encode([
         'status' => 'cancelled',
-        'message' => 'Payment was cancelled by customer'
+        'message' => 'Payment was cancelled by customer',
+        'completion_status' => $completionStatus
     ]);
 } elseif ($status === 'failed') {
     echo json_encode([
         'status' => 'failed',
-        'message' => 'Payment failed'
+        'message' => 'Payment failed',
+        'completion_status' => $completionStatus
     ]);
 } else {
     echo json_encode([
         'status' => 'pending',
-        'message' => 'Waiting for payment confirmation'
+        'message' => 'Waiting for payment confirmation',
+        'completion_status' => $completionStatus
     ]);
 }
 ?>

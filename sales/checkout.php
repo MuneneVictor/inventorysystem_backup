@@ -622,7 +622,6 @@ date_default_timezone_set('Africa/Nairobi');
             showStkMessage('Please enter a phone number.', 'error');
             return;
         }
-        // Validate format (9-10 digits, starts with 07 or 01)
         const digits = phone.replace(/\D/g, '');
         if (digits.length < 9 || digits.length > 10) {
             showStkMessage('Phone number must be 9-10 digits.', 'error');
@@ -633,25 +632,18 @@ date_default_timezone_set('Africa/Nairobi');
             return;
         }
 
-        // Reset cancel flag
         isStkCancelled = false;
-
-        // Disable button
         const btn = document.getElementById('sendStkBtn');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-
-        // Show modal with spinner and cancel button
         showStkModal('loading', 'Sending M-Pesa Prompt...', 'Please wait while we initiate the payment request.');
 
-        // Prepare data
         const data = {
             sale_id: <?= $sale_id ?>,
             phone: digits,
             amount: <?= $grand_total ?>
         };
 
-        // AJAX
         fetch('process_mpesa_stk.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -660,12 +652,9 @@ date_default_timezone_set('Africa/Nairobi');
         .then(response => response.json())
         .then(result => {
             if (result.success) {
-                // STK sent successfully
                 updateStkModal('waiting', 'STK Push Sent!', 'We have sent a payment request to the customer\'s phone. Please ask them to enter their M-Pesa PIN.', result.data);
-                // Start polling
                 startPolling();
             } else {
-                // Error from backend
                 updateStkModal('error', 'Unable to Send', result.error || 'An error occurred.');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send M-Pesa Prompt';
@@ -691,12 +680,9 @@ date_default_timezone_set('Africa/Nairobi');
         const titleEl = document.getElementById('stkModalTitle');
         const msgEl = document.getElementById('stkModalMessage');
         const details = document.getElementById('stkModalDetails');
-        const btn = document.getElementById('stkModalBtn');
         const actions = document.getElementById('stkModalActions');
 
         modal.classList.add('active');
-
-        // Clear previous actions
         actions.innerHTML = '';
 
         if (type === 'loading') {
@@ -704,7 +690,6 @@ date_default_timezone_set('Africa/Nairobi');
             titleEl.textContent = title;
             msgEl.textContent = message;
             details.style.display = 'none';
-            // Add cancel button
             actions.innerHTML = `
                 <button class="btn btn-cancel-stk" onclick="cancelStkPush();">
                     <i class="fas fa-times"></i> Cancel
@@ -722,7 +707,6 @@ date_default_timezone_set('Africa/Nairobi');
             } else {
                 details.style.display = 'none';
             }
-            // Add cancel button while waiting
             actions.innerHTML = `
                 <button class="btn btn-cancel-stk" onclick="cancelStkPush();">
                     <i class="fas fa-times"></i> Cancel Payment
@@ -735,7 +719,9 @@ date_default_timezone_set('Africa/Nairobi');
             if (data) {
                 document.getElementById('stkRef').textContent = data.reference || 'N/A';
                 document.getElementById('stkCheckoutId').textContent = data.checkout_request_id || 'N/A';
-                document.getElementById('stkStatus').textContent = 'Paid ✓';
+                // Show completion status if available
+                const completionStatus = data.completion_status || 'Completed';
+                document.getElementById('stkStatus').textContent = completionStatus === 'Completed' ? 'Completed ✓' : 'Paid ✓';
                 details.style.display = 'block';
             } else {
                 details.style.display = 'none';
@@ -775,7 +761,6 @@ date_default_timezone_set('Africa/Nairobi');
     }
 
     function updateStkModal(type, title, message, data) {
-        // Similar to showStkModal but for dynamic updates during polling
         const icon = document.getElementById('stkModalIcon');
         const titleEl = document.getElementById('stkModalTitle');
         const msgEl = document.getElementById('stkModalMessage');
@@ -792,7 +777,6 @@ date_default_timezone_set('Africa/Nairobi');
                 document.getElementById('stkStatus').textContent = 'Waiting for PIN entry...';
                 details.style.display = 'block';
             }
-            // Keep cancel button
             if (!document.querySelector('.btn-cancel-stk')) {
                 actions.innerHTML = `
                     <button class="btn btn-cancel-stk" onclick="cancelStkPush();">
@@ -807,7 +791,8 @@ date_default_timezone_set('Africa/Nairobi');
             if (data) {
                 document.getElementById('stkRef').textContent = data.reference || 'N/A';
                 document.getElementById('stkCheckoutId').textContent = data.checkout_request_id || 'N/A';
-                document.getElementById('stkStatus').textContent = 'Paid ✓';
+                const completionStatus = data.completion_status || 'Completed';
+                document.getElementById('stkStatus').textContent = completionStatus === 'Completed' ? 'Completed ✓' : 'Paid ✓';
                 details.style.display = 'block';
             }
             actions.innerHTML = `
@@ -849,8 +834,6 @@ date_default_timezone_set('Africa/Nairobi');
             isStkCancelled = true;
             stopPolling();
             updateStkModal('cancelled', 'Payment Cancelled', 'You have cancelled the payment request. You can try again or use another payment method.');
-            
-            // Re-enable send button
             document.getElementById('sendStkBtn').disabled = false;
             document.getElementById('sendStkBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Send M-Pesa Prompt';
         }
@@ -859,7 +842,6 @@ date_default_timezone_set('Africa/Nairobi');
     function closeStkModal() {
         document.getElementById('stkModal').classList.remove('active');
         stopPolling();
-        // Re-enable send button if not already
         const btn = document.getElementById('sendStkBtn');
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send M-Pesa Prompt';
@@ -872,7 +854,6 @@ date_default_timezone_set('Africa/Nairobi');
         isStkCancelled = false;
         if (stkPollingInterval) clearInterval(stkPollingInterval);
         stkPollingInterval = setInterval(checkStatus, 2000);
-        // Update modal to waiting state
         updateStkModal('waiting', 'STK Push Sent!', 'Please ask the customer to enter their M-Pesa PIN on their phone.');
     }
 
@@ -885,7 +866,6 @@ date_default_timezone_set('Africa/Nairobi');
     }
 
     function checkStatus() {
-        // Don't poll if cancelled
         if (isStkCancelled) {
             stopPolling();
             return;
@@ -899,19 +879,18 @@ date_default_timezone_set('Africa/Nairobi');
                 if (isStkCancelled) return;
 
                 if (data.status === 'success') {
-                    // Payment confirmed
                     stopPolling();
-                    updateStkModal('success', 'Payment Successful!', 'The customer has successfully completed the M-Pesa payment.', { reference: data.receipt || 'N/A' });
+                    updateStkModal('success', 'Payment Successful!', 'The customer has successfully completed the M-Pesa payment.', { 
+                        reference: data.receipt || 'N/A',
+                        completion_status: data.completion_status || 'Completed'
+                    });
                 } else if (data.status === 'cancelled') {
-                    // Customer cancelled on phone
                     stopPolling();
                     updateStkModal('cancelled', 'Payment Cancelled', 'The customer cancelled the payment on their phone. They can try again.');
                 } else if (data.status === 'failed') {
-                    // Payment failed
                     stopPolling();
                     updateStkModal('error', 'Payment Failed', 'The payment failed. Please ask the customer to try again.');
                 } else if (data.status === 'pending') {
-                    // Still waiting - update message with timer
                     if (stkPollAttempts % 5 === 0) {
                         const seconds = stkPollAttempts * 2;
                         document.getElementById('stkModalMessage').textContent = 'Waiting for PIN entry... (' + seconds + 's)';
@@ -921,7 +900,6 @@ date_default_timezone_set('Africa/Nairobi');
                     updateStkModal('error', 'Error', data.message || 'Could not verify payment status.');
                 }
                 
-                // If max attempts reached
                 if (stkPollAttempts >= MAX_POLL_ATTEMPTS && !isStkCancelled) {
                     stopPolling();
                     updateStkModal('error', 'Timeout', 'Payment confirmation timed out. Please check if the customer completed the transaction.');
@@ -929,20 +907,17 @@ date_default_timezone_set('Africa/Nairobi');
             })
             .catch(error => {
                 console.error('Polling error:', error);
-                // Continue polling
             });
     }
 
-    // ---------- Initialize on page load ----------
+    // ---------- Initialize ----------
     document.addEventListener('DOMContentLoaded', function() {
         togglePaymentMethod();
-        // If sale already paid, hide STK section
         <?php if ($sale['payment_status'] === 'paid'): ?>
             document.getElementById('stkSection').classList.remove('show');
         <?php endif; ?>
     });
 
-    // Auto-redirect after 3 seconds if success message is shown and a redirect is needed
     <?php if ($redirect_after): ?>
         setTimeout(function() {
             window.location.href = "<?= $redirect_url ?>";

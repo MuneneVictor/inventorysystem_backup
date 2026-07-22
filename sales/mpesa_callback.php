@@ -1,5 +1,5 @@
 <?php
-// mpesa_callback.php - Sets both payment_status (paid/unpaid) and mpesa_status (success/cancelled/failed)
+// mpesa_callback.php - Sets payment_status, mpesa_status, and completion_status
 
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
@@ -73,7 +73,7 @@ if ($resultCode === 0) {
     writeLog('✅ SUCCESS! Sale #' . $sale_id . ' Receipt: ' . $receipt);
 } elseif ($resultCode === 1032 || $resultCode === 1037) {
     $mpesaStatus = 'cancelled';
-    $paymentStatus = 'unpaid';   // keep as unpaid, but mpesa_status records cancellation
+    $paymentStatus = 'unpaid';
     writeLog('❌ CANCELLED by user. Sale #' . $sale_id);
 } elseif ($resultCode === 17) {
     $mpesaStatus = 'failed';
@@ -88,9 +88,17 @@ if ($resultCode === 0) {
 // -------- Update the sale --------
 if ($sale_id > 0 && $mpesaStatus !== null) {
     try {
-        $stmt = $conn->prepare("UPDATE sales SET payment_status = ?, mpesa_status = ?, mpesa_receipt = ? WHERE id = ?");
-        $stmt->execute([$paymentStatus, $mpesaStatus, $receipt, $sale_id]);
-        writeLog("✅ Sale #$sale_id updated: payment_status=$paymentStatus, mpesa_status=$mpesaStatus");
+        if ($mpesaStatus === 'success') {
+            // Successful: set payment_status = paid, mpesa_status = success, completion_status = Completed
+            $stmt = $conn->prepare("UPDATE sales SET payment_status = ?, mpesa_status = ?, mpesa_receipt = ?, completion_status = 'Completed' WHERE id = ?");
+            $stmt->execute([$paymentStatus, $mpesaStatus, $receipt, $sale_id]);
+            writeLog("✅ Sale #$sale_id updated: payment_status=paid, mpesa_status=success, completion_status=Completed");
+        } else {
+            // Cancelled or failed: only update mpesa_status and payment_status (keep completion_status as pending)
+            $stmt = $conn->prepare("UPDATE sales SET payment_status = ?, mpesa_status = ?, mpesa_receipt = ? WHERE id = ?");
+            $stmt->execute([$paymentStatus, $mpesaStatus, $receipt, $sale_id]);
+            writeLog("✅ Sale #$sale_id updated: payment_status=$paymentStatus, mpesa_status=$mpesaStatus");
+        }
     } catch (Exception $e) {
         writeLog("❌ ERROR updating sale: " . $e->getMessage());
     }

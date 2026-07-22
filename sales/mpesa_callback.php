@@ -1,154 +1,98 @@
 <?php
-// mpesa_callback.php - Handles M-Pesa callback for checkout STK Push
-// Location: /inventory_system/sales/mpesa_callback.php
-// Callback URL: https://inventory.vimarktech.com/inventory_system/sales/mpesa_callback.php
+// mpesa_callback.php - DEBUG VERSION with full error reporting
+
+// Enable ALL error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 // Set JSON response
 header('Content-Type: application/json');
 
-// Enable error logging
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
-error_reporting(E_ALL);
+// Log to a simple file - this will work even if logs folder doesn't exist
+$logFile = __DIR__ . '/callback_debug.log';
+$debugData = [
+    'timestamp' => date('Y-m-d H:i:s'),
+    'method' => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
+    'get' => $_GET,
+    'post' => $_POST,
+    'raw_input' => file_get_contents('php://input'),
+    'headers' => getallheaders()
+];
+file_put_contents($logFile, json_encode($debugData) . "\n", FILE_APPEND | LOCK_EX);
 
-// Include database - adjust path as needed
+// Include database
 require_once "../config/db.php";
 
-// Define log file
-define('LOG_FILE', __DIR__ . '/logs/mpesa_callback.log');
-
-// Get sale_id from query string
+// Get sale_id
 $sale_id = isset($_GET['sale_id']) ? (int)$_GET['sale_id'] : 0;
 
 // Get raw input
 $rawInput = file_get_contents('php://input');
 $callbackData = json_decode($rawInput, true);
+
 if ($callbackData === null) {
     $callbackData = ['raw' => $rawInput];
 }
 
-// Log the callback
-$logDir = dirname(LOG_FILE);
-if (!is_dir($logDir)) {
-    mkdir($logDir, 0755, true);
-}
-$logEntry = [
-    'timestamp' => date('Y-m-d H:i:s'),
-    'sale_id' => $sale_id,
-    'data' => $callbackData,
-    'raw' => $rawInput
-];
-file_put_contents(LOG_FILE, json_encode($logEntry) . "\n", FILE_APPEND | LOCK_EX);
+// Log to file
+file_put_contents($logFile, "CALLBACK DATA: " . json_encode($callbackData) . "\n", FILE_APPEND | LOCK_EX);
 
-// Log to PHP error log for debugging
-error_log('=== M-PESA CALLBACK RECEIVED ===');
-error_log('Sale ID: ' . $sale_id);
-error_log('Raw input: ' . $rawInput);
-error_log('Decoded data: ' . json_encode($callbackData));
-error_log('==========================');
-
-// Determine payment status
+// Check for M-Pesa status
 $isSuccess = false;
 $isCancelled = false;
 $isFailed = false;
 $resultCode = null;
 $receipt = null;
-$resultDesc = '';
 
-// Check for M-Pesa STK Push callback format
-if (isset($callbackData['Body']['stkCallback'])) {
-    $stkCallback = $callbackData['Body']['stkCallback'];
-    $resultCode = isset($stkCallback['ResultCode']) ? (int)$stkCallback['ResultCode'] : null;
-    $resultDesc = $stkCallback['ResultDesc'] ?? '';
+if (isset($callbackData['Body']['stkCallback']['ResultCode'])) {
+    $resultCode = (int)$callbackData['Body']['stkCallback']['ResultCode'];
+    file_put_contents($logFile, "ResultCode: " . $resultCode . "\n", FILE_APPEND | LOCK_EX);
     
     if ($resultCode === 0) {
         $isSuccess = true;
-        // Get receipt number
-        if (isset($stkCallback['CallbackMetadata']['Item'])) {
-            foreach ($stkCallback['CallbackMetadata']['Item'] as $item) {
+        // Get receipt
+        if (isset($callbackData['Body']['stkCallback']['CallbackMetadata']['Item'])) {
+            foreach ($callbackData['Body']['stkCallback']['CallbackMetadata']['Item'] as $item) {
                 if ($item['Name'] === 'MpesaReceiptNumber') {
                     $receipt = $item['Value'] ?? null;
-                    break;
                 }
             }
         }
-        error_log('Payment SUCCESS! Sale #' . $sale_id . ' Receipt: ' . $receipt);
+        file_put_contents($logFile, "SUCCESS! Receipt: " . $receipt . "\n", FILE_APPEND | LOCK_EX);
     } elseif ($resultCode === 1032 || $resultCode === 1037) {
         $isCancelled = true;
-        error_log('Payment CANCELLED by user. Sale #' . $sale_id . ' ResultCode: ' . $resultCode);
+        file_put_contents($logFile, "CANCELLED by user\n", FILE_APPEND | LOCK_EX);
     } else {
         $isFailed = true;
-        error_log('Payment FAILED. Sale #' . $sale_id . ' ResultCode: ' . $resultCode . ' Desc: ' . $resultDesc);
+        file_put_contents($logFile, "FAILED - ResultCode: " . $resultCode . "\n", FILE_APPEND | LOCK_EX);
     }
 }
 
-// Check for other formats
-if (isset($callbackData['status'])) {
-    $status = strtolower($callbackData['status']);
-    if ($status === 'success' || $status === 'completed') {
-        $isSuccess = true;
-        $receipt = $callbackData['receipt'] ?? $callbackData['mpesa_receipt'] ?? null;
-        error_log('Payment SUCCESS via status field. Sale #' . $sale_id);
-    } elseif ($status === 'cancelled') {
-        $isCancelled = true;
-        error_log('Payment CANCELLED via status field. Sale #' . $sale_id);
-    } elseif ($status === 'failed' || $status === 'error') {
-        $isFailed = true;
-        error_log('Payment FAILED via status field. Sale #' . $sale_id);
-    }
-}
-
-if (isset($callbackData['result_code'])) {
-    $code = (int)$callbackData['result_code'];
-    if ($code === 0) {
-        $isSuccess = true;
-        $receipt = $callbackData['receipt'] ?? null;
-    } elseif ($code === 1032 || $code === 1037) {
-        $isCancelled = true;
-    } else {
-        $isFailed = true;
-    }
-}
-
-// Update the sale based on the result
+// Update the sale if we have a sale_id
 if ($sale_id > 0) {
     try {
-        $conn->beginTransaction();
+        file_put_contents($logFile, "Updating sale #" . $sale_id . "\n", FILE_APPEND | LOCK_EX);
         
-        // Check if sale exists
-        $stmt = $conn->prepare("SELECT id, payment_status FROM sales WHERE id = ? AND sale_status = 'active'");
-        $stmt->execute([$sale_id]);
-        $sale = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($sale) {
-            if ($isSuccess && $sale['payment_status'] !== 'paid') {
-                // Update to paid
-                $stmt = $conn->prepare("UPDATE sales SET payment_status = 'paid', payment_method = 'mpesa-till', mpesa_receipt = ? WHERE id = ?");
-                $stmt->execute([$receipt, $sale_id]);
-                error_log("Sale #$sale_id marked as PAID via M-Pesa callback. Receipt: $receipt");
-            } elseif ($isCancelled) {
-                // Update to cancelled - keep as unpaid but mark that STK was cancelled
-                $stmt = $conn->prepare("UPDATE sales SET payment_status = 'cancelled' WHERE id = ?");
-                $stmt->execute([$sale_id]);
-                error_log("Sale #$sale_id marked as CANCELLED via M-Pesa callback.");
-            } elseif ($isFailed) {
-                // Update to failed
-                $stmt = $conn->prepare("UPDATE sales SET payment_status = 'failed' WHERE id = ?");
-                $stmt->execute([$sale_id]);
-                error_log("Sale #$sale_id marked as FAILED via M-Pesa callback.");
-            }
-        } else {
-            error_log("Sale #$sale_id not found or not active");
+        if ($isSuccess) {
+            $stmt = $conn->prepare("UPDATE sales SET payment_status = 'paid', payment_method = 'mpesa-till', mpesa_receipt = ? WHERE id = ?");
+            $stmt->execute([$receipt, $sale_id]);
+            file_put_contents($logFile, "Sale #" . $sale_id . " marked as PAID\n", FILE_APPEND | LOCK_EX);
+        } elseif ($isCancelled) {
+            $stmt = $conn->prepare("UPDATE sales SET payment_status = 'cancelled' WHERE id = ?");
+            $stmt->execute([$sale_id]);
+            file_put_contents($logFile, "Sale #" . $sale_id . " marked as CANCELLED\n", FILE_APPEND | LOCK_EX);
+        } elseif ($isFailed) {
+            $stmt = $conn->prepare("UPDATE sales SET payment_status = 'failed' WHERE id = ?");
+            $stmt->execute([$sale_id]);
+            file_put_contents($logFile, "Sale #" . $sale_id . " marked as FAILED\n", FILE_APPEND | LOCK_EX);
         }
-        
-        $conn->commit();
     } catch (Exception $e) {
-        $conn->rollBack();
-        error_log("Error updating sale #$sale_id from callback: " . $e->getMessage());
+        file_put_contents($logFile, "ERROR updating sale: " . $e->getMessage() . "\n", FILE_APPEND | LOCK_EX);
     }
 }
 
-// Always return success to acknowledge receipt
+// Always return success
 echo json_encode([
     'success' => true,
     'result_code' => $resultCode,
@@ -156,6 +100,7 @@ echo json_encode([
     'is_cancelled' => $isCancelled,
     'is_failed' => $isFailed,
     'receipt' => $receipt,
+    'sale_id' => $sale_id,
     'timestamp' => date('Y-m-d H:i:s')
 ]);
 ?>

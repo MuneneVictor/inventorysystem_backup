@@ -49,32 +49,26 @@ function returnItemToStock($conn, $item_type, $item_id, $sale_item_id, $quantity
             $stmt = $conn->prepare("UPDATE devices SET status = 'In Stock', sold_at = NULL, sold_by = NULL, selling_price = NULL WHERE serial_number = ?");
             $stmt->execute([$item_id]);
             break;
-
         case 'monitors':
             $stmt = $conn->prepare("UPDATE monitors SET status = 'In Stock', sold_at = NULL, sold_by = NULL, selling_price = NULL WHERE serial_number = ?");
             $stmt->execute([$item_id]);
             break;
-
         case 'printers':
             $stmt = $conn->prepare("UPDATE printers SET status = 'In Stock', date_sold = NULL, sold_by = NULL, selling_price = NULL WHERE serial_number = ?");
             $stmt->execute([$item_id]);
             break;
-
         case 'smartboards':
             $stmt = $conn->prepare("UPDATE smartboards SET status = 'instock', sold_at = NULL, sold_by = NULL, selling_price = NULL WHERE serial_number = ?");
             $stmt->execute([$item_id]);
             break;
-
         case 'phones':
             $stmt = $conn->prepare("UPDATE phones SET status = 'instock', date_sold = NULL, sold_by = NULL, selling_price = NULL WHERE serial_number = ?");
             $stmt->execute([$item_id]);
             break;
-
         case 'ups':
             $stmt = $conn->prepare("UPDATE ups SET status = 'instock', date_sold = NULL, sold_by = NULL, selling_price = NULL WHERE serial_number = ?");
             $stmt->execute([$item_id]);
             break;
-
         case 'ram':
         case 'ssd':
             $stmt = $conn->prepare("DELETE FROM sold_rams_ssds WHERE ram_ssd_id = ? AND sale_item_id = ?");
@@ -82,49 +76,40 @@ function returnItemToStock($conn, $item_type, $item_id, $sale_item_id, $quantity
             $stmt = $conn->prepare("UPDATE rams_ssds_logs SET status = 'pending_sale', sale_item_id = NULL WHERE sale_item_id = ?");
             $stmt->execute([$sale_item_id]);
             break;
-
         case 'charger':
             $stmt = $conn->prepare("DELETE FROM sold_chargers WHERE charger_id = ? AND sale_item_id = ?");
             $stmt->execute([$item_id, $sale_item_id]);
             $stmt = $conn->prepare("UPDATE charger_logs SET status = 'pending_sale', sale_item_id = NULL WHERE sale_item_id = ?");
             $stmt->execute([$sale_item_id]);
             break;
-
         case 'accessory':
-            // Check if this accessory was sold from store (logs) or display (stock)
             $stmt = $conn->prepare("SELECT id FROM accessories_logs WHERE sale_item_id = ?");
             $stmt->execute([$sale_item_id]);
             $log = $stmt->fetch(PDO::FETCH_ASSOC);
-
             if ($log) {
-                // Store accessory: return to pending sale in logs
                 $stmt = $conn->prepare("DELETE FROM sold_accessories WHERE accessory_id = ? AND sale_item_id = ?");
                 $stmt->execute([$item_id, $sale_item_id]);
                 $stmt = $conn->prepare("UPDATE accessories_logs SET status = 'pending_sale', sale_item_id = NULL WHERE sale_item_id = ?");
                 $stmt->execute([$sale_item_id]);
             } else {
-                // Display accessory: return quantity to stock
                 $stmt = $conn->prepare("UPDATE accessories SET quantity = quantity + ? WHERE id = ?");
                 $stmt->execute([$quantity, $item_id]);
                 $stmt = $conn->prepare("DELETE FROM sold_accessories WHERE accessory_id = ? AND sale_item_id = ?");
                 $stmt->execute([$item_id, $sale_item_id]);
             }
             break;
-
         case 'hdd':
             $stmt = $conn->prepare("DELETE FROM sold_hdds WHERE hdd_id = ? AND sale_item_id = ?");
             $stmt->execute([$item_id, $sale_item_id]);
             $stmt = $conn->prepare("UPDATE hdd_logs SET status = 'pending_sale', sale_item_id = NULL WHERE sale_item_id = ?");
             $stmt->execute([$sale_item_id]);
             break;
-
         case 'graphic':
             $stmt = $conn->prepare("DELETE FROM sold_graphics_cards WHERE graphic_card_id = ? AND sale_item_id = ?");
             $stmt->execute([$item_id, $sale_item_id]);
             $stmt = $conn->prepare("UPDATE graphic_cards_logs SET status = 'pending_sale', sale_item_id = NULL WHERE sale_item_id = ?");
             $stmt->execute([$sale_item_id]);
             break;
-
         default:
             break;
     }
@@ -225,19 +210,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // If redirect needed, store success message in session and we'll display it on the target page.
 if ($redirect_after) {
     $_SESSION['success'] = $success_message;
-    // We will still display the message on this page, but auto-redirect will happen.
 }
 
 // Handle success/error messages from session (for remove_item)
 if (isset($_SESSION['success']) && !$success_message) {
     $success_message = $_SESSION['success'];
-    unset($_SESSION['success']); // Clear so it doesn't show again
+    unset($_SESSION['success']);
 }
-
-// ============================================================
-// NOW INCLUDE HEADER AND SIDEBAR (HTML OUTPUT)
-// ============================================================
-
 
 date_default_timezone_set('Africa/Nairobi');
 ?>
@@ -250,7 +229,6 @@ date_default_timezone_set('Africa/Nairobi');
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* (Same CSS as before – unchanged) */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -313,10 +291,16 @@ date_default_timezone_set('Africa/Nairobi');
         .btn-info { background: var(--info); color: white; }
         .btn-info:hover { background: #1d4ed8; transform: translateY(-2px); }
         .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.7rem; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
         .form-group { margin-bottom: 0.75rem; }
         .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--gray-700); margin-bottom: 0.25rem; }
         .form-group select, .form-group input { padding: 0.5rem 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); width: 100%; max-width: 300px; }
         .payment-section { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1.25rem; border-radius: var(--radius-lg); margin: 1.25rem 0; }
+        .stk-section { background: #f0f9ff; border: 1px solid #bae6fd; padding: 1.25rem; border-radius: var(--radius-lg); margin: 1.25rem 0; display: none; }
+        .stk-section.show { display: block; }
+        .stk-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
+        .stk-row .form-group { flex: 1; min-width: 200px; margin-bottom: 0; }
+        .stk-row .form-group input { max-width: 100%; }
         .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
         .totals { background: var(--gray-50); padding: 1rem 1.25rem; border-radius: var(--radius-lg); margin: 1.25rem 0; }
         .total-row { display: flex; justify-content: space-between; padding: 0.25rem 0; }
@@ -327,6 +311,63 @@ date_default_timezone_set('Africa/Nairobi');
         .sales-note { background: #dbeafe; border: 1px solid #93c5fd; padding: 0.75rem 1.25rem; border-radius: var(--radius-md); margin: 1.25rem 0; color: #1e40af; text-align: center; font-size: 0.95rem; }
         .sales-note i { margin-right: 0.5rem; }
         footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
+
+        /* ---- STK Modal styles ---- */
+        .stk-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 1rem;
+        }
+        .stk-modal-overlay.active { display: flex; }
+        .stk-modal {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalIn 0.3s ease;
+            position: relative;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .stk-modal .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .stk-modal .spinner {
+            display: inline-block;
+            width: 4rem;
+            height: 4rem;
+            border: 4px solid #e5e7eb;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .stk-modal h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--gray-800); }
+        .stk-modal p { color: var(--gray-500); margin-bottom: 1.5rem; }
+        .stk-modal .detail-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--gray-100); font-size: 0.9rem; }
+        .stk-modal .detail-row .label { color: var(--gray-500); }
+        .stk-modal .detail-row .value { font-weight: 500; color: var(--gray-700); }
+        .stk-modal .modal-actions { display: flex; gap: 0.75rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap; }
+        .stk-modal .modal-actions .btn { min-width: 120px; justify-content: center; }
+
+        /* Cancel button style */
+        .btn-cancel-stk { background: var(--gray-200); color: var(--gray-700); }
+        .btn-cancel-stk:hover { background: var(--gray-300); transform: translateY(-2px); }
+        .btn-danger-stk { background: var(--danger); color: white; }
+        .btn-danger-stk:hover { background: #b91c1c; transform: translateY(-2px); }
+
         @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
         @media (max-width: 768px) {
             .main-content { padding: 1rem 0.75rem 0.75rem !important; padding-top: 4.5rem !important; }
@@ -337,6 +378,10 @@ date_default_timezone_set('Africa/Nairobi');
             .actions { flex-direction: column; }
             .btn { width: 100%; justify-content: center; }
             .form-group select, .form-group input { max-width: 100%; }
+            .stk-row { flex-direction: column; align-items: stretch; }
+            .stk-row .form-group { margin-bottom: 0.75rem; }
+            .stk-modal .modal-actions { flex-direction: column; }
+            .stk-modal .modal-actions .btn { width: 100%; }
         }
     </style>
 </head>
@@ -456,14 +501,14 @@ date_default_timezone_set('Africa/Nairobi');
             <form method="POST" id="completeSaleForm">
                 <div class="form-group">
                     <label for="payment_status">Payment Status</label>
-                    <select name="payment_status" id="payment_status" onchange="togglePaymentMethod()">
+                    <select name="payment_status" id="payment_status" onchange="togglePaymentMethod(); toggleStkSection();">
                         <option value="paid" <?= ($sale['payment_status'] ?? 'paid') === 'paid' ? 'selected' : '' ?>>Paid</option>
                         <option value="unpaid" <?= ($sale['payment_status'] ?? '') === 'unpaid' ? 'selected' : '' ?>>Unpaid</option>
                     </select>
                 </div>
                 <div class="form-group" id="payment_method_group" style="<?= (($sale['payment_status'] ?? 'paid') === 'paid') ? '' : 'display:none;' ?>">
                     <label for="payment_method">Payment Method</label>
-                    <select name="payment_method" id="payment_method">
+                    <select name="payment_method" id="payment_method" onchange="toggleStkSection();">
                         <option value="">-- Select --</option>
                         <option value="cash" <?= ($sale['payment_method'] ?? '') === 'cash' ? 'selected' : '' ?>>Cash</option>
                         <option value="mpesa-till" <?= ($sale['payment_method'] ?? '') === 'mpesa-till' ? 'selected' : '' ?>>M-PESA Till</option>
@@ -472,6 +517,27 @@ date_default_timezone_set('Africa/Nairobi');
                     </select>
                 </div>
             </form>
+        </div>
+
+        <!-- STK Push Section (only for M-PESA Till) -->
+        <div class="stk-section" id="stkSection">
+            <h4 style="margin-bottom:0.75rem;"><i class="fas fa-mobile-screen"></i> M-PESA STK Push</h4>
+            <p style="color: var(--gray-500); font-size: 0.9rem; margin-bottom: 1rem;">
+                Send a payment prompt to the customer's phone. Total amount: <strong>KES <?= number_format($grand_total, 2) ?></strong>
+            </p>
+            <div class="stk-row">
+                <div class="form-group">
+                    <label for="stk_phone">Customer Phone Number</label>
+                    <input type="tel" id="stk_phone" placeholder="0712345678" maxlength="10" value="">
+                    <small style="color: var(--gray-400); font-size: 0.7rem;">Format: 0712345678 (without +254)</small>
+                </div>
+                <div class="form-group" style="flex: 0 0 auto;">
+                    <button type="button" class="btn btn-primary" id="sendStkBtn" onclick="sendStkPush();">
+                        <i class="fas fa-paper-plane"></i> Send M-Pesa Prompt
+                    </button>
+                </div>
+            </div>
+            <div id="stkMessage" style="margin-top: 0.75rem; font-size: 0.9rem;"></div>
         </div>
     <?php endif; ?>
 
@@ -503,7 +569,25 @@ date_default_timezone_set('Africa/Nairobi');
     </footer>
 </div>
 
+<!-- STK Modal -->
+<div class="stk-modal-overlay" id="stkModal">
+    <div class="stk-modal">
+        <div id="stkModalIcon" class="icon"><div class="spinner"></div></div>
+        <h3 id="stkModalTitle">Sending M-Pesa Prompt...</h3>
+        <p id="stkModalMessage">Please wait while we initiate the payment request.</p>
+        <div id="stkModalDetails" style="display:none; text-align:left; margin-top:1rem; border-top:1px solid var(--gray-200); padding-top:1rem;">
+            <div class="detail-row"><span class="label">Reference</span><span class="value" id="stkRef">-</span></div>
+            <div class="detail-row"><span class="label">Checkout ID</span><span class="value" id="stkCheckoutId">-</span></div>
+            <div class="detail-row"><span class="label">Status</span><span class="value" id="stkStatus">Pending</span></div>
+        </div>
+        <div class="modal-actions" id="stkModalActions">
+            <button class="btn btn-primary" id="stkModalBtn" style="display:none;" onclick="closeStkModal();">Continue</button>
+        </div>
+    </div>
+</div>
+
 <script>
+    // ---------- Toggle payment method and STK section ----------
     function togglePaymentMethod() {
         const status = document.getElementById('payment_status').value;
         const group = document.getElementById('payment_method_group');
@@ -512,17 +596,358 @@ date_default_timezone_set('Africa/Nairobi');
         } else {
             group.style.display = 'none';
         }
+        toggleStkSection();
     }
+
+    function toggleStkSection() {
+        const method = document.getElementById('payment_method').value;
+        const stkSection = document.getElementById('stkSection');
+        if (document.getElementById('payment_status').value === 'paid' && method === 'mpesa-till') {
+            stkSection.classList.add('show');
+        } else {
+            stkSection.classList.remove('show');
+        }
+    }
+
+    // ---------- STK Push functions ----------
+    let stkPollingInterval = null;
+    let stkPollAttempts = 0;
+    let isStkCancelled = false;
+    const MAX_POLL_ATTEMPTS = 90; // 3 minutes
+
+    function sendStkPush() {
+        const phoneInput = document.getElementById('stk_phone');
+        const phone = phoneInput.value.trim();
+        if (!phone) {
+            showStkMessage('Please enter a phone number.', 'error');
+            return;
+        }
+        // Validate format (9-10 digits, starts with 07 or 01)
+        const digits = phone.replace(/\D/g, '');
+        if (digits.length < 9 || digits.length > 10) {
+            showStkMessage('Phone number must be 9-10 digits.', 'error');
+            return;
+        }
+        if (!digits.startsWith('07') && !digits.startsWith('01')) {
+            showStkMessage('Phone number must start with 07 or 01.', 'error');
+            return;
+        }
+
+        // Reset cancel flag
+        isStkCancelled = false;
+
+        // Disable button
+        const btn = document.getElementById('sendStkBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+        // Show modal with spinner and cancel button
+        showStkModal('loading', 'Sending M-Pesa Prompt...', 'Please wait while we initiate the payment request.');
+
+        // Prepare data
+        const data = {
+            sale_id: <?= $sale_id ?>,
+            phone: digits,
+            amount: <?= $grand_total ?>
+        };
+
+        // AJAX
+        fetch('process_mpesa_stk.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // STK sent successfully
+                updateStkModal('waiting', 'STK Push Sent!', 'We have sent a payment request to the customer\'s phone. Please ask them to enter their M-Pesa PIN.', result.data);
+                // Start polling
+                startPolling();
+            } else {
+                // Error from backend
+                updateStkModal('error', 'Unable to Send', result.error || 'An error occurred.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send M-Pesa Prompt';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            updateStkModal('error', 'Network Error', 'Could not connect to server. Please try again.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send M-Pesa Prompt';
+        });
+    }
+
+    function showStkMessage(msg, type) {
+        const div = document.getElementById('stkMessage');
+        div.innerHTML = msg;
+        div.style.color = type === 'error' ? 'var(--danger)' : 'var(--success)';
+    }
+
+    function showStkModal(type, title, message, data) {
+        const modal = document.getElementById('stkModal');
+        const icon = document.getElementById('stkModalIcon');
+        const titleEl = document.getElementById('stkModalTitle');
+        const msgEl = document.getElementById('stkModalMessage');
+        const details = document.getElementById('stkModalDetails');
+        const btn = document.getElementById('stkModalBtn');
+        const actions = document.getElementById('stkModalActions');
+
+        modal.classList.add('active');
+
+        // Clear previous actions
+        actions.innerHTML = '';
+
+        if (type === 'loading') {
+            icon.innerHTML = '<div class="spinner"></div>';
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            details.style.display = 'none';
+            // Add cancel button
+            actions.innerHTML = `
+                <button class="btn btn-cancel-stk" onclick="cancelStkPush();">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            `;
+        } else if (type === 'waiting') {
+            icon.innerHTML = '<div class="spinner"></div>';
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            if (data) {
+                document.getElementById('stkRef').textContent = data.reference || 'N/A';
+                document.getElementById('stkCheckoutId').textContent = data.checkout_request_id || 'N/A';
+                document.getElementById('stkStatus').textContent = 'Waiting for PIN entry...';
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+            }
+            // Add cancel button while waiting
+            actions.innerHTML = `
+                <button class="btn btn-cancel-stk" onclick="cancelStkPush();">
+                    <i class="fas fa-times"></i> Cancel Payment
+                </button>
+            `;
+        } else if (type === 'success') {
+            icon.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i>';
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            if (data) {
+                document.getElementById('stkRef').textContent = data.reference || 'N/A';
+                document.getElementById('stkCheckoutId').textContent = data.checkout_request_id || 'N/A';
+                document.getElementById('stkStatus').textContent = 'Paid ✓';
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+            }
+            actions.innerHTML = `
+                <button class="btn btn-primary" onclick="closeStkModal(); location.reload();">
+                    <i class="fas fa-check"></i> Continue
+                </button>
+            `;
+        } else if (type === 'error') {
+            icon.innerHTML = '<i class="fas fa-times-circle" style="color: var(--danger);"></i>';
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            details.style.display = 'none';
+            actions.innerHTML = `
+                <button class="btn btn-primary" onclick="closeStkModal();">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button class="btn btn-primary" onclick="closeStkModal(); document.getElementById('sendStkBtn').disabled = false; document.getElementById('sendStkBtn').innerHTML = '<i class=\'fas fa-paper-plane\'></i> Send M-Pesa Prompt';">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+            `;
+        } else if (type === 'cancelled') {
+            icon.innerHTML = '<i class="fas fa-times-circle" style="color: var(--warning);"></i>';
+            titleEl.textContent = 'Payment Cancelled';
+            msgEl.textContent = message || 'The payment request was cancelled. You can try again or choose another payment method.';
+            details.style.display = 'none';
+            actions.innerHTML = `
+                <button class="btn btn-primary" onclick="closeStkModal();">
+                    <i class="fas fa-check"></i> OK
+                </button>
+                <button class="btn btn-primary" onclick="closeStkModal(); document.getElementById('sendStkBtn').disabled = false; document.getElementById('sendStkBtn').innerHTML = '<i class=\'fas fa-paper-plane\'></i> Send M-Pesa Prompt';">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+            `;
+        }
+    }
+
+    function updateStkModal(type, title, message, data) {
+        // Similar to showStkModal but for dynamic updates during polling
+        const icon = document.getElementById('stkModalIcon');
+        const titleEl = document.getElementById('stkModalTitle');
+        const msgEl = document.getElementById('stkModalMessage');
+        const details = document.getElementById('stkModalDetails');
+        const actions = document.getElementById('stkModalActions');
+
+        if (type === 'waiting') {
+            icon.innerHTML = '<div class="spinner"></div>';
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            if (data) {
+                document.getElementById('stkRef').textContent = data.reference || 'N/A';
+                document.getElementById('stkCheckoutId').textContent = data.checkout_request_id || 'N/A';
+                document.getElementById('stkStatus').textContent = 'Waiting for PIN entry...';
+                details.style.display = 'block';
+            }
+            // Keep cancel button
+            if (!document.querySelector('.btn-cancel-stk')) {
+                actions.innerHTML = `
+                    <button class="btn btn-cancel-stk" onclick="cancelStkPush();">
+                        <i class="fas fa-times"></i> Cancel Payment
+                    </button>
+                `;
+            }
+        } else if (type === 'success') {
+            icon.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i>';
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            if (data) {
+                document.getElementById('stkRef').textContent = data.reference || 'N/A';
+                document.getElementById('stkCheckoutId').textContent = data.checkout_request_id || 'N/A';
+                document.getElementById('stkStatus').textContent = 'Paid ✓';
+                details.style.display = 'block';
+            }
+            actions.innerHTML = `
+                <button class="btn btn-primary" onclick="closeStkModal(); location.reload();">
+                    <i class="fas fa-check"></i> Continue
+                </button>
+            `;
+        } else if (type === 'cancelled') {
+            icon.innerHTML = '<i class="fas fa-times-circle" style="color: var(--warning);"></i>';
+            titleEl.textContent = 'Payment Cancelled by Customer';
+            msgEl.textContent = message || 'The customer cancelled the payment on their phone.';
+            details.style.display = 'none';
+            actions.innerHTML = `
+                <button class="btn btn-primary" onclick="closeStkModal();">
+                    <i class="fas fa-check"></i> OK
+                </button>
+                <button class="btn btn-primary" onclick="closeStkModal(); document.getElementById('sendStkBtn').disabled = false; document.getElementById('sendStkBtn').innerHTML = '<i class=\'fas fa-paper-plane\'></i> Send M-Pesa Prompt';">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+            `;
+        } else if (type === 'error') {
+            icon.innerHTML = '<i class="fas fa-times-circle" style="color: var(--danger);"></i>';
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            details.style.display = 'none';
+            actions.innerHTML = `
+                <button class="btn btn-primary" onclick="closeStkModal();">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button class="btn btn-primary" onclick="closeStkModal(); document.getElementById('sendStkBtn').disabled = false; document.getElementById('sendStkBtn').innerHTML = '<i class=\'fas fa-paper-plane\'></i> Send M-Pesa Prompt';">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+            `;
+        }
+    }
+
+    function cancelStkPush() {
+        if (confirm('Are you sure you want to cancel this payment request?')) {
+            isStkCancelled = true;
+            stopPolling();
+            updateStkModal('cancelled', 'Payment Cancelled', 'You have cancelled the payment request. You can try again or use another payment method.');
+            
+            // Re-enable send button
+            document.getElementById('sendStkBtn').disabled = false;
+            document.getElementById('sendStkBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Send M-Pesa Prompt';
+        }
+    }
+
+    function closeStkModal() {
+        document.getElementById('stkModal').classList.remove('active');
+        stopPolling();
+        // Re-enable send button if not already
+        const btn = document.getElementById('sendStkBtn');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send M-Pesa Prompt';
+        isStkCancelled = false;
+    }
+
+    // ---------- Polling ----------
+    function startPolling() {
+        stkPollAttempts = 0;
+        isStkCancelled = false;
+        if (stkPollingInterval) clearInterval(stkPollingInterval);
+        stkPollingInterval = setInterval(checkStatus, 2000);
+        // Update modal to waiting state
+        updateStkModal('waiting', 'STK Push Sent!', 'Please ask the customer to enter their M-Pesa PIN on their phone.');
+    }
+
+    function stopPolling() {
+        if (stkPollingInterval) {
+            clearInterval(stkPollingInterval);
+            stkPollingInterval = null;
+        }
+        stkPollAttempts = 0;
+    }
+
+    function checkStatus() {
+        // Don't poll if cancelled
+        if (isStkCancelled) {
+            stopPolling();
+            return;
+        }
+
+        stkPollAttempts++;
+        const saleId = <?= $sale_id ?>;
+        fetch('check_mpesa_status.php?sale_id=' + saleId + '&t=' + Date.now())
+            .then(res => res.json())
+            .then(data => {
+                if (isStkCancelled) return;
+
+                if (data.status === 'success') {
+                    // Payment confirmed
+                    stopPolling();
+                    updateStkModal('success', 'Payment Successful!', 'The customer has successfully completed the M-Pesa payment.', { reference: data.receipt || 'N/A' });
+                } else if (data.status === 'cancelled') {
+                    // Customer cancelled on phone
+                    stopPolling();
+                    updateStkModal('cancelled', 'Payment Cancelled', 'The customer cancelled the payment on their phone. They can try again.');
+                } else if (data.status === 'failed') {
+                    // Payment failed
+                    stopPolling();
+                    updateStkModal('error', 'Payment Failed', 'The payment failed. Please ask the customer to try again.');
+                } else if (data.status === 'pending') {
+                    // Still waiting - update message with timer
+                    if (stkPollAttempts % 5 === 0) {
+                        const seconds = stkPollAttempts * 2;
+                        document.getElementById('stkModalMessage').textContent = 'Waiting for PIN entry... (' + seconds + 's)';
+                    }
+                } else if (data.status === 'error') {
+                    stopPolling();
+                    updateStkModal('error', 'Error', data.message || 'Could not verify payment status.');
+                }
+                
+                // If max attempts reached
+                if (stkPollAttempts >= MAX_POLL_ATTEMPTS && !isStkCancelled) {
+                    stopPolling();
+                    updateStkModal('error', 'Timeout', 'Payment confirmation timed out. Please check if the customer completed the transaction.');
+                }
+            })
+            .catch(error => {
+                console.error('Polling error:', error);
+                // Continue polling
+            });
+    }
+
+    // ---------- Initialize on page load ----------
     document.addEventListener('DOMContentLoaded', function() {
         togglePaymentMethod();
-
-        // Auto-redirect after 3 seconds if success message is shown and a redirect is needed
-        <?php if ($redirect_after): ?>
-            setTimeout(function() {
-                window.location.href = "<?= $redirect_url ?>";
-            }, 3000);
+        // If sale already paid, hide STK section
+        <?php if ($sale['payment_status'] === 'paid'): ?>
+            document.getElementById('stkSection').classList.remove('show');
         <?php endif; ?>
     });
+
+    // Auto-redirect after 3 seconds if success message is shown and a redirect is needed
+    <?php if ($redirect_after): ?>
+        setTimeout(function() {
+            window.location.href = "<?= $redirect_url ?>";
+        }, 3000);
+    <?php endif; ?>
 </script>
 
 <?php require_once "../includes/footer.php"; ?>

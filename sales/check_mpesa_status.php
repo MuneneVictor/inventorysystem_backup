@@ -1,5 +1,5 @@
 <?php
-// check_mpesa_status.php - Check if sale payment is confirmed
+// check_mpesa_status.php - Check sale payment status
 session_start();
 require_once "../config/db.php";
 
@@ -12,8 +12,7 @@ if ($sale_id <= 0) {
     exit;
 }
 
-// Check sale
-$stmt = $conn->prepare("SELECT payment_status, mpesa_receipt FROM sales WHERE id = ?");
+$stmt = $conn->prepare("SELECT payment_status, mpesa_status, mpesa_receipt FROM sales WHERE id = ?");
 $stmt->execute([$sale_id]);
 $sale = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$sale) {
@@ -21,15 +20,34 @@ if (!$sale) {
     exit;
 }
 
-// Map payment status to response
+// Determine overall status for the UI
+$responseStatus = 'pending';
+
+if ($sale['payment_status'] === 'paid') {
+    // If payment is paid, it's definitely a success
+    $responseStatus = 'success';
+    $receipt = $sale['mpesa_receipt'];
+} elseif ($sale['mpesa_status'] === 'cancelled') {
+    $responseStatus = 'cancelled';
+    $receipt = null;
+} elseif ($sale['mpesa_status'] === 'failed') {
+    $responseStatus = 'failed';
+    $receipt = null;
+} elseif ($sale['mpesa_status'] === 'success') {
+    // Should not happen if payment_status is not paid, but just in case
+    $responseStatus = 'success';
+    $receipt = $sale['mpesa_receipt'];
+}
+
+// Map to the frontend expected statuses
 $statusMap = [
-    'paid' => 'success',
+    'success' => 'success',
     'cancelled' => 'cancelled',
     'failed' => 'failed',
-    'unpaid' => 'pending'
+    'pending' => 'pending'
 ];
 
-$status = $statusMap[$sale['payment_status']] ?? 'pending';
+$status = $statusMap[$responseStatus] ?? 'pending';
 
 if ($status === 'success') {
     echo json_encode([

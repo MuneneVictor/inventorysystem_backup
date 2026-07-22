@@ -115,6 +115,18 @@ curl_setopt_array($ch, [
 ]);
 
 $response = curl_exec($ch);
+
+
+
+echo "<pre>";
+
+echo "HTTP Code: " . curl_getinfo($ch, CURLINFO_HTTP_CODE) . "\n\n";
+
+echo $response;
+
+echo "</pre>";
+
+exit;
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $curlError = curl_error($ch);
 curl_close($ch);

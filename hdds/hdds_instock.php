@@ -448,13 +448,17 @@ $branches = array_unique(array_column($hdds, 'branch'));
                             <th>Quantity</th>
                             <th>Storage</th>
                             <th>Branch</th>
+            <?php if (in_array($role, ['super_admin', 'manager'])): ?>
                             <th>Price (KES)</th>
                             <th>Total Value (KES)</th>
+            <?php endif; ?>
                             <th>Added By</th>
                             <th>Updated By</th>
                             <th>Date Updated</th>
                             <th>Date Added</th>
+                    <?php if (in_array($role, ['super_admin', 'manager'])): ?>
                             <th>Actions</th>
+                    <?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>

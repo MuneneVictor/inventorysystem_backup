@@ -469,13 +469,17 @@ $places = array_unique(array_column($accessories, 'place'));
                             <th>Quantity</th>
                             <th>Branch</th>
                             <th>Place</th>
+                    <?php if (in_array($role, ['super_admin', 'manager'])): ?>
                             <th>Price (KES)</th>
                             <th>Total Value (KES)</th>
+                    <?php endif; ?>
                             <th>Date Added</th>
                             <th>Added By</th>
                             <th>Updated By</th> 
                             <th>Date Updated</th> 
+                        <?php if (in_array($role, ['super_admin', 'manager'])): ?>
                             <th>Actions</th>
+                        <?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>

@@ -79,7 +79,7 @@ $username = 'Rce66miWcVEnzfjLbSKp';       // Replace with your PayHero username
 $password = 'npe9cWNlJOz0GZhkWr5Bz5xVpuJPfHF5tOPLMs2B';       // Replace with your PayHero password
 $channel_id = '10427';             // Your channel ID
 $api_url = 'https://backend.payhero.co.ke/api/v2/payments';
-$callback_url = 'https://inventory.vimarktech.com/inventory_system/sales/mpesa_callback.php?sale_id=' . $sale_id;
+$callback_url = 'https://inventory.mombasacomputers.com/inventory_system/sales/mpesa_callback.php?sale_id=' . $sale_id;
 
 // Basic Auth
 $auth = base64_encode($username . ':' . $password);

@@ -470,13 +470,17 @@ $branches = array_unique(array_column($chargers, 'branch'));
                             <th>Condition</th>
                             <th>Quantity</th>
                             <th>Branch</th>
+                    <?php if (in_array($role, ['super_admin', 'manager'])): ?>
                             <th>Price (KES)</th>
                             <th>Total Value (KES)</th>
+                    <?php endif; ?>
                             <th>Added By</th>
                             <th>Updated By</th>
                             <th>Date Updated</th>
                             <th>Date Added</th>
+                    <?php if (in_array($role, ['super_admin', 'manager'])): ?>
                             <th>Actions</th>
+                    <?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
@@ -499,7 +503,7 @@ $branches = array_unique(array_column($chargers, 'branch'));
                                 <td><small><?= date('M j, Y g:i A', strtotime($c['date_added'])) ?></small></td>
                                 <td>
                                     <div class="action-links">
-                                        <?php if (in_array($role, ['super_admin', 'inventory_admin', 'manager'])): ?>
+                                        <?php if (in_array($role, ['super_admin', 'manager'])): ?>
                                             <?php if ($c['price'] === null): ?>
                                                 <a href="add_price_charger.php?id=<?= urlencode($c['id']) ?>" class="action-link">
                                                     <i class="fas fa-plus-circle"></i> Add Price

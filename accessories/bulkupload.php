@@ -401,14 +401,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
         <h1><i class="fas fa-file-upload"></i> Bulk Upload Accessories</h1>
         <div class="breadcrumb">
             <?php if ($_SESSION['role'] === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/superadmindashboard"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/managerdashboard"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'inventory_admin'): ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/inventorydashboard"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
-            <a href="accessory_instock.php">Accessories</a>
+            <a href="accessory_instock">Accessories</a>
             <span> / </span>
             <span>Bulk Upload</span>
         </div>

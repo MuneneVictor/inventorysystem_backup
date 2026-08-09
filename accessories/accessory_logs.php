@@ -148,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_accessory'])) 
 
                 // Clear output buffer and redirect
                 ob_end_clean();
-                header("Location: accessory_logs.php?success=1");
+                header("Location: accessory_logs?success=1");
                 exit;
 
             } catch (Exception $e) {
@@ -163,10 +163,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_accessory'])) 
 if (isset($_GET['success'])) {
     $return_success = "Accessory returned successfully!";
 }
-
-// Now include header and sidebar (after all processing)
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 
 // Get filter inputs
 $filter_branch = trim($_GET['branch'] ?? '');
@@ -581,7 +577,7 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
     </style>
 </head>
 <body>
-
+<?php include '../includes/sidebar.php'; ?>
 <div class="main-content">
     <div class="page-header">
         <h1><i class="fas fa-history"></i> Accessory Logs</h1>

@@ -375,13 +375,13 @@ $places = array_unique(array_column($accessories, 'place'));
         <h1><i class="fas fa-plug"></i> In‑Stock Accessories</h1>
         <div class="breadcrumb">
             <?php if ($_SESSION['role'] === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/superadmindashboard"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/managerdashboard"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'inventory_admin'): ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/inventorydashboard"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'sales'): ?>
-                <a href="/inventory_system/dashboard/salesdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/salesdashboard"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <span>In‑Stock Accessories</span>
@@ -505,11 +505,11 @@ $places = array_unique(array_column($accessories, 'place'));
                                                 
                                         <div class="action-links">
                                             <?php if ($a['price'] === null): ?>
-                                                <a href="add_price_accessory.php?id=<?= urlencode($a['id']) ?>" class="action-link">
+                                                <a href="add_price_accessory?id=<?= urlencode($a['id']) ?>" class="action-link">
                                                     <i class="fas fa-tag"></i> Add Price
                                                 </a>
                                             <?php else: ?>
-                                                <a href="update_price_accessory.php?id=<?= urlencode($a['id']) ?>" class="action-link">
+                                                <a href="update_price_accessory?id=<?= urlencode($a['id']) ?>" class="action-link">
                                                     <i class="fas fa-edit"></i> Update Price
                                                 </a>
                                             <?php endif; ?>

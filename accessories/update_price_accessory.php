@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
         $success = "Price updated successfully!";
-        header("Location: accessory_instock.php");
+        header("Location: accessory_instock");
         exit();
     }
 }

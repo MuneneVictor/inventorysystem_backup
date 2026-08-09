@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
         $success = "Price added successfully!";
-        header("Location: accessory_instock.php");
+        header("Location: accessory_instock");
         exit();
     }
 }
@@ -259,14 +259,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h1><i class="fas fa-plus-circle"></i> Add Accessory Price</h1>
         <div class="breadcrumb">
             <?php if ($_SESSION['role'] === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/superadmindashboard"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/managerdashboard"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'inventory_admin'): ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/inventorydashboard"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
-            <a href="accessory_instock.php">In‑Stock Accessories</a>
+            <a href="accessory_instock">In‑Stock Accessories</a>
             <span> / </span>
             <span>Add Price</span>
         </div>

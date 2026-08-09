@@ -360,7 +360,7 @@ if ($stmt) {
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as $row) {
         $recentChargersGivenToMe[] = [
-            'charger_label' => trim(($row['charger_type'] ?? 'Charger') . ($row['watts'] ? " {$row['watts']}W" : '')),
+            'charger_label' => trim(($row['charger_type'] ?? 'Charger')),
             'quantity_given' => (int)($row['quantity'] ?? 0),
             'given_by_name'  => $row['given_by_name'] ?? '-',
             'branch'         => $row['branch'] ?? null,

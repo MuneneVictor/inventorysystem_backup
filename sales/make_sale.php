@@ -3,9 +3,31 @@ session_start();
 require_once "../config/db.php";
 require_once "../includes/auth_check.php";
 
+// Security: Regenerate session ID to prevent fixation
+if (!isset($_SESSION['initiated'])) {
+    session_regenerate_id(true);
+    $_SESSION['initiated'] = true;
+}
 
-$role = $_SESSION['role'];
-$user_id = (int) $_SESSION['user_id'];
+// CSRF Token generation
+function generateCSRFToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function verifyCSRFToken($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+// XSS Protection helper
+function sanitizeOutput($data) {
+    return htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+}
+
+$role = $_SESSION['role'] ?? '';
+$user_id = (int) ($_SESSION['user_id'] ?? 0);
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 $user_branch = $_SESSION['branch'] ?? null;
 
@@ -16,6 +38,10 @@ if (!in_array($role, ['sales', 'super_admin', 'inventory_admin', 'manager', 'cas
 
 // --- Handle reset (clear session sale_id) ---
 if (isset($_GET['reset_sale']) && $_GET['reset_sale'] == '1') {
+    // Verify CSRF token for destructive action
+    if (!isset($_GET['csrf_token']) || !verifyCSRFToken($_GET['csrf_token'])) {
+        die("Security validation failed.");
+    }
     unset($_SESSION['current_sale_id']);
     header("Location: make_sale.php");
     exit;
@@ -24,11 +50,28 @@ if (isset($_GET['reset_sale']) && $_GET['reset_sale'] == '1') {
 // --- Handle sale selection (store in session) ---
 if (isset($_GET['sale_id']) && is_numeric($_GET['sale_id'])) {
     $new_sale_id = (int)$_GET['sale_id'];
-    $stmt = $conn->prepare("SELECT id, sale_status, sold_by FROM sales WHERE id = ?");
+    
+    // Use prepared statement to prevent SQL injection
+    // Fixed: Alias the id columns properly
+    $stmt = $conn->prepare("
+        SELECT s.id AS sale_id, s.sale_status, s.sold_by, u.branch AS salesperson_branch 
+        FROM sales s 
+        LEFT JOIN users u ON s.sold_by = u.id 
+        WHERE s.id = ?
+    ");
     $stmt->execute([$new_sale_id]);
     $sale = $stmt->fetch(PDO::FETCH_ASSOC);
+    
     if ($sale && $sale['sale_status'] === 'active') {
-        if ($role !== 'cashier' && $sale['sold_by'] != $user_id) {
+        // Cashier branch check
+        if ($role === 'cashier') {
+            if (!$user_branch) {
+                die("Your account has no branch assigned.");
+            }
+            if ($sale['salesperson_branch'] !== $user_branch) {
+                die("You do not have permission to access sales from other branches.");
+            }
+        } elseif ($role !== 'cashier' && $sale['sold_by'] != $user_id && !in_array($role, ['super_admin', 'manager'])) {
             die("You do not have permission to access this sale.");
         }
         $_SESSION['current_sale_id'] = $new_sale_id;
@@ -44,24 +87,34 @@ if (isset($_GET['sale_id']) && is_numeric($_GET['sale_id'])) {
 // --- Check if we have a valid sale in session ---
 $current_sale_id = $_SESSION['current_sale_id'] ?? 0;
 $sale_valid = false;
-$salesperson_name_for_sale = 'Unknown'; // will hold name for display
+$salesperson_name_for_sale = 'Unknown';
+$sale_branch = null;
 
 if ($current_sale_id) {
-    // Fetch sale details including salesperson name
+    // Fetch sale details including salesperson name and branch
+    // Fixed: Alias the id columns properly
     $stmt = $conn->prepare("
-        SELECT s.id, s.sale_status, s.sold_by, u.full_name AS salesperson_name 
+        SELECT s.id AS sale_id, s.sale_status, s.sold_by, u.full_name AS salesperson_name, u.branch AS salesperson_branch 
         FROM sales s 
         LEFT JOIN users u ON s.sold_by = u.id 
         WHERE s.id = ?
     ");
     $stmt->execute([$current_sale_id]);
     $sale = $stmt->fetch(PDO::FETCH_ASSOC);
+    
     if ($sale && $sale['sale_status'] === 'active') {
         $sale_valid = true;
-        if ($role !== 'cashier' && $sale['sold_by'] != $user_id) {
+        // Cashier branch check
+        if ($role === 'cashier') {
+            if (!$user_branch || $sale['salesperson_branch'] !== $user_branch) {
+                $sale_valid = false;
+            }
+        } elseif ($role !== 'cashier' && $sale['sold_by'] != $user_id && !in_array($role, ['super_admin', 'manager'])) {
             $sale_valid = false;
-        } else {
+        }
+        if ($sale_valid) {
             $salesperson_name_for_sale = $sale['salesperson_name'] ?? 'Unknown';
+            $sale_branch = $sale['salesperson_branch'] ?? null;
         }
     }
     if (!$sale_valid) {
@@ -77,7 +130,8 @@ if ($hour < 12) $greeting = 'Good morning';
 elseif ($hour < 17) $greeting = 'Good afternoon';
 else $greeting = 'Good evening';
 
-
+// Generate CSRF token
+$csrf_token = generateCSRFToken();
 
 function secureQuery($conn, $sql, $params = []) {
     try {
@@ -90,22 +144,31 @@ function secureQuery($conn, $sql, $params = []) {
     }
 }
 
-// Determine active sales based on role
+// Determine active sales based on role and branch
 if ($role === 'cashier') {
+    // Cashiers see only active sales from their branch
+    if (!$user_branch) {
+        $user_branch = 'KIMATHI'; // Default fallback
+    }
+    // Fixed: Alias the id columns properly
     $stmt = secureQuery($conn, "
-        SELECT s.*, u.full_name AS salesperson_name, u.branch AS salesperson_branch
+        SELECT s.id AS sale_id, s.client_name, s.client_phone, s.total_amount, s.created_at, s.sold_by,
+               u.full_name AS salesperson_name, u.branch AS salesperson_branch
         FROM sales s
         LEFT JOIN users u ON s.sold_by = u.id
-        WHERE s.sale_status = 'active'
+        WHERE s.sale_status = 'active' AND u.branch = ?
         ORDER BY s.created_at DESC
-    ");
+    ", [$user_branch]);
     $activeSales = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
-    $stmt = secureQuery($conn, "SELECT id, full_name, branch FROM users WHERE role = 'sales' ORDER BY full_name");
+    $stmt = secureQuery($conn, "SELECT id, full_name, branch FROM users WHERE role = 'sales' AND branch = ? ORDER BY full_name", [$user_branch]);
     $salespersons = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 } else {
+    // Salespersons see only their own active sales
+    // Fixed: Alias the id columns properly
     $stmt = secureQuery($conn, "
-        SELECT s.*, u.full_name AS salesperson_name, u.branch AS salesperson_branch
+        SELECT s.id AS sale_id, s.client_name, s.client_phone, s.total_amount, s.created_at, s.sold_by,
+               u.full_name AS salesperson_name, u.branch AS salesperson_branch
         FROM sales s
         LEFT JOIN users u ON s.sold_by = u.id
         WHERE s.sale_status = 'active' AND s.sold_by = ?
@@ -117,6 +180,20 @@ if ($role === 'cashier') {
 
 $show_cards = $sale_valid && $current_sale_id > 0;
 
+// Handle error messages
+$error_message = '';
+if (isset($_GET['error'])) {
+    switch ($_GET['error']) {
+        case 'invalid_sale':
+            $error_message = 'The selected sale is invalid or no longer active.';
+            break;
+        case 'branch_mismatch':
+            $error_message = 'You can only access sales from your branch.';
+            break;
+        default:
+            $error_message = 'An error occurred. Please try again.';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -127,7 +204,6 @@ $show_cards = $sale_valid && $current_sale_id > 0;
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* (All existing CSS unchanged) */
         :root {
             --primary: #1a4b2a;
             --primary-light: #2a6b3a;
@@ -148,6 +224,9 @@ $show_cards = $sale_valid && $current_sale_id > 0;
             --radius-lg: 0.75rem;
             --radius-xl: 1rem;
             --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --error-color: #dc2626;
+            --error-bg: #fef2f2;
+            --error-border: #fecaca;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -206,6 +285,21 @@ $show_cards = $sale_valid && $current_sale_id > 0;
             margin-top: 0.25rem;
         }
 
+        .alert-error {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            color: var(--error-color);
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .alert-error i {
+            font-size: 1.25rem;
+        }
+
         .section {
             background: white;
             border-radius: var(--radius-xl);
@@ -222,6 +316,16 @@ $show_cards = $sale_valid && $current_sale_id > 0;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+        }
+
+        .branch-badge {
+            background: var(--primary);
+            color: white;
+            padding: 0.15rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
         }
 
         .table {
@@ -278,6 +382,12 @@ $show_cards = $sale_valid && $current_sale_id > 0;
             padding: 0.25rem 0.75rem;
             font-size: 0.8rem;
         }
+        .btn-danger {
+            background: #dc2626;
+        }
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
 
         .form-group {
             margin-bottom: 1rem;
@@ -294,6 +404,11 @@ $show_cards = $sale_valid && $current_sale_id > 0;
             border: 1px solid var(--gray-300);
             border-radius: var(--radius-md);
             font-size: 0.9rem;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 75, 42, 0.1);
         }
         .form-row {
             display: grid;
@@ -319,6 +434,9 @@ $show_cards = $sale_valid && $current_sale_id > 0;
         }
         .client-search-results .result-item:hover {
             background: var(--gray-50);
+        }
+        .client-search-wrapper {
+            position: relative;
         }
 
         .flex-between {
@@ -391,6 +509,27 @@ $show_cards = $sale_valid && $current_sale_id > 0;
             color: var(--gray-400);
         }
 
+        .sale-info-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            background: var(--gray-50);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--gray-200);
+        }
+        .sale-info-bar .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .sale-info-bar .info-item i {
+            color: var(--primary);
+        }
+
         footer {
             text-align: center;
             padding: 1.5rem 0 0.5rem;
@@ -398,6 +537,17 @@ $show_cards = $sale_valid && $current_sale_id > 0;
             font-size: 0.85rem;
             color: var(--gray-400);
             border-top: 1px solid var(--gray-200);
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
         }
 
         @media (max-width: 1200px) {
@@ -434,6 +584,11 @@ $show_cards = $sale_valid && $current_sale_id > 0;
             .sale-card .label {
                 font-size: 0.85rem;
             }
+            .sale-info-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
         }
         @media (max-width: 480px) {
             .card-grid {
@@ -459,6 +614,9 @@ $show_cards = $sale_valid && $current_sale_id > 0;
         <h1>
             <i class="fas fa-cash-register"></i>
             Process Sale
+            <?php if ($role === 'cashier' && $user_branch): ?>
+                <span class="branch-badge"><?= sanitizeOutput($user_branch) ?></span>
+            <?php endif; ?>
         </h1>
         <div class="breadcrumb">
             <a href="<?php
@@ -472,8 +630,15 @@ $show_cards = $sale_valid && $current_sale_id > 0;
             <span> / </span>
             <span>Process Sale</span>
         </div>
-        <div class="greeting"><?= $show_cards ? "Adding items to sale ID: $current_sale_id" : "Select an active sale or start a new one." ?></div>
+        <div class="greeting"><?= $show_cards ? "Adding items to sale ID: " . (int)$current_sale_id : "Select an active sale or start a new one." ?></div>
     </div>
+
+    <?php if ($error_message): ?>
+        <div class="alert-error">
+            <i class="fas fa-exclamation-triangle"></i>
+            <?= sanitizeOutput($error_message) ?>
+        </div>
+    <?php endif; ?>
 
     <?php if (!$show_cards): ?>
         <!-- ============================================================ -->
@@ -487,9 +652,20 @@ $show_cards = $sale_valid && $current_sale_id > 0;
                 <?php if (!empty($activeSales)): ?>
                     <span style="background:var(--gray-200); padding:0.25rem 0.75rem; border-radius:9999px; font-size:0.8rem; margin-left:0.5rem;"><?= count($activeSales) ?></span>
                 <?php endif; ?>
+                <?php if ($role === 'cashier' && $user_branch): ?>
+                    <span style="font-size:0.8rem; color:var(--gray-500); margin-left:0.5rem;">
+                        <i class="fas fa-store"></i> Branch: <?= sanitizeOutput($user_branch) ?>
+                    </span>
+                <?php endif; ?>
             </div>
             <?php if (empty($activeSales)): ?>
-                <p class="text-muted">No active sales found. Start a new sale below.</p>
+                <p class="text-muted">
+                    <?php if ($role === 'cashier' && $user_branch): ?>
+                        No active sales found in <?= sanitizeOutput($user_branch) ?> branch. Start a new sale below.
+                    <?php else: ?>
+                        No active sales found. Start a new sale below.
+                    <?php endif; ?>
+                </p>
             <?php else: ?>
                 <div style="overflow-x:auto;">
                     <table class="table">
@@ -499,6 +675,7 @@ $show_cards = $sale_valid && $current_sale_id > 0;
                                 <th>Client</th>
                                 <th>Phone</th>
                                 <th>Salesperson</th>
+                                <th>Branch</th>
                                 <th>Date</th>
                                 <th style="text-align:right;">Action</th>
                             </tr>
@@ -506,13 +683,14 @@ $show_cards = $sale_valid && $current_sale_id > 0;
                         <tbody>
                             <?php foreach ($activeSales as $sale): ?>
                                 <tr>
-                                    <td><strong>#<?= $sale['id'] ?></strong></td>
-                                    <td><?= htmlspecialchars($sale['client_name'] ?? '—') ?></td>
-                                    <td><?= htmlspecialchars($sale['client_phone'] ?? '—') ?></td>
-                                    <td><?= htmlspecialchars($sale['salesperson_name'] ?? 'Unknown') ?></td>
+                                    <td><strong>#<?= (int)$sale['sale_id'] ?></strong></td>
+                                    <td><?= sanitizeOutput($sale['client_name'] ?? '—') ?></td>
+                                    <td><?= sanitizeOutput($sale['client_phone'] ?? '—') ?></td>
+                                    <td><?= sanitizeOutput($sale['salesperson_name'] ?? 'Unknown') ?></td>
+                                    <td><span style="background:var(--gray-100); padding:0.15rem 0.5rem; border-radius:9999px; font-size:0.75rem;"><?= sanitizeOutput($sale['salesperson_branch'] ?? '—') ?></span></td>
                                     <td><?= date('M j, Y H:i', strtotime($sale['created_at'])) ?></td>
                                     <td style="text-align:right;">
-                                        <a href="make_sale.php?sale_id=<?= $sale['id'] ?>" class="btn btn-sm">
+                                        <a href="make_sale.php?sale_id=<?= (int)$sale['sale_id'] ?>&csrf_token=<?= urlencode($csrf_token) ?>" class="btn btn-sm">
                                             <i class="fas fa-arrow-right"></i> Select
                                         </a>
                                     </td>
@@ -528,24 +706,32 @@ $show_cards = $sale_valid && $current_sale_id > 0;
         <div class="section">
             <div class="section-title"><i class="fas fa-plus-circle"></i> Start New Sale</div>
             <form id="newSaleForm" action="create_sale.php" method="POST">
+                <!-- CSRF Token -->
+                <input type="hidden" name="csrf_token" value="<?= sanitizeOutput($csrf_token) ?>">
+                
                 <?php if ($role === 'cashier'): ?>
                     <div class="form-group">
                         <label for="salesperson_id">Assign to Salesperson <span style="color:red;">*</span></label>
                         <select name="salesperson_id" id="salesperson_id" required>
                             <option value="">— Select Salesperson —</option>
                             <?php foreach ($salespersons as $sp): ?>
-                                <option value="<?= $sp['id'] ?>"><?= htmlspecialchars($sp['full_name']) ?> (<?= htmlspecialchars($sp['branch']) ?>)</option>
+                                <option value="<?= (int)$sp['id'] ?>"><?= sanitizeOutput($sp['full_name']) ?> (<?= sanitizeOutput($sp['branch']) ?>)</option>
                             <?php endforeach; ?>
                         </select>
+                        <?php if (empty($salespersons)): ?>
+                            <p style="color:var(--gray-400); font-size:0.8rem; margin-top:0.25rem;">
+                                <i class="fas fa-info-circle"></i> No salespersons found in your branch.
+                            </p>
+                        <?php endif; ?>
                     </div>
                 <?php else: ?>
-                    <input type="hidden" name="salesperson_id" value="<?= $user_id ?>">
+                    <input type="hidden" name="salesperson_id" value="<?= (int)$user_id ?>">
                 <?php endif; ?>
 
                 <!-- Client search & selection -->
-                <div class="form-group" style="position:relative;">
+                <div class="form-group client-search-wrapper">
                     <label for="client_search">Client (optional)</label>
-                    <input type="text" id="client_search" placeholder="Type client name to search..." autocomplete="off">
+                    <input type="text" id="client_search" placeholder="Type client name to search..." autocomplete="off" class="form-control">
                     <input type="hidden" name="client_id" id="client_id" value="">
                     <div id="clientResults" class="client-search-results"></div>
                 </div>
@@ -553,11 +739,11 @@ $show_cards = $sale_valid && $current_sale_id > 0;
                 <div class="form-row">
                     <div class="form-group">
                         <label for="client_name">Client Name / Organization (Optional)</label>
-                        <input type="text" name="client_name" id="client_name" placeholder="e.g., John Doe or ABC Ltd">
+                        <input type="text" name="client_name" id="client_name" placeholder="e.g., John Doe or ABC Ltd" maxlength="100">
                     </div>
                     <div class="form-group">
                         <label for="client_phone">Phone Number (Optional)</label>
-                        <input type="text" name="client_phone" id="client_phone" placeholder="e.g., 0712345678">
+                        <input type="text" name="client_phone" id="client_phone" placeholder="e.g., 0712345678" maxlength="20">
                     </div>
                 </div>
 
@@ -570,96 +756,117 @@ $show_cards = $sale_valid && $current_sale_id > 0;
         <!-- ============================================================ -->
         <!--  ITEM SELECTION CARDS (SALE ALREADY SELECTED)                 -->
         <!-- ============================================================ -->
-        <div style="margin-bottom:1rem;">
-            <a href="make_sale.php?reset_sale=1" class="btn"><i class="fas fa-undo"></i> Change Sale</a>
-            <span style="margin-left:1rem; font-weight:500;">Current Sale ID: <?= $current_sale_id ?></span>
-            <!-- Display salesperson name for cashier (and for all roles, actually) -->
-            <span style="margin-left:1.5rem; font-weight:500; color:var(--gray-700);">
-                <i class="fas fa-user"></i> Salesperson: <?= htmlspecialchars($salesperson_name_for_sale) ?>
+        <div class="sale-info-bar">
+            <span class="info-item">
+                <i class="fas fa-receipt"></i>
+                <strong>Sale #<?= (int)$current_sale_id ?></strong>
+            </span>
+            <span class="info-item">
+                <i class="fas fa-user"></i>
+                Salesperson: <?= sanitizeOutput($salesperson_name_for_sale) ?>
+            </span>
+            <?php if ($sale_branch): ?>
+                <span class="info-item">
+                    <i class="fas fa-store"></i>
+                    Branch: <?= sanitizeOutput($sale_branch) ?>
+                </span>
+            <?php endif; ?>
+            <span style="margin-left:auto;">
+                <a href="make_sale.php?reset_sale=1&csrf_token=<?= urlencode($csrf_token) ?>" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-undo"></i> Change Sale
+                </a>
+                <a href="checkout.php?sale_id=<?= (int)$current_sale_id ?>" class="btn btn-sm" style="background:#059669;">
+                    <i class="fas fa-shopping-cart"></i> Checkout
+                </a>
             </span>
         </div>
 
         <div class="card-grid">
             <!-- Device -->
-            <a href="sell_device.php?sale_id=<?= $current_sale_id ?>" class="sale-card">
+            <a href="sell_device.php?sale_id=<?= (int)$current_sale_id ?>" class="sale-card">
                 <div class="icon"><i class="fas fa-laptop"></i></div>
                 <div class="label">Device</div>
                 <div class="sub-label">Laptops, Desktops, etc.</div>
             </a>
 
             <!-- Monitor -->
-            <a href="sell_monitor.php?sale_id=<?= $current_sale_id ?>" class="sale-card">
+            <a href="sell_monitor.php?sale_id=<?= (int)$current_sale_id ?>" class="sale-card">
                 <div class="icon"><i class="fas fa-desktop"></i></div>
                 <div class="label">Monitor</div>
                 <div class="sub-label">Displays</div>
             </a>
 
             <!-- Printer -->
-            <a href="sell_printer.php?sale_id=<?= $current_sale_id ?>" class="sale-card">
+            <a href="sell_printer.php?sale_id=<?= (int)$current_sale_id ?>" class="sale-card">
                 <div class="icon"><i class="fas fa-print"></i></div>
                 <div class="label">Printer</div>
                 <div class="sub-label">Printers</div>
             </a>
 
             <!-- Smartboard -->
-            <a href="sell_smartboard.php?sale_id=<?= $current_sale_id ?>" class="sale-card">
+            <a href="sell_smartboard.php?sale_id=<?= (int)$current_sale_id ?>" class="sale-card">
                 <div class="icon"><i class="fas fa-chalkboard"></i></div>
                 <div class="label">Smartboard</div>
                 <div class="sub-label">Interactive Boards</div>
             </a>
 
             <!-- UPS -->
-            <a href="sell_ups.php?sale_id=<?= $current_sale_id ?>" class="sale-card">
+            <a href="sell_ups.php?sale_id=<?= (int)$current_sale_id ?>" class="sale-card">
                 <div class="icon"><i class="fas fa-bolt"></i></div>
                 <div class="label">UPS</div>
                 <div class="sub-label">Power Backup</div>
             </a>
 
             <!-- Phone -->
-            <a href="sell_phone.php?sale_id=<?= $current_sale_id ?>" class="sale-card">
+            <a href="sell_phone.php?sale_id=<?= (int)$current_sale_id ?>" class="sale-card">
                 <div class="icon"><i class="fas fa-mobile-alt"></i></div>
                 <div class="label">Phone</div>
                 <div class="sub-label">Smartphones</div>
             </a>
 
             <!-- Accessory -->
-            <a href="sell_accessory.php?sale_id=<?= $current_sale_id ?>" class="sale-card">
+            <a href="sell_accessory.php?sale_id=<?= (int)$current_sale_id ?>" class="sale-card">
                 <div class="icon"><i class="fas fa-plug"></i></div>
                 <div class="label">Accessory</div>
                 <div class="sub-label">Cables, Mice, etc.</div>
             </a>
 
             <!-- Charger -->
-            <a href="sell_charger.php?sale_id=<?= $current_sale_id ?>" class="sale-card">
+            <a href="sell_charger.php?sale_id=<?= (int)$current_sale_id ?>" class="sale-card">
                 <div class="icon"><i class="fas fa-battery-three-quarters"></i></div>
                 <div class="label">Charger</div>
                 <div class="sub-label">Laptop Chargers</div>
             </a>
 
             <!-- Graphics Card -->
-            <a href="sell_graphics_card.php?sale_id=<?= $current_sale_id ?>" class="sale-card">
+            <a href="sell_graphics_card.php?sale_id=<?= (int)$current_sale_id ?>" class="sale-card">
                 <div class="icon"><i class="fas fa-microchip"></i></div>
                 <div class="label">Graphics Card</div>
                 <div class="sub-label">GPUs</div>
             </a>
 
             <!-- HDD -->
-            <a href="sell_hdd.php?sale_id=<?= $current_sale_id ?>" class="sale-card">
+            <a href="sell_hdd.php?sale_id=<?= (int)$current_sale_id ?>" class="sale-card">
                 <div class="icon"><i class="fas fa-hdd"></i></div>
                 <div class="label">HDD</div>
                 <div class="sub-label">Hard Drives</div>
             </a>
 
             <!-- RAM/SSD -->
-            <a href="sell_ram_ssd.php?sale_id=<?= $current_sale_id ?>" class="sale-card">
+            <a href="sell_ram_ssd.php?sale_id=<?= (int)$current_sale_id ?>" class="sale-card">
                 <div class="icon"><i class="fas fa-memory"></i></div>
                 <div class="label">RAM / SSD</div>
                 <div class="sub-label">Memory & Storage</div>
             </a>
         </div>
 
-        <div style="margin-top:1rem;">
-            <a href="checkout.php?sale_id=<?= $current_sale_id ?>" class="btn"><i class="fas fa-shopping-cart"></i> Go to Checkout</a>
+        <div style="margin-top:1rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
+            <a href="checkout.php?sale_id=<?= (int)$current_sale_id ?>" class="btn" style="background:#059669;">
+                <i class="fas fa-shopping-cart"></i> Go to Checkout
+            </a>
+            <a href="make_sale.php?reset_sale=1&csrf_token=<?= urlencode($csrf_token) ?>" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Close Sale & Return
+            </a>
         </div>
     <?php endif; ?>
 
@@ -669,8 +876,31 @@ $show_cards = $sale_valid && $current_sale_id > 0;
 </div>
 
 <script>
-    // Client search AJAX (only needed when the form is visible)
-    <?php if (!$show_cards): ?>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Responsive sidebar adjustment
+        function adjustMainContent() {
+            const mainContent = document.querySelector('.main-content');
+            const sidebar = document.querySelector('.sidebar');
+            if (window.innerWidth <= 1200) {
+                if (mainContent) {
+                    mainContent.style.marginLeft = '0';
+                    mainContent.style.width = '100%';
+                    mainContent.style.paddingTop = '5rem';
+                }
+            } else {
+                if (mainContent && sidebar) {
+                    mainContent.style.marginLeft = '260px';
+                    mainContent.style.width = 'calc(100% - 260px)';
+                    mainContent.style.paddingTop = '';
+                }
+            }
+        }
+        adjustMainContent();
+        window.addEventListener('resize', adjustMainContent);
+        window.addEventListener('orientationchange', adjustMainContent);
+
+        <?php if (!$show_cards): ?>
+        // Client search AJAX
         const searchInput = document.getElementById('client_search');
         const clientIdInput = document.getElementById('client_id');
         const clientNameInput = document.getElementById('client_name');
@@ -678,13 +908,12 @@ $show_cards = $sale_valid && $current_sale_id > 0;
         const resultsContainer = document.getElementById('clientResults');
         let searchTimeout;
 
-        // Determine the sales_person to send
         function getSalesPersonId() {
             <?php if ($role === 'cashier'): ?>
                 const select = document.getElementById('salesperson_id');
                 return select ? select.value : '';
             <?php else: ?>
-                return <?= $user_id ?>;
+                return <?= (int)$user_id ?>;
             <?php endif; ?>
         }
 
@@ -698,13 +927,17 @@ $show_cards = $sale_valid && $current_sale_id > 0;
                 }
                 const salesPerson = getSalesPersonId();
                 if (!salesPerson) {
-                    // If no salesperson selected (cashier), don't search
                     resultsContainer.style.display = 'none';
                     return;
                 }
                 searchTimeout = setTimeout(() => {
-                    fetch(`search_clients.php?q=${encodeURIComponent(query)}&sales_person=${encodeURIComponent(salesPerson)}`)
-                        .then(response => response.json())
+                    fetch(`search_clients.php?q=${encodeURIComponent(query)}&sales_person=${encodeURIComponent(salesPerson)}&csrf_token=<?= urlencode($csrf_token) ?>`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
                         .then(data => {
                             resultsContainer.innerHTML = '';
                             if (data.length === 0) {
@@ -713,9 +946,9 @@ $show_cards = $sale_valid && $current_sale_id > 0;
                                 data.forEach(client => {
                                     const div = document.createElement('div');
                                     div.className = 'result-item';
-                                    div.textContent = `${client.client_name} (${client.client_phone || 'No phone'})`;
-                                    div.dataset.id = client.id;
-                                    div.dataset.name = client.client_name;
+                                    div.textContent = `${client.client_name || 'Unnamed'} (${client.client_phone || 'No phone'})`;
+                                    div.dataset.id = client.id || '';
+                                    div.dataset.name = client.client_name || '';
                                     div.dataset.phone = client.client_phone || '';
                                     div.addEventListener('click', function() {
                                         searchInput.value = this.dataset.name;
@@ -750,16 +983,19 @@ $show_cards = $sale_valid && $current_sale_id > 0;
                 }
             });
 
-            // For cashier: re-trigger search when salesperson selection changes
             <?php if ($role === 'cashier'): ?>
-                document.getElementById('salesperson_id').addEventListener('change', function() {
-                    if (searchInput.value.length >= 2) {
-                        searchInput.dispatchEvent(new Event('input'));
-                    }
-                });
+                const salespersonSelect = document.getElementById('salesperson_id');
+                if (salespersonSelect) {
+                    salespersonSelect.addEventListener('change', function() {
+                        if (searchInput.value.length >= 2) {
+                            searchInput.dispatchEvent(new Event('input'));
+                        }
+                    });
+                }
             <?php endif; ?>
         }
-    <?php endif; ?>
+        <?php endif; ?>
+    });
 </script>
 
 </body>

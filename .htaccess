@@ -1,1 +1,28 @@
 Options -Indexes
+RewriteEngine On
+
+# Don't rewrite if the file or directory actually exists
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Don't rewrite if the request already ends with .php
+RewriteCond %{REQUEST_URI} \.php$
+RewriteRule ^ - [L]
+
+# Root homepage
+RewriteRule ^$ index.php [L]
+
+# Route 2-level pages: /folder/page → folder/page.php
+# Handles folders like: sales, dashboard, auth, config, etc.
+RewriteRule ^([a-zA-Z0-9_]+)/([a-zA-Z0-9_]+)$ $1/$2.php [L]
+
+# Route 3-level pages: /folder/subfolder/page → folder/subfolder/page.php
+# Handles dashboard/superadmin/dashboard, etc.
+RewriteRule ^([a-zA-Z0-9_]+)/([a-zA-Z0-9_]+)/([a-zA-Z0-9_]+)$ $1/$2/$3.php [L]
+
+# Optional: Handle index pages in subfolders
+# /sales → sales/index.php (if it exists)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-zA-Z0-9_]+)$ $1/index.php [L]

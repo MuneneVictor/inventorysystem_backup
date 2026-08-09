@@ -20,18 +20,18 @@
             <a href="<?php
                 $role = $_SESSION['role'] ?? '';
                 switch ($role) {
-                    case 'super_admin': $dashboard_url = '/inventory_system/dashboard/superadmindashboard.php'; break;
-                    case 'manager': $dashboard_url = '/inventory_system/dashboard/managerdashboard.php'; break;
-                    case 'inventory_admin': $dashboard_url = '/inventory_system/dashboard/inventorydashboard.php'; break;
-                    case 'sales': $dashboard_url = '/inventory_system/dashboard/salesdashboard.php'; break;
-                    case 'cashier': $dashboard_url = '/inventory_system/dashboard/cashierdashboard.php'; break;
-                    case 'software': $dashboard_url = '/inventory_system/dashboard/softwaredashboard.php'; break;
-                    case 'technician': $dashboard_url = '/inventory_system/dashboard/techniciandashboard.php'; break;
+                    case 'super_admin': $dashboard_url = '../dashboard/superadmindashboard'; break;
+                    case 'manager': $dashboard_url = '../dashboard/managerdashboard'; break;
+                    case 'inventory_admin': $dashboard_url = '../dashboard/inventorydashboard'; break;
+                    case 'sales': $dashboard_url = '../dashboard/salesdashboard'; break;
+                    case 'cashier': $dashboard_url = '../dashboard/cashierdashboard'; break;
+                    case 'software': $dashboard_url = '../dashboard/softwaredashboard'; break;
+                    case 'technician': $dashboard_url = '../dashboard/techniciandashboard'; break;
 
                 }
                 echo $dashboard_url;
             ?>" class="logo-link">
-                <img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasa Computers" class="logo-img">
+                <img src="../assets/MC-LOGO.png" alt="Mombasa Computers" class="logo-img">
             </a>
             
         </div>
@@ -40,7 +40,7 @@
             <?php $role = $_SESSION['role']; ?>
 
             <!-- My Profile (always visible) -->
-            <a href="/inventory_system/auth/myaccount.php" class="menu-item">
+            <a href="../auth/myaccount" class="menu-item">
                 <i class="fas fa-user"></i> MY PROFILE
             </a>
 
@@ -53,41 +53,41 @@
                 $sections['REPORTS'] = [
                     'icon' => 'fas fa-chart-line',
                     'items' => [
-                        ['Daily Report', '/inventory_system/reports/daily_report.php', 'fas fa-calendar-day'],
-                        ['Sales Report', '/inventory_system/sales/sales_logs.php', 'fas fa-chart-line'],
-                        ['Sales Team', '/inventory_system/reports/sales_team.php', 'fas fa-users'],
-                        ['Inventory Overview', '/inventory_system/reports/overview.php', 'fas fa-warehouse'],
-                        ['Categories Report', '/inventory_system/reports/categories_report.php', 'fas fa-list-alt'],
-                        ['Low Stock Report', '/inventory_system/reports/low_stock.php', 'fas fa-exclamation-triangle']
+                        ['Daily Report', '../reports/daily_report', 'fas fa-calendar-day'],
+                        ['Sales Report', '../sales/sales_logs', 'fas fa-chart-line'],
+                        ['Sales Team', '../reports/sales_team', 'fas fa-users'],
+                        ['Inventory Overview', '../reports/overview', 'fas fa-warehouse'],
+                        ['Categories Report', '../reports/categories_report', 'fas fa-list-alt'],
+                        ['Low Stock Report', '../reports/low_stock', 'fas fa-exclamation-triangle']
                     ]
                 ];
             }
             // Devices section
             if (in_array($role, ['super_admin','manager','inventory_admin'])) {
                 $deviceItems = [
-                    ['Add Device', '/inventory_system/devices/add_device.php', 'fas fa-plus'],
-                    ['Bulk Upload', '/inventory_system/devices/upload_excel.php', 'fas fa-file-upload'],
-                    ['Device List', '/inventory_system/devices/device_list.php', 'fas fa-list'],
-                    ['In Stock', '/inventory_system/devices/instock.php', 'fas fa-box'],
-                    ['Sold', '/inventory_system/devices/sold.php', 'fas fa-money-bill-wave'],
-                    ['Search Device', '/inventory_system/devices/search.php', 'fas fa-search'],
-                    ['Give out Device', '/inventory_system/devices/give_device.php', 'fas fa-gift'],
-                    ['Device Logs', '/inventory_system/devices/device_logs.php', 'fas fa-clipboard-list'],
+                    ['Add Device', '../devices/add_device', 'fas fa-plus'],
+                    ['Bulk Upload', '../devices/upload_excel', 'fas fa-file-upload'],
+                    ['Device List', '../devices/device_list', 'fas fa-list'],
+                    ['In Stock', '../devices/instock', 'fas fa-box'],
+                    ['Sold', '../devices/sold', 'fas fa-money-bill-wave'],
+                    ['Search Device', '../devices/search', 'fas fa-search'],
+                    ['Give out Device', '../devices/give_device', 'fas fa-gift'],
+                    ['Device Logs', '../devices/device_logs', 'fas fa-clipboard-list'],
                 ];
                 if ($role === 'super_admin' || $role === 'manager') {
-                    $deviceItems[] = ['Price list', '/inventory_system/devices/price_list.php', 'fas fa-dollar-sign'];
+                    $deviceItems[] = ['Price list', '../devices/price_list', 'fas fa-dollar-sign'];
                 }
                 $sections['DEVICES'] = ['icon' => 'fas fa-laptop', 'items' => $deviceItems];
             }
             if (in_array($role, ['super_admin', 'inventory_admin'])){
                 $smartboardItems = [
-                    ['Add Smartboard', '/inventory_system/smartboards/add_smartboard.php', 'fas fa-plus'],
-                    ['Bulk upload', '/inventory_system/smartboards/bulk_upload.php', 'fas fa-file-upload'],
-                    ['View stock', '/inventory_system/smartboards/smartboard_list.php', 'fas fa-box'],
-                    ['Sold', '/inventory_system/smartboards/sold_smartboards.php', 'fas fa-money-bill-wave'],                      
+                    ['Add Smartboard', '../smartboards/add_smartboard', 'fas fa-plus'],
+                    ['Bulk upload', '../smartboards/bulk_upload', 'fas fa-file-upload'],
+                    ['View stock', '../smartboards/smartboard_list', 'fas fa-box'],
+                    ['Sold', '../smartboards/sold_smartboards', 'fas fa-money-bill-wave'],                      
                 ];
                 if ($role === 'super_admin') {
-                    $smartboardItems[] = ['Price list', '/inventory_system/smartboards/pricelist.php', 'fas fa-dollar-sign'];
+                    $smartboardItems[] = ['Price list', '../smartboards/pricelist', 'fas fa-dollar-sign'];
                 }
                 $sections['SMARTBOARDS'] = ['icon' => 'fas fa-chalkboard','items' => $smartboardItems];
             }
@@ -97,14 +97,14 @@
                 $sections['MONITORS'] = [
                     'icon' => 'fas fa-desktop',
                     'items' => [
-                        ['Add Monitor', '/inventory_system/monitors/add_monitor.php', 'fas fa-plus'],
-                        ['Bulk upload', '/inventory_system/monitors/bulkupload.php', 'fas fa-file-upload'],
-                        ['View stock', '/inventory_system/monitors/monitors_instock.php', 'fas fa-box'],
-                        ['Sold', '/inventory_system/monitors/sold_monitors.php', 'fas fa-money-bill-wave'],
+                        ['Add Monitor', '../monitors/add_monitor', 'fas fa-plus'],
+                        ['Bulk upload', '../monitors/bulkupload', 'fas fa-file-upload'],
+                        ['View stock', '../monitors/monitors_instock', 'fas fa-box'],
+                        ['Sold', '../monitors/sold_monitors', 'fas fa-money-bill-wave'],
                     ]
                 ];
                 if ($role === 'super_admin' || $role === 'manager') {
-                    $sections['MONITORS']['items'][] = ['Price list', '/inventory_system/monitors/price_list_monitors.php', 'fas fa-dollar-sign'];
+                    $sections['MONITORS']['items'][] = ['Price list', '../monitors/price_list_monitors', 'fas fa-dollar-sign'];
                 }
             }
 
@@ -113,14 +113,14 @@
                 $sections['PRINTERS'] = [
                     'icon' => 'fas fa-print',
                     'items' => [
-                        ['Add Printer', '/inventory_system/printers/add_printer.php', 'fas fa-plus'],
-                        ['Bulk upload', '/inventory_system/printers/bulkupload.php', 'fas fa-file-upload'],
-                        ['View stock', '/inventory_system/printers/printers_instock.php', 'fas fa-box'],
-                        ['Sold', '/inventory_system/printers/soldprinters.php', 'fas fa-money-bill-wave'],
+                        ['Add Printer', '../printers/add_printer', 'fas fa-plus'],
+                        ['Bulk upload', '../printers/bulkupload', 'fas fa-file-upload'],
+                        ['View stock', '../printers/printers_instock', 'fas fa-box'],
+                        ['Sold', '../printers/soldprinters', 'fas fa-money-bill-wave'],
                     ]
                 ];
                 if ($role === 'super_admin' || $role === 'manager') {
-                    $sections['PRINTERS']['items'][] = ['Price list', '/inventory_system/printers/price_list_printers.php', 'fas fa-dollar-sign'];
+                    $sections['PRINTERS']['items'][] = ['Price list', '../printers/price_list_printers', 'fas fa-dollar-sign'];
                 }
             }
 
@@ -129,28 +129,28 @@
                 $sections['UPS'] = [
                     'icon' => 'fas fa-battery-full',
                     'items' => [
-                        ['Add UPS', '/inventory_system/ups/add_ups.php', 'fas fa-plus'],
-                        ['Bulk upload', '/inventory_system/ups/bulk_upload.php', 'fas fa-file-upload'],
-                        ['View Stock', '/inventory_system/ups/ups_instock.php', 'fas fa-box'],
-                        ['Sold UPS', '/inventory_system/ups/sold_ups.php', 'fas fa-money-bill-wave'],
+                        ['Add UPS', '../ups/add_ups', 'fas fa-plus'],
+                        ['Bulk upload', '../ups/bulk_upload', 'fas fa-file-upload'],
+                        ['View Stock', '../ups/ups_instock', 'fas fa-box'],
+                        ['Sold UPS', '../ups/sold_ups', 'fas fa-money-bill-wave'],
                     ]
                 ];
                 if ($role === 'super_admin') {
-                    $sections['UPS']['items'][] = ['Price list', '/inventory_system/ups/price_list_ups.php', 'fas fa-dollar-sign'];
+                    $sections['UPS']['items'][] = ['Price list', '../ups/price_list_ups', 'fas fa-dollar-sign'];
                 }
             }
 
           // PHONES
                 if (in_array($role, ['super_admin', 'manager', 'inventory_admin'])) {
                     $phoneItems = [
-                        ['Add Phone', '/inventory_system/phones/add_phone.php', 'fas fa-plus'],
-                        ['Bulk upload', '/inventory_system/phones/bulk_upload.php', 'fas fa-file-upload'],
-                        ['View stock', '/inventory_system/phones/phones_instock.php', 'fas fa-box'],
-                        ['Sold Phones', '/inventory_system/phones/sold_phones.php', 'fas fa-money-bill-wave'],
+                        ['Add Phone', '../phones/add_phone', 'fas fa-plus'],
+                        ['Bulk upload', '../phones/bulk_upload', 'fas fa-file-upload'],
+                        ['View stock', '../phones/phones_instock', 'fas fa-box'],
+                        ['Sold Phones', '../phones/sold_phones', 'fas fa-money-bill-wave'],
                     ];
                     // Only super_admin gets the Price list
                     if ($role === 'super_admin') {
-                        $phoneItems[] = ['Price list', '/inventory_system/phones/price_list_phones.php', 'fas fa-dollar-sign'];
+                        $phoneItems[] = ['Price list', '../phones/price_list_phones', 'fas fa-dollar-sign'];
                     }
                     $sections['PHONES'] = [
                         'icon' => 'fas fa-mobile-alt',
@@ -161,12 +161,12 @@
             // Accessories
             if (in_array($role, ['super_admin','manager','inventory_admin'])){
                 $accessoryItems = [
-                    ['Add Accessory', '/inventory_system/accessories/add_accessory.php', 'fas fa-plus'],
-                    ['Bulk upload', '/inventory_system/accessories/bulkupload.php', 'fas fa-file-upload'],
-                    ['View stock', '/inventory_system/accessories/accessory_instock.php', 'fas fa-box'],
-                    ['Give Out Accessory', '/inventory_system/accessories/give_accessory.php', 'fas fa-gift'],
-                    ['Accessory Logs', '/inventory_system/accessories/accessory_logs.php', 'fas fa-clipboard-list'],
-                    ['Sold', '/inventory_system/accessories/sold_accessories.php', 'fas fa-money-bill-wave'],
+                    ['Add Accessory', '../accessories/add_accessory', 'fas fa-plus'],
+                    ['Bulk upload', '../accessories/bulkupload', 'fas fa-file-upload'],
+                    ['View stock', '../accessories/accessory_instock', 'fas fa-box'],
+                    ['Give Out Accessory', '../accessories/give_accessory', 'fas fa-gift'],
+                    ['Accessory Logs', '../accessories/accessory_logs', 'fas fa-clipboard-list'],
+                    ['Sold', '../accessories/sold_accessories', 'fas fa-money-bill-wave'],
                 ];
                 $sections['ACCESSORIES'] = ['icon' => 'fas fa-headphones', 'items' => $accessoryItems];
             }
@@ -176,11 +176,11 @@
                 $sections['RAMs & SSDs'] = [
                     'icon' => 'fas fa-microchip',
                     'items' => [
-                        ['Add RAM/SSD', '/inventory_system/ram_ssd/add_ram.php', 'fas fa-plus'],
-                        ['View Stock', '/inventory_system/ram_ssd/rams_instocks.php', 'fas fa-box'],
-                        ['Give Out RAM/SSD', '/inventory_system/ram_ssd/give_ram.php', 'fas fa-gift'],
-                        ['RAM/SSD Logs', '/inventory_system/ram_ssd/ram_ssd_logs.php', 'fas fa-clipboard-list'],
-                        ['Sold RAMs/SSDs', '/inventory_system/ram_ssd/sold_rams_ssds.php', 'fas fa-shopping-cart'],
+                        ['Add RAM/SSD', '../ram_ssd/add_ram', 'fas fa-plus'],
+                        ['View Stock', '../ram_ssd/rams_instocks', 'fas fa-box'],
+                        ['Give Out RAM/SSD', '../ram_ssd/give_ram', 'fas fa-gift'],
+                        ['RAM/SSD Logs', '../ram_ssd/ram_ssd_logs', 'fas fa-clipboard-list'],
+                        ['Sold RAMs/SSDs', '../ram_ssd/sold_rams_ssds', 'fas fa-shopping-cart'],
                     ]
                 ];
             }
@@ -190,12 +190,12 @@
                 $sections['HDDs'] = [
                     'icon' => 'fas fa-database',
                     'items' => [
-                        ['Add HDD', '/inventory_system/hdds/add_hdd.php', 'fas fa-plus'],
-                        ['Bulk Upload', '/inventory_system/hdds/bulkupload_hdd.php', 'fas fa-file-upload'],
-                        ['View Stock', '/inventory_system/hdds/hdds_instock.php', 'fas fa-box'],
-                        ['Give Out HDD', '/inventory_system/hdds/give_hdd.php', 'fas fa-gift'],
-                        ['HDDs Logs', '/inventory_system/hdds/hdd_logs.php', 'fas fa-clipboard-list'],
-                        ['Sold HDDs', '/inventory_system/hdds/sold_hdds.php', 'fas fa-shopping-cart'],
+                        ['Add HDD', '../hdds/add_hdd', 'fas fa-plus'],
+                        ['Bulk Upload', '../hdds/bulkupload_hdd', 'fas fa-file-upload'],
+                        ['View Stock', '../hdds/hdds_instock', 'fas fa-box'],
+                        ['Give Out HDD', '../hdds/give_hdd', 'fas fa-gift'],
+                        ['HDDs Logs', '../hdds/hdd_logs', 'fas fa-clipboard-list'],
+                        ['Sold HDDs', '../hdds/sold_hdds', 'fas fa-shopping-cart'],
                     ]
                 ];
             }
@@ -204,15 +204,15 @@
             if (in_array($role, ['super_admin','manager','inventory_admin'])) {
                 $charger_items = [];
                 if (in_array($role, ['super_admin','manager','inventory_admin'])) {
-                    $charger_items[] = ['Add Charger', '/inventory_system/chargers/add_charger.php', 'fas fa-plus'];
-                    $charger_items[] = ['Bulk Upload', '/inventory_system/chargers/bulkupload_charger.php', 'fas fa-file-upload'];
-                    $charger_items[] = ['View Stock', '/inventory_system/chargers/chargers_instock.php', 'fas fa-box'];
+                    $charger_items[] = ['Add Charger', '../chargers/add_charger', 'fas fa-plus'];
+                    $charger_items[] = ['Bulk Upload', '../chargers/bulkupload_charger', 'fas fa-file-upload'];
+                    $charger_items[] = ['View Stock', '../chargers/chargers_instock', 'fas fa-box'];
                 }
                 if (in_array($role, ['inventory_admin', 'super_admin'])) {
-                    $charger_items[] = ['Give Out Charger', '/inventory_system/chargers/give_charger.php', 'fas fa-gift'];
+                    $charger_items[] = ['Give Out Charger', '../chargers/give_charger', 'fas fa-gift'];
                 }
-                $charger_items[] = ['Charger Logs', '/inventory_system/chargers/charger_logs.php', 'fas fa-clipboard-list'];
-                $charger_items[] = ['Sold Chargers', '/inventory_system/chargers/sold_chargers.php', 'fas fa-shopping-cart'];
+                $charger_items[] = ['Charger Logs', '../chargers/charger_logs', 'fas fa-clipboard-list'];
+                $charger_items[] = ['Sold Chargers', '../chargers/sold_chargers', 'fas fa-shopping-cart'];
                 if (!empty($charger_items)) {
                     $sections['CHARGERS'] = ['icon' => 'fas fa-bolt', 'items' => $charger_items];
                 }
@@ -223,11 +223,11 @@
                 $sections['GRAPHICS CARD'] = [
                     'icon' => 'fas fa-video',
                     'items' => [
-                        ['Add Graphics Card', '/inventory_system/graphic_cards/add_graphic_card.php', 'fas fa-plus'],
-                        ['View Stock', '/inventory_system/graphic_cards/graphic_cards_instock.php', 'fas fa-box'],
-                        ['Give Out Graphics Card', '/inventory_system/graphic_cards/give_graphics_card.php', 'fas fa-gift'],
-                        ['Graphics Cards Logs', '/inventory_system/graphic_cards/graphics_card_logs.php', 'fas fa-clipboard-list'],
-                        ['Sold Graphics Cards', '/inventory_system/graphic_cards/sold_graphic_cards.php', 'fas fa-shopping-cart'],
+                        ['Add Graphics Card', '../graphic_cards/add_graphic_card', 'fas fa-plus'],
+                        ['View Stock', '../graphic_cards/graphic_cards_instock', 'fas fa-box'],
+                        ['Give Out Graphics Card', '../graphic_cards/give_graphics_card', 'fas fa-gift'],
+                        ['Graphics Cards Logs', '../graphic_cards/graphics_card_logs', 'fas fa-clipboard-list'],
+                        ['Sold Graphics Cards', '../graphic_cards/sold_graphic_cards', 'fas fa-shopping-cart'],
                     ]
                 ];
             }
@@ -235,13 +235,13 @@
             if (in_array($role, ['super_admin','manager','inventory_admin','software'])) {
                 $sw_items = [];
                 if ($role === 'software') {
-                    $sw_items[] = ['Search Device', '/inventory_system/software/search_device.php', 'fas fa-search'];
+                    $sw_items[] = ['Search Device', '../software/search_device', 'fas fa-search'];
                 }
                 if (in_array($role, ['software','inventory_admin'])) {
-                    $sw_items[] = ['Upgrade/Downgrade', '/inventory_system/software/update_specs.php', 'fas fa-cog'];
+                    $sw_items[] = ['Upgrade/Downgrade', '../software/update_specs', 'fas fa-cog'];
                 }
                 if (in_array($role, ['super_admin','manager','inventory_admin','software'])) {
-                    $sw_items[] = ['Software Logs', '/inventory_system/software/software_logs.php', 'fas fa-clipboard-list'];
+                    $sw_items[] = ['Software Logs', '../software/software_logs', 'fas fa-clipboard-list'];
                 }
                 if (!empty($sw_items)) {
                     $sections['SOFTWARE DEP'] = ['icon' => 'fas fa-code-branch', 'items' => $sw_items];
@@ -252,11 +252,11 @@
             if (in_array($role, ['super_admin','manager','technician','inventory_admin'])) {
                 $repair_items = [];
                 if ($role === 'technician') {
-                    $repair_items[] = ['Search Device', '/inventory_system/repairs/search_device.php', 'fas fa-search'];
-                    $repair_items[] = ['Add Repair', '/inventory_system/repairs/add_repair.php', 'fas fa-plus'];
+                    $repair_items[] = ['Search Device', '../repairs/search_device', 'fas fa-search'];
+                    $repair_items[] = ['Add Repair', '../repairs/add_repair', 'fas fa-plus'];
                 }
-                $repair_items[] = ['Under Repair', '/inventory_system/repairs/under_repair.php', 'fas fa-tools'];
-                $repair_items[] = ['Repair Logs', '/inventory_system/repairs/repair_logs.php', 'fas fa-clipboard-list'];
+                $repair_items[] = ['Under Repair', '../repairs/under_repair', 'fas fa-tools'];
+                $repair_items[] = ['Repair Logs', '../repairs/repair_logs', 'fas fa-clipboard-list'];
                 $sections['REPAIRS'] = ['icon' => 'fas fa-wrench', 'items' => $repair_items];
             }
 
@@ -265,9 +265,9 @@
                 $sections['SALES'] = [
                     'icon' => 'fas fa-chart-line',
                     'items' => [
-                        ['Make a Sale', '/inventory_system/sales/make_sale.php', 'fas fa-cash-register'],
-                        ['My Sales', '/inventory_system/sales/my_sales.php', 'fas fa-chart-bar'],
-                        ['Search', '/inventory_system/sales/search_device.php', 'fas fa-search'],
+                        ['Make a Sale', '../sales/make_sale', 'fas fa-cash-register'],
+                        ['My Sales', '../sales/my_sales', 'fas fa-chart-bar'],
+                        ['Search', '../sales/search_device', 'fas fa-search'],
                     ]
                 ];
             }
@@ -275,8 +275,8 @@
                 $sections['QUOTATIONS'] = [
                     'icon' => 'fas fa-file-invoice',
                     'items' => [
-                        ['Write Quotation', '/inventory_system/quotations/write_quotation.php', 'fas fa-file-invoice'],
-                        ['My Quotations', '/inventory_system/quotations/quotations_list.php', 'fas fa-chart-bar'],
+                        ['Write Quotation', '../quotations/write_quotation', 'fas fa-file-invoice'],
+                        ['My Quotations', '../quotations/quotations_list', 'fas fa-chart-bar'],
                     ]
                 ];
             }
@@ -285,8 +285,8 @@
                 $sections['INVOICES'] = [
                     'icon' => 'fas fa-file-invoice-dollar',
                     'items' => [
-                        ['Write Invoice', '/inventory_system/invoices/write_invoice.php', 'fas fa-file-invoice-dollar'],
-                        ['My Invoices', '/inventory_system/invoices/invoices_list.php', 'fas fa-chart-bar'],
+                        ['Write Invoice', '../invoices/write_invoice', 'fas fa-file-invoice-dollar'],
+                        ['My Invoices', '../invoices/invoices_list', 'fas fa-chart-bar'],
                     ]
                 ];
             }
@@ -295,8 +295,8 @@
                 $sections['CLIENTS'] = [
                     'icon' => 'fas fa-users',
                     'items' => [
-                        ['Add Client', '/inventory_system/sales/add_client.php', 'fas fa-user-plus'],
-                        ['My Clients', '/inventory_system/sales/view_clients.php', 'fas fa-users'],
+                        ['Add Client', '../sales/add_client', 'fas fa-user-plus'],
+                        ['My Clients', '../sales/view_clients', 'fas fa-users'],
                     ]
                 ];
             }
@@ -306,10 +306,11 @@
                 $sections['SALES'] = [
                     'icon' => 'fas fa-chart-line',
                     'items' => [
-                        ['Process Sale', '/inventory_system/sales/make_sale.php', 'fas fa-cash-register'],
-                        ['Active Sales', '/inventory_system/sales/active_sales.php', 'fas fa-shopping-cart'],
-                        ['Sales Logs', '/inventory_system/sales/sales_logs.php', 'fas fa-chart-bar'],
-                        ['Search', '/inventory_system/sales/search_device.php', 'fas fa-search'],
+                        ['Process Sale', '../sales/make_sale', 'fas fa-cash-register'],
+                        ['Active Sales', '../sales/active_sales', 'fas fa-shopping-cart'],
+                        ['View Daily Report', '../reports/daily_report', 'fas fa-calendar-day'],
+                        ['Sales Logs', '../sales/sales_logs', 'fas fa-chart-bar'],
+                        ['Search', '../sales/search_device', 'fas fa-search'],
                     ]
                 ];
             }
@@ -317,8 +318,8 @@
                 $sections['EXPENSES'] = [
                     'icon' => 'fas fa-money-bill-wave',
                     'items' => [
-                        ['Add Expense', '/inventory_system/sales/add_expense.php', 'fas fa-money-bill-wave'],
-                        ['Expense Logs', '/inventory_system/sales/expenses_logs.php', 'fas fa-chart-bar'],
+                        ['Add Expense', '../sales/add_expense', 'fas fa-money-bill-wave'],
+                        ['Expense Logs', '../sales/expenses_logs', 'fas fa-chart-bar'],
                     ]
                 ];
             }
@@ -327,8 +328,8 @@
                 $sections['CLIENTS'] = [
                     'icon' => 'fas fa-users',
                     'items' => [
-                        ['Add Client', '/inventory_system/sales/add_client.php', 'fas fa-user-plus'],
-                        ['View Clients', '/inventory_system/sales/view_clients.php', 'fas fa-users'],
+                        ['Add Client', '../sales/add_client', 'fas fa-user-plus'],
+                        ['View Clients', '../sales/view_clients', 'fas fa-users'],
                     ]
                 ];
             }
@@ -340,8 +341,8 @@
                 $sections['TRANSFERS'] = [
                     'icon' => 'fas fa-exchange-alt',
                     'items' => [
-                        ['Make Transfer', '/inventory_system/transfers/index.php', 'fas fa-exchange-alt'],
-                        ['Transfer Logs', '/inventory_system/transfers/transfer_logs.php', 'fas fa-clipboard-list'],
+                        ['Make Transfer', '../transfers/index', 'fas fa-exchange-alt'],
+                        ['Transfer Logs', '../transfers/transfer_logs', 'fas fa-clipboard-list'],
                     ]
                 ];
             }
@@ -350,10 +351,10 @@
             if (in_array($role, ['super_admin','manager'])) {
                 $log_items = [];
                 if (in_array($role, ['super_admin','inventory_admin','manager'])) {
-                    $log_items[] = ['Sales Logs', '/inventory_system/sales/sales_logs.php', 'fas fa-chart-line'];
+                    $log_items[] = ['Sales Logs', '../sales/sales_logs', 'fas fa-chart-line'];
                 }
                 if ($role === 'super_admin') {
-                    $log_items[] = ['Activity Logs', '/inventory_system/logs/activity.php', 'fas fa-chart-bar'];
+                    $log_items[] = ['Activity Logs', '../logs/activity', 'fas fa-chart-bar'];
                 }
                 if (!empty($log_items)) {
                     $sections['LOGS'] = ['icon' => 'fas fa-history', 'items' => $log_items];
@@ -365,8 +366,8 @@
                 $sections['ADMIN'] = [
                     'icon' => 'fas fa-cogs',
                     'items' => [
-                        ['Add New user', '/inventory_system/auth/generate_code.php', 'fas fa-key'],
-                        ['View Users', '/inventory_system/auth/view_users.php', 'fas fa-users'],
+                        ['Add New user', '../auth/generate_code', 'fas fa-key'],
+                        ['View Users', '../auth/view_users', 'fas fa-users'],
                     ]
                 ];
             }
@@ -390,7 +391,7 @@
             }
             ?>
             <!-- Logout button -->
-            <a href="/inventory_system/auth/logout.php" class="menu-item logout-btn">
+            <a href="../auth/logout" class="menu-item logout-btn">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </a>
         </div>

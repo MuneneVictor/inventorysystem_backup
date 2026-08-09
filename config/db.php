@@ -2,7 +2,7 @@
 // Database connection settings
 $host = "localhost";     // your server
 $dbname = "inventory_db";  // your database name
-$username = "root";      // your MySQL username
+$username = "inventory_user";      // your MySQL username
 $password = "@MUNENE";          // your MySQL password
 
 try {

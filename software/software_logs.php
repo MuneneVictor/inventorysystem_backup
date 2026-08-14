@@ -233,13 +233,13 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         <h1><i class="fas fa-history"></i> Maintenance Logs</h1>
         <div class="breadcrumb">
             <?php if ($user_role === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php">Dashboard</a>
+                <a href="../dashboard/superadmindashboard.php">Dashboard</a>
             <?php elseif ($user_role === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php">Dashboard</a>
+                <a href="../dashboard/managerdashboard.php">Dashboard</a>
             <?php elseif ($user_role === 'inventory_admin'): ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php">Dashboard</a>
+                <a href="../dashboard/inventorydashboard.php">Dashboard</a>
             <?php else: ?>
-                <a href="/inventory_system/dashboard/softwaredashboard.php">Dashboard</a>
+                <a href="../dashboard/softwaredashboard.php">Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <span>Maintenance Logs</span>
@@ -336,7 +336,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                 <p>No maintenance records found matching your criteria.</p>
                 <?php if ($user_role === 'software'): ?>
                     <p style="font-size:0.85rem; margin-top:0.5rem; color:var(--gray-400);">
-                        <a href="/inventory_system/software/update_specs.php" style="color:var(--primary); text-decoration:none;">
+                        <a href="../software/update_specs.php" style="color:var(--primary); text-decoration:none;">
                             <i class="fas fa-plus-circle"></i> Perform your first update
                         </a>
                     </p>
@@ -386,10 +386,10 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 
     <!-- Quick Action Buttons -->
     <div class="actions-row">
-        <a href="/inventory_system/software/update_specs.php" class="link-btn">
+        <a href="../software/update_specs.php" class="link-btn">
             <i class="fas fa-microchip"></i> Update Specs
         </a>
-        <a href="/inventory_system/search/search_device.php" class="link-btn link-btn-sm">
+        <a href="../search/search_device.php" class="link-btn link-btn-sm">
             <i class="fas fa-search"></i> Search Device
         </a>
         <?php if (!empty($logs)): ?>

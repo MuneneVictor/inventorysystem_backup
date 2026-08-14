@@ -340,7 +340,7 @@ $branches = ['MOI', 'KIMATHI'];
     <div class="page-header">
         <h1><i class="fas fa-chart-pie"></i> Category Report</h1>
         <div class="breadcrumb">
-            <a href="<?= $role === 'super_admin' ? '/inventory_system/dashboard/superadmindashboard.php' : '/inventory_system/dashboard/managerdashboard.php' ?>"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="<?= $role === 'super_admin' ? '../dashboard/superadmindashboard.php' : '../dashboard/managerdashboard.php' ?>"><i class="fas fa-home"></i> Dashboard</a>
             <span> / </span>
             <span>Category Report</span>
         </div>
@@ -442,7 +442,7 @@ $branches = ['MOI', 'KIMATHI'];
 
     <!-- Back to Dashboard -->
     <div style="margin-top:1.5rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
-        <a href="<?= $role === 'super_admin' ? '/inventory_system/dashboard/superadmindashboard.php' : '/inventory_system/dashboard/managerdashboard.php' ?>" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+        <a href="<?= $role === 'super_admin' ? '../dashboard/superadmindashboard.php' : '../dashboard/managerdashboard.php' ?>" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
     </div>
 
     <div class="footer">

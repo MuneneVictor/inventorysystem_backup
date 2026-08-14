@@ -1168,7 +1168,7 @@ $cleanup->execute();
 <div class="login-card">
     <div class="card-header">
         <div class="logo-wrapper">
-            <img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasacomputers Logo">
+            <img src="../assets/MC-LOGO.png" alt="Mombasacomputers Logo">
         </div>
         <h1>Inventory System</h1>
         <p>Secure Access Portal</p>

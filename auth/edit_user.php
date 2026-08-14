@@ -530,7 +530,7 @@ if (isset($_SESSION['error'])) {
             Edit User
         </h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="../dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <span> / </span>
             <a href="view_users.php">Users</a>
             <span> / </span>

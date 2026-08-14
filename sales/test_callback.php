@@ -4,7 +4,7 @@
 $sale_id = $_GET['sale_id'] ?? 1;
 $type = $_GET['type'] ?? 'success';
 
-$callbackUrl = 'https://inventory.vimarktech.com/inventory_system/sales/mpesa_callback.php?sale_id=' . $sale_id;
+$callbackUrl = 'https://inventory.vimarktech.com../sales/mpesa_callback.php?sale_id=' . $sale_id;
 
 if ($type === 'success') {
     $data = [

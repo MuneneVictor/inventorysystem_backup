@@ -141,7 +141,7 @@ date_default_timezone_set('Africa/Nairobi');
     <div class="page-header">
         <h1><i class="fas fa-user-plus"></i> Add Client</h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/<?= $user_role === 'cashier' ? 'cashierdashboard.php' : 'salesdashboard.php' ?>">Dashboard</a>
+            <a href="../dashboard/<?= $user_role === 'cashier' ? 'cashierdashboard.php' : 'salesdashboard.php' ?>">Dashboard</a>
             <span> / </span>
             <a href="view_clients.php">Clients</a>
             <span> / </span>

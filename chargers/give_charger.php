@@ -193,7 +193,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <div class="page-header">
         <h1><i class="fas fa-bolt"></i> Give Out Charger</h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/<?= $user_role === 'super_admin' ? 'superadmindashboard.php' : 'inventorydashboard.php' ?>">Dashboard</a>
+            <a href="../dashboard/<?= $user_role === 'super_admin' ? 'superadmindashboard.php' : 'inventorydashboard.php' ?>">Dashboard</a>
             <span> / </span>
             <a href="chargers_instock.php">Charger Stock</a>
             <span> / </span>

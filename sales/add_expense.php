@@ -476,11 +476,11 @@ function safe($value) {
             </h1>
             <div class="breadcrumb">
                 <?php if ($user_role === 'super_admin'): ?>
-                    <a href="/inventory_system/dashboard/superadmindashboard.php">Dashboard</a>
+                    <a href="../dashboard/superadmindashboard.php">Dashboard</a>
                 <?php elseif ($user_role === 'manager'): ?>
-                    <a href="/inventory_system/dashboard/managerdashboard.php">Dashboard</a>
+                    <a href="../dashboard/managerdashboard.php">Dashboard</a>
                 <?php else: ?>
-                    <a href="/inventory_system/dashboard/cashierdashboard.php">Dashboard</a>
+                    <a href="../dashboard/cashierdashboard.php">Dashboard</a>
                 <?php endif; ?>
                 <span> / </span>
                 <span>Add Expense</span>
@@ -567,7 +567,7 @@ function safe($value) {
                         <button type="submit" class="btn btn-primary btn-block">
                             <i class="fas fa-save"></i> Save Expense
                         </button>
-                        <a href="<?= $user_role === 'cashier' ? '/inventory_system/dashboard/cashierdashboard.php' : ($user_role === 'manager' ? '/inventory_system/dashboard/managerdashboard.php' : '/inventory_system/dashboard/superadmindashboard.php') ?>" class="btn btn-secondary">
+                        <a href="<?= $user_role === 'cashier' ? '../dashboard/cashierdashboard.php' : ($user_role === 'manager' ? '../dashboard/managerdashboard.php' : '../dashboard/superadmindashboard.php') ?>" class="btn btn-secondary">
                             <i class="fas fa-times"></i> Cancel
                         </a>
                     </div>

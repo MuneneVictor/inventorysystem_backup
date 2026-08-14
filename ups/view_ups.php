@@ -286,11 +286,11 @@ if ($ups['status'] === 'sold') {
         </h1>
         <div class="breadcrumb">
             <?php if ($role === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($role === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($role === 'inventory_admin'): ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <a href="ups_instock.php">UPS Stock</a>

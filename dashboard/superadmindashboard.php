@@ -1107,8 +1107,8 @@ else $greeting = 'Good evening';
             <div class="page-title">Super Admin Dashboard</div>
             <div class="welcome-text"><i class="fas fa-hand-wave" style="color: var(--accent);"></i> <?= $greeting ?>, <?= htmlspecialchars(explode(' ', $user_name)[0]) ?> • <?= date('l, F j, Y') ?></div>
         </div>
-        <div class="logo"><img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'"></div>
-        <div><a href="/inventory_system/dashboard/superadmindashboard.php" class="link-btn"><i class="fas fa-sync-alt"></i> Refresh</a></div>
+        <div class="logo"><img src="../assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'"></div>
+        <div><a href="../dashboard/superadmindashboard.php" class="link-btn"><i class="fas fa-sync-alt"></i> Refresh</a></div>
     </div>
 
     <!-- Stats Cards Row - 5 Cards -->
@@ -1168,7 +1168,7 @@ else $greeting = 'Good evening';
     <div class="section">
         <div class="flex-between">
             <h4><i class="fas fa-warehouse"></i> Inventory Summary (Instock)</h4>
-            <a href="/inventory_system/reports/overview.php" class="link-btn"><i class="fas fa-boxes"></i> Inventory Overview</a>
+            <a href="../reports/overview.php" class="link-btn"><i class="fas fa-boxes"></i> Inventory Overview</a>
         </div>
         <div class="stats-grid">
             <div class="stat-item devices"><div class="stat-number"><?= number_format($inventoryDevices) ?></div><div class="stat-label"><i class="fas fa-laptop"></i> Devices</div></div>
@@ -1195,11 +1195,11 @@ else $greeting = 'Good evening';
             <tbody><?php if(!empty($topSellingItems)): $i=1; foreach($topSellingItems as $item): ?><tr><td class="badge badge-primary" style="text-align:center; width:35px"><?= $i++ ?></td><td><?= htmlspecialchars(substr($item['item_name'], 0, 30)) ?></td><td><?= htmlspecialchars($item['category']) ?></td><td class="badge badge-info" style="text-align:center"><?= number_format($item['quantity_sold']) ?></td><td class="text-success">Ksh <?= number_format($item['revenue'], 0) ?></td></tr><?php endforeach; else: ?><tr><td colspan="5" class="text-muted">No sales data this month</td></tr><?php endif; ?></tbody></table></div>
         </div>
         <div class="section" style="margin-bottom:0">
-            <div class="flex-between"><h4><i class="fas fa-chart-pie"></i> Top Categories</h4><a href="/inventory_system/reports/categories_report.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
+            <div class="flex-between"><h4><i class="fas fa-chart-pie"></i> Top Categories</h4><a href="../reports/categories_report.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
             <div class="categories-grid"><?php if(!empty($topCategories)): foreach($topCategories as $cat): ?><div class="category-card"><div class="category-count"><?= number_format($cat['count']) ?></div><div class="category-name"><?= htmlspecialchars($cat['category_name']) ?></div><div class="category-revenue">Ksh <?= number_format($cat['revenue'], 0) ?></div></div><?php endforeach; else: ?><div class="text-muted" style="text-align:center; padding:1rem;">No category data</div><?php endif; ?></div>
         </div>
         <div class="section" style="margin-bottom:0">
-            <div class="flex-between"><h4><i class="fas fa-trophy" style="color: var(--accent);"></i> Top Sales People</h4><a href="/inventory_system/reports/sales_team.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
+            <div class="flex-between"><h4><i class="fas fa-trophy" style="color: var(--accent);"></i> Top Sales People</h4><a href="../reports/sales_team.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
             <div class="table-responsive"><table class="table"><thead><tr><th>#</th><th>Sales Person</th><th>Branch</th><th>Revenue</th></tr></thead>
             <tbody><?php if(!empty($topSalesPeople)): $i=1; foreach($topSalesPeople as $p): ?><tr><td class="badge badge-primary" style="text-align:center; width:35px"><?= $i++ ?></td><td><i class="fas fa-user"></i> <?= htmlspecialchars(substr($p['full_name'], 0, 15)) ?></td><td><?= htmlspecialchars($p['branch']) ?></td><td class="text-success">Ksh <?= number_format($p['total_revenue'], 0) ?></td></tr><?php endforeach; else: ?><tr><td colspan="4" class="text-muted">No sales data</td></tr><?php endif; ?></tbody></table></div>
         </div>
@@ -1208,14 +1208,14 @@ else $greeting = 'Good evening';
     <!-- Recently Added Devices (only devices) -->
     <div class="full-width">
         <div class="section">
-            <div class="flex-between"><h4><i class="fas fa-plus-circle"></i> Recently Added Devices</h4><a href="/inventory_system/devices/device_list.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
+            <div class="flex-between"><h4><i class="fas fa-plus-circle"></i> Recently Added Devices</h4><a href="../devices/device_list.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
             <div class="table-responsive"><table class="table"><thead><tr><th>Serial</th><th>Model</th><th>Specs (RAM + Storage)</th><th>Status</th><th>Action</th></tr></thead>
             <tbody><?php if(!empty($recentAddedItems)): foreach($recentAddedItems as $d): ?><tr>
                 <td><code><?= htmlspecialchars(substr($d['id'], 0, 12)) ?></code></td>
                 <td><?= htmlspecialchars($d['item_name']) ?></td>
                 <td><?= htmlspecialchars($d['ram'] ?? '-') ?>GB RAM, <?= htmlspecialchars($d['storage_type'] ?? '') ?> <?= htmlspecialchars($d['storage_capacity'] ?? '-') ?>GB</td>
                 <td><?= $d['status'] == 'In Stock' ? '<span class="badge badge-success">In Stock</span>' : '<span class="badge badge-warning">Sold</span>' ?></td>
-                <td><a href="/inventory_system/devices/view_device.php?sn=<?= urlencode($d['id']) ?>" class="btn-view"><i class="fas fa-eye"></i> View</a></td>
+                <td><a href="../devices/view_device.php?sn=<?= urlencode($d['id']) ?>" class="btn-view"><i class="fas fa-eye"></i> View</a></td>
             </tr><?php endforeach; else: ?><tr><td colspan="5" class="text-muted">No recent devices</td></tr><?php endif; ?></tbody></table></div>
         </div>
     </div>
@@ -1225,7 +1225,7 @@ else $greeting = 'Good evening';
         <div class="section">
             <div class="flex-between">
                 <h4><i class="fas fa-tags"></i> Recently Sold Items</h4>
-                <a href="/inventory_system/sales/sales_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                <a href="../sales/sales_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table">
@@ -1268,7 +1268,7 @@ else $greeting = 'Good evening';
        <div class="section" style="margin-bottom: 0;">
     <div class="flex-between">
         <h4><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Low Stock Items</h4>
-        <a href="/inventory_system/reports/low_stock.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+        <a href="../reports/low_stock.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
     </div>
     <div class="table-responsive">
         <table class="table">
@@ -1324,19 +1324,19 @@ else $greeting = 'Good evening';
 
     <!-- Recent Activity Logs -->
     <div class="section">
-        <div class="flex-between"><h4><i class="fas fa-history"></i> Recent Activity Logs</h4><a href="/inventory_system/logs/activity.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
+        <div class="flex-between"><h4><i class="fas fa-history"></i> Recent Activity Logs</h4><a href="../logs/activity.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
         <div class="table-responsive"><table class="table"><thead><tr><th>User</th><th>Action</th><th>Time</th></tr></thead>
         <tbody><?php foreach($recentActivities as $a): ?><tr><td><strong><?= htmlspecialchars($a['done_by_name'] ?? 'System') ?></strong></td><td><span class="badge badge-info"><?= htmlspecialchars($a['action'] ?? '') ?></span> <?= htmlspecialchars(substr($a['details'] ?? '', 0, 60)) ?></td><td><?= date('M j, H:i', strtotime($a['created_at'] ?? '')) ?></td></tr><?php endforeach; ?></tbody></table></div>
     </div>
 
     <!-- Bottom Buttons (All Blue) -->
     <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem;">
-        <a href="/inventory_system/ram_ssd/add_ram.php" class="link-btn"><i class="fas fa-memory"></i> Add RAM/SSD</a>
-        <a href="/inventory_system/chargers/add_charger.php" class="link-btn"><i class="fas fa-bolt"></i> Add Charger</a>
-        <a href="/inventory_system/devices/add_device.php" class="link-btn"><i class="fas fa-plus-circle"></i> Add Device</a>
-        <a href="/inventory_system/sales/sales_logs.php" class="link-btn"><i class="fas fa-chart-line"></i> Sales Report</a>
-        <a href="/inventory_system/software/software_logs.php" class="link-btn"><i class="fas fa-code"></i> Software Report</a>
-        <a href="/inventory_system/repairs/repair_logs.php" class="link-btn"><i class="fas fa-tools"></i> Repair Report</a>
+        <a href="../ram_ssd/add_ram.php" class="link-btn"><i class="fas fa-memory"></i> Add RAM/SSD</a>
+        <a href="../chargers/add_charger.php" class="link-btn"><i class="fas fa-bolt"></i> Add Charger</a>
+        <a href="../devices/add_device.php" class="link-btn"><i class="fas fa-plus-circle"></i> Add Device</a>
+        <a href="../sales/sales_logs.php" class="link-btn"><i class="fas fa-chart-line"></i> Sales Report</a>
+        <a href="../software/software_logs.php" class="link-btn"><i class="fas fa-code"></i> Software Report</a>
+        <a href="../repairs/repair_logs.php" class="link-btn"><i class="fas fa-tools"></i> Repair Report</a>
     </div>
 
     <footer><i class="fas fa-copyright"></i> <?= date('Y'); ?> Mombasa Computers. All rights reserved. <span style="margin:0 0.5rem">•</span> v2.0.0</footer>

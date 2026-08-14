@@ -432,10 +432,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </h1>
         <div class="breadcrumb">
               <?php if($_SESSION['role'] === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>       
+                <a href="../dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>       
             <?php endif; ?>
             <?php if($_SESSION['role'] === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <a href="price_list.php">Price List</a>

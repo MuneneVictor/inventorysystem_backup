@@ -219,7 +219,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <div class="page-header">
         <h1><i class="fas fa-hdd"></i> Sell HDD</h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/<?= $_SESSION['role'] === 'sales' ? 'salesdashboard.php' : 'cashierdashboard.php' ?>">Dashboard</a>
+            <a href="../dashboard/<?= $_SESSION['role'] === 'sales' ? 'salesdashboard.php' : 'cashierdashboard.php' ?>">Dashboard</a>
             <span> / </span>
             <span>Sell HDD</span>
         </div>

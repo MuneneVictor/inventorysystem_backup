@@ -139,7 +139,7 @@ $pdf->AddPage();
 
 // Title
 // Add company logo
-$logo_file = $_SERVER['DOCUMENT_ROOT'] . '/inventory_system/assets/MC-LOGO.png';
+$logo_file = $_SERVER['DOCUMENT_ROOT'] . '../assets/MC-LOGO.png';
 if (file_exists($logo_file)) {
     $pdf->Image($logo_file, 15, 10, 50, 0, 'PNG'); // X=15, Y=10, Width=50, auto height
 }

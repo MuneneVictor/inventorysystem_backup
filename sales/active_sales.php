@@ -130,7 +130,7 @@ date_default_timezone_set('Africa/Nairobi');
             Active Sales
         </h1>
         <div class="breadcrumb">
-            <a href="<?= $role === 'cashier' ? '/inventory_system/dashboard/cashierdashboard.php' : '/inventory_system/dashboard/salesdashboard.php' ?>">Dashboard</a>
+            <a href="<?= $role === 'cashier' ? '../dashboard/cashierdashboard.php' : '../dashboard/salesdashboard.php' ?>">Dashboard</a>
             <span> / </span>
             <span>Active Sales</span>
         </div>

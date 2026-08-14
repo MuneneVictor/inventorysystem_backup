@@ -393,7 +393,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <div class="page-header">
         <h1><i class="fas fa-exchange-alt"></i> Give Out Device</h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/<?= $user_role === 'super_admin' ? 'superadmindashboard.php' : ($user_role === 'manager' ? 'managerdashboard.php' : 'inventorydashboard.php') ?>">Dashboard</a>
+            <a href="../dashboard/<?= $user_role === 'super_admin' ? 'superadmindashboard.php' : ($user_role === 'manager' ? 'managerdashboard.php' : 'inventorydashboard.php') ?>">Dashboard</a>
             <span> / </span>
             <span>Give Out Device</span>
         </div>

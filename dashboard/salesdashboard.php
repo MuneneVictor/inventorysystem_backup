@@ -720,10 +720,10 @@ $myTodayRevenueJS = $myTodayRevenue;
             </div>
         </div>
         <div class="logo">
-            <img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'">
+            <img src="../assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'">
         </div>
         <div>
-            <a href="/inventory_system/dashboard/salesdashboard.php" class="link-btn">
+            <a href="../dashboard/salesdashboard.php" class="link-btn">
                 <i class="fas fa-sync-alt"></i> Refresh
             </a>
         </div>

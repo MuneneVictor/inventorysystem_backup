@@ -742,10 +742,10 @@ $currentMonth = date('F Y');
             </div>
         </div>
         <div class="logo">
-            <img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'">
+            <img src="../assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'">
         </div>
         <div>
-            <a href="/inventory_system/dashboard/softwaredashboard.php" class="link-btn">
+            <a href="../dashboard/softwaredashboard.php" class="link-btn">
                 <i class="fas fa-sync-alt"></i> Refresh
             </a>
         </div>
@@ -812,7 +812,7 @@ $currentMonth = date('F Y');
                     <?php endif; ?>
                 </div>
             </div>
-            <a href="/inventory_system/software/update_specs.php" class="link-btn link-btn-sm">
+            <a href="../software/update_specs.php" class="link-btn link-btn-sm">
                 <i class="fas fa-plus"></i> New Update
             </a>
         </div>
@@ -826,7 +826,7 @@ $currentMonth = date('F Y');
                 Recent Updates
                 <span class="badge-count"><?= count($myRecentUpdates) ?></span>
             </h4>
-            <a href="/inventory_system/software/software_logs.php" class="view-all-link">
+            <a href="../software/software_logs.php" class="view-all-link">
                 <i class="fas fa-arrow-right"></i> View All
             </a>
         </div>
@@ -876,7 +876,7 @@ $currentMonth = date('F Y');
                     <i class="fas fa-clipboard-list"></i>
                     <p>No updates performed yet.</p>
                     <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--gray-400);">
-                        <a href="/inventory_system/software/update_specs.php" style="color: var(--primary); text-decoration: none;">
+                        <a href="../software/update_specs.php" style="color: var(--primary); text-decoration: none;">
                             <i class="fas fa-plus-circle"></i> Perform your first update
                         </a>
                     </p>
@@ -887,13 +887,13 @@ $currentMonth = date('F Y');
 
     <!-- Quick Action Links -->
     <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
-        <a href="/inventory_system/software/update_specs.php" class="link-btn">
+        <a href="../software/update_specs.php" class="link-btn">
             <i class="fas fa-microchip"></i> Update Device Specs
         </a>
-        <a href="/inventory_system/software/software_logs.php" class="link-btn link-btn-sm">
+        <a href="../software/software_logs.php" class="link-btn link-btn-sm">
             <i class="fas fa-history"></i> View All History
         </a>
-        <a href="/inventory_system/search/search_device.php" class="link-btn link-btn-sm">
+        <a href="../search/search_device.php" class="link-btn link-btn-sm">
             <i class="fas fa-search"></i> Search Device
         </a>
     </div>

@@ -405,7 +405,7 @@ date_default_timezone_set('Africa/Nairobi');
     <div class="page-header">
         <h1><i class="fas fa-cash-register"></i> Checkout</h1>
         <div class="breadcrumb">
-            <a href="<?= $user_role === 'cashier' ? '/inventory_system/dashboard/cashierdashboard.php' : '/inventory_system/dashboard/salesdashboard.php' ?>"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="<?= $user_role === 'cashier' ? '../dashboard/cashierdashboard.php' : '../dashboard/salesdashboard.php' ?>"><i class="fas fa-home"></i> Dashboard</a>
             <span> / </span>
             <a href="make_sale.php">Make a Sale</a>
             <span> / </span>

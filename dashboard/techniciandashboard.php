@@ -307,8 +307,8 @@ $systemPendingRepairsFormatted = number_format($systemPendingRepairs);
             <div class="page-title">Technician Dashboard</div>
             <div class="welcome-text"><i class="fas fa-hand-wave" style="color: var(--accent);"></i> <?= safe($greeting) ?>, <?= safe(explode(' ', $user_name)[0]) ?> • <?= date('l, F j, Y') ?></div>
         </div>
-        <div class="logo"><img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'"></div>
-        <div><a href="/inventory_system/dashboard/techniciandashboard.php" class="link-btn"><i class="fas fa-sync-alt"></i> Refresh</a></div>
+        <div class="logo"><img src="../assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'"></div>
+        <div><a href="../dashboard/techniciandashboard.php" class="link-btn"><i class="fas fa-sync-alt"></i> Refresh</a></div>
     </div>
 
     <!-- Main Stats Row - 4 Cards -->
@@ -425,7 +425,7 @@ $systemPendingRepairsFormatted = number_format($systemPendingRepairs);
                 </table>
             </div>
             <div style="margin-top:0.5rem;">
-                <a href="/inventory_system/repairs/under_repair.php" class="view-all-link">View All Pending <i class="fas fa-arrow-right"></i></a>
+                <a href="../repairs/under_repair.php" class="view-all-link">View All Pending <i class="fas fa-arrow-right"></i></a>
             </div>
         </div>
 
@@ -476,7 +476,7 @@ $systemPendingRepairsFormatted = number_format($systemPendingRepairs);
                 </table>
             </div>
             <div style="margin-top:0.5rem;">
-                <a href="/inventory_system/repairs/repair_logs.php" class="view-all-link">View All Repairs <i class="fas fa-arrow-right"></i></a>
+                <a href="../repairs/repair_logs.php" class="view-all-link">View All Repairs <i class="fas fa-arrow-right"></i></a>
             </div>
         </div>
     </div>
@@ -518,9 +518,9 @@ $systemPendingRepairsFormatted = number_format($systemPendingRepairs);
 
     <!-- Quick Action Buttons -->
     <div class="actions-row">
-        <a href="/inventory_system/repairs/add_repair.php" class="link-btn"><i class="fas fa-plus-circle"></i> Add New Repair</a>
-        <a href="/inventory_system/repairs/repair_logs.php" class="link-btn"><i class="fas fa-list"></i> View All Repairs</a>
-        <a href="/inventory_system/repairs/under_repair.php" class="link-btn link-btn-sm"><i class="fas fa-user-cog"></i> My Pending Repairs</a>
+        <a href="../repairs/add_repair.php" class="link-btn"><i class="fas fa-plus-circle"></i> Add New Repair</a>
+        <a href="../repairs/repair_logs.php" class="link-btn"><i class="fas fa-list"></i> View All Repairs</a>
+        <a href="../repairs/under_repair.php" class="link-btn link-btn-sm"><i class="fas fa-user-cog"></i> My Pending Repairs</a>
     </div>
 
     <footer>

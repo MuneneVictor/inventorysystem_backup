@@ -524,11 +524,11 @@ else $greeting = 'Good evening';
             </h1>
             <div class="breadcrumb">
                 <?php if ($user_role === 'super_admin'): ?>
-                    <a href="/inventory_system/dashboard/superadmindashboard.php">Dashboard</a>
+                    <a href="../dashboard/superadmindashboard.php">Dashboard</a>
                 <?php elseif ($user_role === 'manager'): ?>
-                    <a href="/inventory_system/dashboard/managerdashboard.php">Dashboard</a>
+                    <a href="../dashboard/managerdashboard.php">Dashboard</a>
                 <?php else: ?>
-                    <a href="/inventory_system/dashboard/cashierdashboard.php">Dashboard</a>
+                    <a href="../dashboard/cashierdashboard.php">Dashboard</a>
                 <?php endif; ?>
                 <span> / </span>
                 <span>Daily Report</span>

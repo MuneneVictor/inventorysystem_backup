@@ -714,7 +714,7 @@ else $greeting = 'Good evening';
             Complete Repair
         </h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/techniciandashboard.php">Dashboard</a>
+            <a href="../dashboard/techniciandashboard.php">Dashboard</a>
             <span> / </span>
             <a href="under_repair.php">Under Repair</a>
             <span> / </span>

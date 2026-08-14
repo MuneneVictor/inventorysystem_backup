@@ -723,7 +723,7 @@ require_once "../includes/sidebar.php";
             User Management
         </h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="../dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <span> / </span>
             <span>View Users</span>
         </div>

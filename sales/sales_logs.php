@@ -323,11 +323,11 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         <h1><i class="fas fa-chart-line"></i> Sales Logs</h1>
         <div class="breadcrumb">
             <?php if ($role === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php">Dashboard</a>
+                <a href="../dashboard/superadmindashboard.php">Dashboard</a>
             <?php elseif ($role === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php">Dashboard</a>
+                <a href="../dashboard/managerdashboard.php">Dashboard</a>
             <?php else: ?>
-                <a href="/inventory_system/dashboard/cashierdashboard.php">Dashboard</a>
+                <a href="../dashboard/cashierdashboard.php">Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <span>Sales Logs</span>

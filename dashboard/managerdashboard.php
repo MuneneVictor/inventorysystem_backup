@@ -839,8 +839,8 @@ else $greeting = 'Good evening';
             <div class="page-title">Manager Dashboard</div>
             <div class="welcome-text"><i class="fas fa-hand-wave" style="color: var(--accent);"></i> <?= $greeting ?>, <?= htmlspecialchars(explode(' ', $user_name)[0]) ?> • <?= date('l, F j, Y') ?></div>
         </div>
-        <div class="logo"><img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'"></div>
-        <div><a href="/inventory_system/dashboard/managerdashboard.php" class="link-btn"><i class="fas fa-sync-alt"></i> Refresh</a></div>
+        <div class="logo"><img src="../assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'"></div>
+        <div><a href="../dashboard/managerdashboard.php" class="link-btn"><i class="fas fa-sync-alt"></i> Refresh</a></div>
     </div>
 
     <!-- Stats Cards Row -->
@@ -893,12 +893,12 @@ else $greeting = 'Good evening';
     <!-- Top Selling Items & Categories & Branch Sales -->
     <div class="three-column">
         <div class="section" style="margin-bottom:0">
-            <div class="flex-between"><h4><i class="fas fa-fire" style="color: var(--accent);"></i> Top Selling Items</h4><a href="/inventory_system/reports/top_items.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
+            <div class="flex-between"><h4><i class="fas fa-fire" style="color: var(--accent);"></i> Top Selling Items</h4><a href="../reports/top_items.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
             <div class="table-responsive"><table class="table"><thead><tr><th>#</th><th>Item Name</th><th>Category</th><th>Qty</th><th>Revenue</th></tr></thead>
             <tbody><?php if(!empty($topSellingItems)): $i=1; foreach($topSellingItems as $item): ?><tr><td class="badge badge-primary" style="text-align:center; width:35px"><?= $i++ ?></td><td><?= htmlspecialchars(substr($item['item_name'], 0, 30)) ?></td><td><?= htmlspecialchars($item['category']) ?></td><td class="badge badge-info" style="text-align:center"><?= number_format($item['quantity_sold']) ?></td><td class="text-success">Ksh <?= number_format($item['revenue'], 0) ?></td></tr><?php endforeach; else: ?><tr><td colspan="5" class="text-muted">No sales data this month</td></tr><?php endif; ?></tbody></table></div>
         </div>
         <div class="section" style="margin-bottom:0">
-            <div class="flex-between"><h4><i class="fas fa-chart-pie"></i> Top Categories</h4><a href="/inventory_system/reports/category_report.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
+            <div class="flex-between"><h4><i class="fas fa-chart-pie"></i> Top Categories</h4><a href="../reports/category_report.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a></div>
             <div class="categories-grid"><?php if(!empty($topCategories)): foreach($topCategories as $cat): ?><div class="category-card"><div class="category-count"><?= number_format($cat['count']) ?></div><div class="category-name"><?= htmlspecialchars($cat['category_name']) ?></div><div class="category-revenue">Ksh <?= number_format($cat['revenue'], 0) ?></div></div><?php endforeach; else: ?><div class="text-muted" style="text-align:center; padding:1rem;">No category data</div><?php endif; ?></div>
         </div>
         <div class="section" style="margin-bottom:0">
@@ -913,7 +913,7 @@ else $greeting = 'Good evening';
         <div class="section">
             <div class="flex-between">
                 <h4><i class="fas fa-tags"></i> Recently Sold Items</h4>
-                <a href="/inventory_system/sales/sales_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                <a href="../sales/sales_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table">
@@ -951,10 +951,10 @@ else $greeting = 'Good evening';
         <div class="section" style="margin-bottom:0">
             <h4><i class="fas fa-bolt"></i> Quick Actions</h4>
             <div style="display:flex; flex-direction:column; gap:0.75rem; margin-top:0.5rem;">
-                <a href="/inventory_system/devices/add_device.php" class="link-btn" style="justify-content:center;"><i class="fas fa-plus-circle"></i> Add Device</a>
-                <a href="/inventory_system/ram_ssd/add_ram.php" class="link-btn" style="justify-content:center;"><i class="fas fa-memory"></i> Add RAM/SSD</a>
-                <a href="/inventory_system/chargers/add_charger.php" class="link-btn" style="justify-content:center;"><i class="fas fa-bolt"></i> Add Charger</a>
-                <a href="/inventory_system/sales/sales_logs.php" class="link-btn" style="justify-content:center;"><i class="fas fa-chart-line"></i> Sales Report</a>
+                <a href="../devices/add_device.php" class="link-btn" style="justify-content:center;"><i class="fas fa-plus-circle"></i> Add Device</a>
+                <a href="../ram_ssd/add_ram.php" class="link-btn" style="justify-content:center;"><i class="fas fa-memory"></i> Add RAM/SSD</a>
+                <a href="../chargers/add_charger.php" class="link-btn" style="justify-content:center;"><i class="fas fa-bolt"></i> Add Charger</a>
+                <a href="../sales/sales_logs.php" class="link-btn" style="justify-content:center;"><i class="fas fa-chart-line"></i> Sales Report</a>
             </div>
         </div>
         <div class="section" style="margin-bottom:0">

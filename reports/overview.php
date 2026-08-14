@@ -371,15 +371,15 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         <h1><i class="fas fa-list-ul"></i> Inventory Overview</h1>
         <div class="breadcrumb">
             <?php if ($_SESSION['role'] === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php">Dashboard</a>
+                <a href="../dashboard/superadmindashboard.php">Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php">Dashboard</a>
+                <a href="../dashboard/managerdashboard.php">Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'inventory_admin'): ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php">Dashboard</a>
+                <a href="../dashboard/inventorydashboard.php">Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'sales'): ?>
-                <a href="/inventory_system/dashboard/salesdashboard.php">Dashboard</a>
+                <a href="../dashboard/salesdashboard.php">Dashboard</a>
             <?php else: ?>
-                <a href="/inventory_system/index.php">Home</a>
+                <a href="../index.php">Home</a>
             <?php endif; ?>
             <span> / </span>
             <span>Overview</span>

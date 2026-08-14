@@ -337,7 +337,7 @@ $reset_date_to = date('Y-m-t', strtotime($default_from));
     <div class="page-header">
         <h1><i class="fas fa-users"></i> Sales Team Report</h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="../dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <span> / </span>
             <span>Sales Team</span>
         </div>

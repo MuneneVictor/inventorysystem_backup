@@ -1,6 +1,6 @@
 <?php return array(
     'root' => array(
-        'name' => 'victor/inventory_system',
+        'name' => 'victor..',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
         'reference' => 'a5f564b3abac5573ee0f3f00b04e2aac02762c24',
@@ -118,7 +118,7 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
-        'victor/inventory_system' => array(
+        'victor..' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
             'reference' => 'a5f564b3abac5573ee0f3f00b04e2aac02762c24',

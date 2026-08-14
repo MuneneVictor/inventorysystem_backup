@@ -340,7 +340,7 @@ else $greeting = 'Good evening';
     <div class="page-header">
         <h1><i class="fas fa-chart-line"></i> My Sales</h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/salesdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="../dashboard/salesdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <span> / </span>
             <span>My Sales</span>
         </div>

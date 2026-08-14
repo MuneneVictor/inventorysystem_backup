@@ -362,13 +362,13 @@ if (in_array($role, ['super_admin', 'inventory_admin'])) {
         <h1><i class="fas fa-bolt"></i> Sold Chargers</h1>
         <div class="breadcrumb">
             <?php if ($_SESSION['role'] === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'inventory_admin'): ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'cashier'): ?>
-                <a href="/inventory_system/dashboard/cashierdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/cashierdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <span>Sold Chargers</span>

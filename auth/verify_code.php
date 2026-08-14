@@ -294,7 +294,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
 <div class="verify-card">
     <div class="card-header">
         <div class="logo-wrapper">
-            <img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasacomputers Logo">
+            <img src="../assets/MC-LOGO.png" alt="Mombasacomputers Logo">
         </div>
         <h1>Verify Registration</h1>
         <p>Enter your unique access code</p>

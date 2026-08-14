@@ -194,7 +194,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <div class="page-header">
         <h1><i class="fas fa-microchip"></i> Give Out Graphic Card</h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/<?= $user_role === 'super_admin' ? 'superadmindashboard.php' : 'inventorydashboard.php' ?>">Dashboard</a>
+            <a href="../dashboard/<?= $user_role === 'super_admin' ? 'superadmindashboard.php' : 'inventorydashboard.php' ?>">Dashboard</a>
             <span> / </span>
             <a href="graphic_cards_instock.php">Graphic Card Stock</a>
             <span> / </span>

@@ -160,7 +160,7 @@ if ($user_role === 'manager' || $user_role === 'super_admin') {
     <div class="page-header">
         <h1><i class="fas fa-users"></i> View Clients</h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/<?= $user_role === 'cashier' ? 'cashierdashboard.php' : ($user_role === 'sales' ? 'salesdashboard.php' : 'superadmindashboard.php') ?>">Dashboard</a>
+            <a href="../dashboard/<?= $user_role === 'cashier' ? 'cashierdashboard.php' : ($user_role === 'sales' ? 'salesdashboard.php' : 'superadmindashboard.php') ?>">Dashboard</a>
             <span> / </span>
             <span>Clients</span>
         </div>

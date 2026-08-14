@@ -207,13 +207,13 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
         <h1><i class="fas fa-search"></i> Search Device</h1>
         <div class="breadcrumb">
             <?php if ($user_role === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php">Dashboard</a>
+                <a href="../dashboard/superadmindashboard.php">Dashboard</a>
             <?php elseif ($user_role === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php">Dashboard</a>
+                <a href="../dashboard/managerdashboard.php">Dashboard</a>
             <?php elseif ($user_role === 'inventory_admin'): ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php">Dashboard</a>
+                <a href="../dashboard/inventorydashboard.php">Dashboard</a>
             <?php else: ?>
-                <a href="/inventory_system/dashboard/softwaredashboard.php">Dashboard</a>
+                <a href="../dashboard/softwaredashboard.php">Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <span>Search Device</span>
@@ -241,7 +241,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
             <i class="fas fa-box-open"></i>
             <p>Device not found or you do not have permission.</p>
             <p style="font-size:0.85rem; margin-top:0.5rem; color:var(--gray-400);">
-                <a href="/inventory_system/software/update_specs.php?sn=<?= urlencode($search_sn) ?>" style="color:var(--primary);">
+                <a href="../software/update_specs.php?sn=<?= urlencode($search_sn) ?>" style="color:var(--primary);">
                     <i class="fas fa-plus-circle"></i> Add this device for maintenance?
                 </a>
             </p>
@@ -312,15 +312,15 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 
                 <!-- Quick Actions -->
                 <div class="quick-actions">
-                    <a href="/inventory_system/software/update_specs.php?sn=<?= urlencode($device['serial_number']) ?>" class="link-btn">
+                    <a href="../software/update_specs.php?sn=<?= urlencode($device['serial_number']) ?>" class="link-btn">
                         <i class="fas fa-microchip"></i> Update Specs
                     </a>
                     <?php if ($device['status'] === 'In Stock'): ?>
-                        <a href="/inventory_system/repairs/add_repair.php?mode=instock&sn=<?= urlencode($device['serial_number']) ?>" class="link-btn link-btn-sm" style="background:#f59e0b;">
+                        <a href="../repairs/add_repair.php?mode=instock&sn=<?= urlencode($device['serial_number']) ?>" class="link-btn link-btn-sm" style="background:#f59e0b;">
                             <i class="fas fa-tools"></i> Add to Repair
                         </a>
                     <?php endif; ?>
-                    <a href="/inventory_system/devices/view_device.php?serial=<?= urlencode($device['serial_number']) ?>" class="link-btn link-btn-sm">
+                    <a href="../devices/view_device.php?serial=<?= urlencode($device['serial_number']) ?>" class="link-btn link-btn-sm">
                         <i class="fas fa-eye"></i> Full Details
                     </a>
                 </div>
@@ -341,7 +341,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                         <i class="fas fa-clipboard-list" style="font-size:2rem;"></i>
                         <p style="margin-top:0.5rem;">No maintenance records for this device.</p>
                         <p style="font-size:0.85rem; color:var(--gray-400);">
-                            <a href="/inventory_system/software/update_specs.php?sn=<?= urlencode($device['serial_number']) ?>" style="color:var(--primary);">
+                            <a href="../software/update_specs.php?sn=<?= urlencode($device['serial_number']) ?>" style="color:var(--primary);">
                                 <i class="fas fa-plus-circle"></i> Perform first update
                             </a>
                         </p>

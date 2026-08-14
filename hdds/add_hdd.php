@@ -455,11 +455,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h1><i class="fas fa-hdd"></i> Add HDD</h1>
         <div class="breadcrumb">
             <?php if ($_SESSION['role'] === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/managerdashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'inventory_admin'): ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="../dashboard/inventorydashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <a href="hdds_instock.php">HDDs</a>

@@ -387,13 +387,13 @@ if ($ajax) {
         <h1><i class="fas fa-search"></i> Search Inventory (In Stock)</h1>
         <div class="breadcrumb">
             <?php if ($user_role === 'sales'): ?>
-                <a href="/inventory_system/dashboard/salesdashboard.php">Dashboard</a>
+                <a href="../dashboard/salesdashboard.php">Dashboard</a>
             <?php elseif ($user_role === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php">Dashboard</a>
+                <a href="../dashboard/superadmindashboard.php">Dashboard</a>
             <?php elseif ($user_role === 'inventory_admin'): ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php">Dashboard</a>
+                <a href="../dashboard/inventorydashboard.php">Dashboard</a>
             <?php elseif ($user_role === 'cashier'): ?>
-                <a href="/inventory_system/dashboard/cashierdashboard.php">Dashboard</a>
+                <a href="../dashboard/cashierdashboard.php">Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <span>Search Inventory</span>

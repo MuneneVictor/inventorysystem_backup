@@ -200,11 +200,11 @@ else $greeting = 'Good evening';
         <h1><i class="fas fa-mobile-alt"></i> Transfer Phone</h1>
         <div class="breadcrumb">
             <?php if ($user_role === 'super_admin'): ?>
-                <a href="/inventory_system/dashboard/superadmindashboard.php">Dashboard</a>
+                <a href="../dashboard/superadmindashboard.php">Dashboard</a>
             <?php elseif ($user_role === 'manager'): ?>
-                <a href="/inventory_system/dashboard/managerdashboard.php">Dashboard</a>
+                <a href="../dashboard/managerdashboard.php">Dashboard</a>
             <?php else: ?>
-                <a href="/inventory_system/dashboard/inventorydashboard.php">Dashboard</a>
+                <a href="../dashboard/inventorydashboard.php">Dashboard</a>
             <?php endif; ?>
             <span> / </span>
             <a href="index.php">Transfers</a>

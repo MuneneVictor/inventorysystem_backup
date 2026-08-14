@@ -915,10 +915,10 @@ else $greeting = 'Good evening';
             </div>
         </div>
         <div class="logo">
-            <img src="/inventory_system/assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'">
+            <img src="../assets/MC-LOGO.png" alt="Mombasa Computers" onerror="this.style.display='none'">
         </div>
         <div>
-            <a href="/inventory_system/dashboard/inventorydashboard.php" class="link-btn">
+            <a href="../dashboard/inventorydashboard.php" class="link-btn">
                 <i class="fas fa-sync-alt"></i> Refresh
             </a>
         </div>
@@ -928,7 +928,7 @@ else $greeting = 'Good evening';
     <div class="section">
          <div class="flex-between">
             <h4><i class="fas fa-warehouse"></i> Inventory Summary (Instock)</h4>
-            <a href="/inventory_system/reports/overview.php" class="link-btn"><i class="fas fa-boxes"></i> Inventory Overview</a>
+            <a href="../reports/overview.php" class="link-btn"><i class="fas fa-boxes"></i> Inventory Overview</a>
         </div>
         <div class="stats-grid">
             <div class="stat-item devices"><div class="stat-number"><?= number_format($summary['devices']) ?></div><div class="stat-label"><i class="fas fa-laptop"></i> Devices</div></div>
@@ -951,7 +951,7 @@ else $greeting = 'Good evening';
         <div class="section" style="margin-bottom: 0;">
             <div class="flex-between">
                 <h4><i class="fas fa-fire" style="color: var(--accent);"></i> Top Selling Items</h4>
-                <a href="/inventory_system/reports/top_items.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                <a href="../reports/top_items.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table">
@@ -975,7 +975,7 @@ else $greeting = 'Good evening';
         <div class="section" style="margin-bottom: 0;">
             <div class="flex-between">
                 <h4><i class="fas fa-chart-pie"></i> Top Categories</h4>
-                <a href="/inventory_system/reports/category_report.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                <a href="../reports/category_report.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.75rem;">
                 <?php if(!empty($topCategories)): foreach($topCategories as $cat): ?>
@@ -995,7 +995,7 @@ else $greeting = 'Good evening';
     <div class="section">
         <div class="flex-between">
             <h4><i class="fas fa-plus-circle"></i> Recently Added</h4>
-            <a href="/inventory_system/reports/overview.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+            <a href="../reports/overview.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
         </div>
         <div class="table-responsive">
             <table class="table">
@@ -1022,7 +1022,7 @@ else $greeting = 'Good evening';
         <div class="section" style="margin-bottom: 0;">
             <div class="flex-between">
                 <h4><i class="fas fa-memory"></i> Recently Given RAM/SSD</h4>
-                <a href="/inventory_system/ram_ssd/ram_ssd_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                <a href="../ram_ssd/ram_ssd_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table">
@@ -1046,7 +1046,7 @@ else $greeting = 'Good evening';
         <div class="section" style="margin-bottom: 0;">
             <div class="flex-between">
                 <h4><i class="fas fa-hdd"></i> Recently Given HDDs</h4>
-                <a href="/inventory_system/hdds/hdd_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                <a href="../hdds/hdd_logs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table">
@@ -1074,7 +1074,7 @@ else $greeting = 'Good evening';
         <div class="section" style="margin-bottom: 0;">
             <div class="flex-between">
                 <h4><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Low Stock Items</h4>
-                <a href="/inventory_system/reports/low_stock.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                <a href="../reports/low_stock.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table">
@@ -1126,7 +1126,7 @@ else $greeting = 'Good evening';
                 <div style="background: var(--gray-50); border-radius: var(--radius-lg); padding: 0.75rem; text-align: center; border: 1px solid var(--gray-200);">
                     <div style="font-size: 1.3rem; font-weight: 700; color: var(--info);"><?= number_format($softwareLogsCount) ?></div>
                     <div style="font-size: 0.65rem; color: var(--gray-500);">Software Logs</div>
-                    <a href="/inventory_system/software/software_logs.php" class="link-btn link-btn-sm" style="margin-top:0.25rem;">View</a>
+                    <a href="../software/software_logs.php" class="link-btn link-btn-sm" style="margin-top:0.25rem;">View</a>
                 </div>
             </div>
         </div>

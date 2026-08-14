@@ -393,7 +393,7 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
     <div class="page-header">
         <h1><i class="fas fa-chalkboard"></i> Sell Smartboard</h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/salesdashboard.php">Dashboard</a>
+            <a href="../dashboard/salesdashboard.php">Dashboard</a>
             <span> / </span>
             <span>Sell Smartboard</span>
         </div>

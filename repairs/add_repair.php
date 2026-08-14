@@ -885,7 +885,7 @@ function safe($value) {
         <div class="page-header">
             <h1><i class="fas fa-tools"></i> Add Repair</h1>
             <div class="breadcrumb">
-                <a href="/inventory_system/dashboard/techniciandashboard.php">Dashboard</a>
+                <a href="../dashboard/techniciandashboard.php">Dashboard</a>
                 <span> / </span>
                 <a href="repair_logs.php">Repairs</a>
                 <span> / </span>

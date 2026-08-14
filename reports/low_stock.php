@@ -198,7 +198,7 @@ date_default_timezone_set('Africa/Nairobi');
     <div class="page-header">
         <h1><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Low Stock Items</h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/<?= $user_role === 'cashier' ? 'cashierdashboard.php' : ($user_role === 'inventory_admin' ? 'inventorydashboard.php' : 'superadmindashboard.php') ?>">Dashboard</a>
+            <a href="../dashboard/<?= $user_role === 'cashier' ? 'cashierdashboard.php' : ($user_role === 'inventory_admin' ? 'inventorydashboard.php' : 'superadmindashboard.php') ?>">Dashboard</a>
             <span> / </span>
             <span>Low Stock</span>
         </div>

@@ -86,7 +86,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                                 <p>Your registration code is:</p>
                                 <div class="code">' . $token . '</div>
                                 <p>Please use this code to complete your registration at:</p>
-                                <p><a href="https://yourdomain.com/inventory_system/auth/register.php">https://yourdomain.com/inventory_system/auth/register.php</a></p>
+                                <p><a href="https://yourdomain.com../auth/register.php">https://yourdomain.com../auth/register.php</a></p>
                                 <p>This code is valid for <strong>one-time use only</strong> and expires after 20 minutes.</p>
                                 <p>If you did not request this registration, please ignore this email.</p>
                             </div>
@@ -462,7 +462,7 @@ $roles = ['manager','inventory_admin','technician','software','sales', 'cashier'
             Generate Registration Code
         </h1>
         <div class="breadcrumb">
-            <a href="/inventory_system/dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="../dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <span> / </span>
             <a href="view_users.php">Users</a>
             <span> / </span>

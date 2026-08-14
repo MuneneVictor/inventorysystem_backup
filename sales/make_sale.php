@@ -620,11 +620,11 @@ if (isset($_GET['error'])) {
         </h1>
         <div class="breadcrumb">
             <a href="<?php
-                if ($role === 'super_admin') echo '/inventory_system/dashboard/superadmindashboard.php';
-                elseif ($role === 'manager') echo '/inventory_system/dashboard/managerdashboard.php';
-                elseif ($role === 'inventory_admin') echo '/inventory_system/dashboard/inventorydashboard.php';
-                elseif ($role === 'sales') echo '/inventory_system/dashboard/salesdashboard.php';
-                elseif ($role === 'cashier') echo '/inventory_system/dashboard/cashierdashboard.php';
+                if ($role === 'super_admin') echo '../dashboard/superadmindashboard.php';
+                elseif ($role === 'manager') echo '../dashboard/managerdashboard.php';
+                elseif ($role === 'inventory_admin') echo '../dashboard/inventorydashboard.php';
+                elseif ($role === 'sales') echo '../dashboard/salesdashboard.php';
+                elseif ($role === 'cashier') echo '../dashboard/cashierdashboard.php';
                 else echo '#';
             ?>"><i class="fas fa-home"></i> Dashboard</a>
             <span> / </span>

@@ -78,14 +78,14 @@ function sendCompletionEmail($toEmail, $customerName, $repair, $branch, $parts_u
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
-        $mail->Host       = 'smtp.zoho.com';
+        $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'support@vimarktech.com';
-        $mail->Password   = 'Gct8ygb6Htfj';
+        $mail->Username   = '';
+        $mail->Password   = '';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port       = 465;
 
-        $mail->setFrom('support@vimarktech.com', 'Mombasa Computers');
+        $mail->setFrom('', 'Mombasa Computers');
         $mail->addAddress($toEmail);
 
         // Get branch location details

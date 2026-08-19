@@ -83,6 +83,79 @@ function generateVerificationCode() {
     return strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
 }
 
+
+// ============================================================
+// LOGIN ACCESS POLICY
+// Super Admin is always exempt from scheduled login restrictions.
+// ============================================================
+function checkLoginAccessPolicy(PDO $conn, array $user): array {
+    if (($user['role'] ?? '') === 'super_admin') {
+        return ['allowed' => true, 'message' => ''];
+    }
+
+    try {
+        $stmt = $conn->query("SELECT * FROM login_access_settings WHERE id = 1 LIMIT 1");
+        $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        // Fail open if the settings table has not yet been installed.
+        error_log('Login access settings error: ' . $e->getMessage());
+        return ['allowed' => true, 'message' => ''];
+    }
+
+    if (!$settings || (int)$settings['restrictions_enabled'] !== 1) {
+        return ['allowed' => true, 'message' => ''];
+    }
+
+    date_default_timezone_set($settings['timezone'] ?: 'Africa/Nairobi');
+
+    $now = new DateTimeImmutable('now');
+    $dayName = strtolower($now->format('l'));
+
+    $blockedDays = array_filter(array_map(
+        'trim',
+        explode(',', strtolower((string)($settings['blocked_days'] ?? '')))
+    ));
+
+    if (in_array($dayName, $blockedDays, true)) {
+        $custom = trim((string)($settings['blocked_day_message'] ?? ''));
+        return [
+            'allowed' => false,
+            'message' => $custom !== ''
+                ? $custom
+                : 'Login is not allowed today. Please try again on the next working day.'
+        ];
+    }
+
+    if ((int)$settings['enforce_working_hours'] === 1) {
+        $start = substr((string)$settings['work_start_time'], 0, 5);
+        $end = substr((string)$settings['work_end_time'], 0, 5);
+        $current = $now->format('H:i');
+
+        $withinHours = true;
+
+        if ($start !== '' && $end !== '') {
+            if ($start <= $end) {
+                $withinHours = ($current >= $start && $current <= $end);
+            } else {
+                // Supports overnight windows, e.g. 18:00 - 06:00
+                $withinHours = ($current >= $start || $current <= $end);
+            }
+        }
+
+        if (!$withinHours) {
+            $custom = trim((string)($settings['outside_hours_message'] ?? ''));
+            return [
+                'allowed' => false,
+                'message' => $custom !== ''
+                    ? $custom
+                    : "Login is only allowed between {$start} and {$end}."
+            ];
+        }
+    }
+
+    return ['allowed' => true, 'message' => ''];
+}
+
 // ============================================================
 // SEND VERIFICATION CODE EMAIL - PROFESSIONAL STYLING
 // ============================================================
@@ -485,6 +558,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 if ($user) {
+                    // Re-check access policy after device verification in case the
+                    // allowed login period changed while the code was being entered.
+                    $accessPolicy = checkLoginAccessPolicy($conn, $user);
+                    if (!$accessPolicy['allowed']) {
+                        $error = $accessPolicy['message'];
+                        unset($_SESSION['pending_verification_user_id']);
+                        unset($_SESSION['pending_verification_device_id']);
+                    } else {
                     session_regenerate_id(true);
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['role'] = $user['role'];
@@ -528,6 +609,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         header("Location: ../dashboard/cashierdashboard.php");
                     }
                     exit();
+                    } // end login access policy allowed
                 }
             } else {
                 $failed = ($device['failed_attempts'] ?? 0) + 1;
@@ -578,6 +660,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif (!empty($user['account_locked_until']) && strtotime($user['account_locked_until']) > time()) {
                 $error = "Something went wrong. Please try again later.";
             } elseif (password_verify($password, $user['password'])) {
+                // Enforce Super Admin controlled login schedule before session/device login.
+                $accessPolicy = checkLoginAccessPolicy($conn, $user);
+                if (!$accessPolicy['allowed']) {
+                    $error = $accessPolicy['message'];
+                } else {
                 // Check if user has any verified devices
                 $stmt = $conn->prepare("SELECT COUNT(*) FROM user_devices WHERE user_id = ? AND is_verified = 1");
                 $stmt->execute([$user['id']]);
@@ -746,6 +833,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $show_verification = true;
                     $verification_sent = true;
                 }
+                } // end login access policy allowed
             } else {
                 // Wrong password - track failed attempts
                 $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");

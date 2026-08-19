@@ -62,11 +62,6 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
 }
 
 // ============================================================
-// UPDATE LAST ACTIVITY
-// ============================================================
-$_SESSION['last_activity'] = time();
-
-// ============================================================
 // REGENERATE SESSION ID PERIODICALLY (every 5 minutes)
 // ============================================================
 if (!isset($_SESSION['session_regenerated']) || (time() - $_SESSION['session_regenerated'] > 300)) {
@@ -90,6 +85,139 @@ if (!$user || $user['is_active'] != 1) {
     header("Location: ../auth/login.php");
     exit();
 }
+
+
+// ============================================================
+// ENFORCE CURRENT LOGIN ACCESS POLICY
+// This runs on every protected request.
+// Super Admin is always exempt.
+// ============================================================
+function checkCurrentSessionLoginAccessPolicy(PDO $conn, array $user): array {
+    if (($user['role'] ?? '') === 'super_admin') {
+        return ['allowed' => true, 'message' => ''];
+    }
+
+    try {
+        $settingsStmt = $conn->query(
+            "SELECT restrictions_enabled, blocked_days, enforce_working_hours,
+                    work_start_time, work_end_time, timezone,
+                    blocked_day_message, outside_hours_message
+             FROM login_access_settings
+             WHERE id = 1
+             LIMIT 1"
+        );
+        $settings = $settingsStmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        // Fail open if the settings table is temporarily unavailable.
+        // This avoids accidentally locking every user out because of a DB/migration issue.
+        error_log('Auth access settings error: ' . $e->getMessage());
+        return ['allowed' => true, 'message' => ''];
+    }
+
+    if (!$settings || (int)$settings['restrictions_enabled'] !== 1) {
+        return ['allowed' => true, 'message' => ''];
+    }
+
+    $timezone = trim((string)($settings['timezone'] ?? 'Africa/Nairobi'));
+    if ($timezone === '') {
+        $timezone = 'Africa/Nairobi';
+    }
+
+    try {
+        $tz = new DateTimeZone($timezone);
+    } catch (Throwable $e) {
+        $tz = new DateTimeZone('Africa/Nairobi');
+    }
+
+    $now = new DateTimeImmutable('now', $tz);
+    $dayName = strtolower($now->format('l'));
+
+    $blockedDays = array_values(array_filter(array_map(
+        'trim',
+        explode(',', strtolower((string)($settings['blocked_days'] ?? '')))
+    )));
+
+    if (in_array($dayName, $blockedDays, true)) {
+        $customMessage = trim((string)($settings['blocked_day_message'] ?? ''));
+
+        return [
+            'allowed' => false,
+            'message' => $customMessage !== ''
+                ? $customMessage
+                : 'The system is not available today. Please log in on the next working day.'
+        ];
+    }
+
+    if ((int)$settings['enforce_working_hours'] === 1) {
+        $start = substr((string)($settings['work_start_time'] ?? ''), 0, 5);
+        $end   = substr((string)($settings['work_end_time'] ?? ''), 0, 5);
+        $current = $now->format('H:i');
+
+        $withinHours = true;
+
+        if ($start !== '' && $end !== '') {
+            if ($start <= $end) {
+                // Normal same-day window, e.g. 08:00 - 18:00
+                $withinHours = ($current >= $start && $current <= $end);
+            } else {
+                // Overnight window, e.g. 18:00 - 06:00
+                $withinHours = ($current >= $start || $current <= $end);
+            }
+        }
+
+        if (!$withinHours) {
+            $customMessage = trim((string)($settings['outside_hours_message'] ?? ''));
+
+            return [
+                'allowed' => false,
+                'message' => $customMessage !== ''
+                    ? $customMessage
+                    : "The system is only available between {$start} and {$end}."
+            ];
+        }
+    }
+
+    return ['allowed' => true, 'message' => ''];
+}
+
+$accessPolicy = checkCurrentSessionLoginAccessPolicy($conn, $user);
+
+if (!$accessPolicy['allowed']) {
+    $restrictedMessage = $accessPolicy['message'];
+
+    // Clear all authenticated session data.
+    $_SESSION = [];
+
+    // Expire the current PHP session cookie.
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(
+            session_name(),
+            '',
+            time() - 42000,
+            $params["path"],
+            $params["domain"],
+            $params["secure"],
+            $params["httponly"]
+        );
+    }
+
+    session_destroy();
+
+    // Start a clean session so the login page can optionally display
+    // the reason the user was automatically logged out.
+    session_start();
+    $_SESSION['access_restricted_message'] = $restrictedMessage;
+
+    header("Location: ../auth/login.php?restricted=1");
+    exit();
+}
+
+// ============================================================
+// UPDATE LAST ACTIVITY
+// Only update after the live access-policy check passes.
+// ============================================================
+$_SESSION['last_activity'] = time();
 
 // ============================================================
 // STORE USER INFO FOR EASY ACCESS

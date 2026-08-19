@@ -368,6 +368,7 @@
                     'items' => [
                         ['Add New user', '../auth/generate_code', 'fas fa-key'],
                         ['View Users', '../auth/view_users', 'fas fa-users'],
+                        ['Settings', '../auth/settings', 'fas fa-cog'],
                     ]
                 ];
             }

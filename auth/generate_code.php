@@ -86,7 +86,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                                 <p>Your registration code is:</p>
                                 <div class="code">' . $token . '</div>
                                 <p>Please use this code to complete your registration at:</p>
-                                <p><a href="https://yourdomain.com../auth/register.php">https://yourdomain.com../auth/register.php</a></p>
+                                <p><a href="https://imanmombasaco.com/auth/register">https://imanmombasaco.com/auth/register</a></p>
                                 <p>This code is valid for <strong>one-time use only</strong> and expires after 20 minutes.</p>
                                 <p>If you did not request this registration, please ignore this email.</p>
                             </div>

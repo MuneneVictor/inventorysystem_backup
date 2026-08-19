@@ -375,10 +375,7 @@ if ($phone['status'] === 'sold') {
                     <div class="info-label">Selling Price</div>
                     <div class="info-value"><strong style="color: #059669;"><?= !empty($sold_info['selling_price']) ? 'KES ' . number_format($sold_info['selling_price'], 2) : '-' ?></strong></div>
                 </div>
-                <div class="info-item">
-                    <div class="info-label">Customer</div>
-                    <div class="info-value"><?= htmlspecialchars($sold_info['customer_name'] ?? 'Walk-in Customer') ?></div>
-                </div>
+              
             </div>
         </div>
     </div>

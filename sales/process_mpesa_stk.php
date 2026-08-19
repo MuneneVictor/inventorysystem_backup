@@ -73,13 +73,12 @@ if ($amount <= 0) {
 // ============================================
 // PAYHERO CREDENTIALS - UPDATE THESE
 // ============================================
-//$username = "Rce66miWcVEnzfjLbSKp";
-    //$password = "npe9cWNlJOz0GZhkWr5Bz5xVpuJPfHF5tOPLMs2B";
-$username = 'Rce66miWcVEnzfjLbSKp';       // Replace with your PayHero username
-$password = 'npe9cWNlJOz0GZhkWr5Bz5xVpuJPfHF5tOPLMs2B';       // Replace with your PayHero password
-$channel_id = '10427';             // Your channel ID
+
+$username = '';       // Replace with your PayHero username
+$password = '';       // Replace with your PayHero password
+$channel_id = '';             // Your channel ID
 $api_url = 'https://backend.payhero.co.ke/api/v2/payments';
-$callback_url = 'https://inventory.mombasacomputers.com../sales/mpesa_callback.php?sale_id=' . $sale_id;
+$callback_url = 'https://imanmombasaco.com/sales/mpesa_callback.php?sale_id=' . $sale_id;
 
 // Basic Auth
 $auth = base64_encode($username . ':' . $password);

@@ -122,6 +122,56 @@ if ($role !== 'super_admin') {
     die("Access denied! Only Super Administrators can view users.");
 }
 
+
+// Get current global login access policy for display in the users table.
+$loginPolicy = [
+    'restrictions_enabled' => 0,
+    'blocked_days' => '',
+    'enforce_working_hours' => 0,
+    'work_start_time' => '08:00:00',
+    'work_end_time' => '18:00:00'
+];
+
+try {
+    $policyStmt = $conn->query("SELECT restrictions_enabled, blocked_days, enforce_working_hours, work_start_time, work_end_time
+                                FROM login_access_settings WHERE id = 1 LIMIT 1");
+    $savedPolicy = $policyStmt->fetch(PDO::FETCH_ASSOC);
+    if ($savedPolicy) {
+        $loginPolicy = array_merge($loginPolicy, $savedPolicy);
+    }
+} catch (Throwable $e) {
+    // Keep defaults if migration has not yet been installed.
+}
+
+function getUserLoginRestrictionLabel(array $user, array $policy): array {
+    if (($user['role'] ?? '') === 'super_admin') {
+        return ['class' => 'badge-active', 'text' => 'Exempt (Super Admin)'];
+    }
+
+    if ((int)$policy['restrictions_enabled'] !== 1) {
+        return ['class' => 'badge-active', 'text' => 'No schedule restriction'];
+    }
+
+    $parts = [];
+
+    $days = array_values(array_filter(array_map('trim', explode(',', (string)$policy['blocked_days']))));
+    if ($days) {
+        $parts[] = 'Blocked: ' . implode(', ', array_map('ucfirst', $days));
+    }
+
+    if ((int)$policy['enforce_working_hours'] === 1) {
+        $start = substr((string)$policy['work_start_time'], 0, 5);
+        $end = substr((string)$policy['work_end_time'], 0, 5);
+        $parts[] = "Allowed {$start}–{$end}";
+    }
+
+    if (!$parts) {
+        return ['class' => 'badge-active', 'text' => 'No schedule restriction'];
+    }
+
+    return ['class' => 'badge-locked', 'text' => implode(' | ', $parts)];
+}
+
 // Get filters from GET
 $filterSearch = trim($_GET['search'] ?? '');
 $filterBranch = $_GET['branch'] ?? '';
@@ -185,7 +235,6 @@ $locked_users = count(array_filter($users, fn($u) => !empty($u['account_locked_u
 $success_msg = $_SESSION['success'] ?? '';
 $error_msg = $_SESSION['error'] ?? '';
 unset($_SESSION['success'], $_SESSION['error']);
-require_once "../includes/sidebar.php";
 ?>
 
 <!DOCTYPE html>
@@ -715,7 +764,7 @@ require_once "../includes/sidebar.php";
     </style>
 </head>
 <body>
-
+<?php include "../includes/sidebar.php"; ?>
 <div class="main-content">
     <div class="page-header">
         <h1>
@@ -826,6 +875,9 @@ require_once "../includes/sidebar.php";
                 <a href="generate_code.php" class="btn btn-secondary">
                     <i class="fas fa-key"></i> Generate Code
                 </a>
+                <a href="settings.php" class="btn btn-secondary">
+                    <i class="fas fa-clock"></i> Login Access Settings
+                </a>
             </div>
         </form>
     </div>
@@ -861,6 +913,7 @@ require_once "../includes/sidebar.php";
                             <th>Status</th>
                             <th>Date Created</th>
                             <th>Last Login</th>
+                            <th>Login Restrictions</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -869,6 +922,7 @@ require_once "../includes/sidebar.php";
                         <?php 
                         $is_locked = !empty($u['account_locked_until']) && strtotime($u['account_locked_until']) > time();
                         $failed_attempts = (int)($u['failed_attempts'] ?? 0);
+                        $restrictionLabel = getUserLoginRestrictionLabel($u, $loginPolicy);
                         ?>
                         <tr>
                             <td><?= $i++ ?></td>
@@ -938,6 +992,12 @@ require_once "../includes/sidebar.php";
                             </td>
                             <td><small><?= date('M j, Y g:i A', strtotime($u['created_at'])) ?></small></td>
                             <td><small><?= $u['last_login'] ? date('M j, Y g:i A', strtotime($u['last_login'])) : 'Never' ?></small></td>
+                            <td>
+                                <span class="badge <?= htmlspecialchars($restrictionLabel['class']) ?>">
+                                    <i class="fas fa-clock"></i>
+                                    <?= htmlspecialchars($restrictionLabel['text']) ?>
+                                </span>
+                            </td>
                             <td>
                                 <div class="action-buttons">
                                     <a href="edit_user.php?id=<?= $u['id'] ?>" class="btn btn-secondary btn-sm">

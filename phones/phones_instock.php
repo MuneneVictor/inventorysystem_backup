@@ -473,16 +473,11 @@ $branches = array_unique(array_column($phones, 'branch'));
                                 <td><small><?= date('M j, Y g:i A', strtotime($p['date_added'])) ?></small></td>
                                 <td>
                                     <div class="action-links">
-                                        <?php if (in_array($role, ['super_admin', 'manager'])): ?>
-                                            <?php if ($p['price'] === null): ?>
-                                                <a href="add_price_phone.php?id=<?= urlencode($p['serial_number']) ?>" class="action-link">
-                                                    <i class="fas fa-tag"></i> Add Price
+                                        <?php if (in_array($role, ['super_admin', 'manager', 'inventory_admin'])): ?>
+                                          
+                                                <a href="view_phone?sn=<?= urlencode($p['serial_number']) ?>" class="action-link">
+                                                    <i class="fas fa-eye"></i> view
                                                 </a>
-                                            <?php else: ?>
-                                                <a href="update_price_phone.php?id=<?= urlencode($p['serial_number']) ?>" class="action-link">
-                                                    <i class="fas fa-edit"></i> Update Price
-                                                </a>
-                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </td>

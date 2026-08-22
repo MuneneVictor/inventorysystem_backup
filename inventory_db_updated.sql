@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1deb1+deb12u1
+-- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 09, 2026 at 02:52 PM
--- Server version: 10.11.14-MariaDB-0+deb12u2
--- PHP Version: 8.3.32
+-- Generation Time: Aug 22, 2026 at 01:56 PM
+-- Server version: 8.4.3
+-- PHP Version: 8.3.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -28,19 +28,19 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `accessories` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` varchar(100) NOT NULL,
-  `quantity` int(11) NOT NULL,
-  `added_by` int(11) DEFAULT NULL,
-  `place` enum('display','store','warehouse') NOT NULL DEFAULT 'display',
-  `branch` enum('MOI','KIMATHI') NOT NULL DEFAULT 'MOI',
+  `quantity` int NOT NULL,
+  `added_by` int DEFAULT NULL,
+  `place` enum('display','store','warehouse') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'display',
+  `branch` enum('MOI','KIMATHI') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'MOI',
   `price` decimal(10,2) DEFAULT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `price`) STORED,
-  `date_added` timestamp NULL DEFAULT current_timestamp(),
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `price`)) STORED,
+  `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `status` enum('instock','sold') DEFAULT 'instock',
-  `updated_by` int(11) DEFAULT NULL,
+  `updated_by` int DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `accessories`
@@ -48,15 +48,15 @@ CREATE TABLE `accessories` (
 
 INSERT INTO `accessories` (`id`, `name`, `quantity`, `added_by`, `place`, `branch`, `price`, `date_added`, `status`, `updated_by`, `updated_at`) VALUES
 (1, 'DELL optical mouse', 21, 1, 'display', 'MOI', NULL, '2026-06-17 15:07:59', 'instock', 1, '2026-06-22 13:34:24'),
-(2, 'JBL essential 2 speaker', 7, 1, 'display', 'KIMATHI', 20000.00, '2026-06-22 08:38:12', 'instock', 4, '2026-07-07 13:08:42'),
+(2, 'JBL essential 2 speaker', 4, 1, 'display', 'KIMATHI', NULL, '2026-06-22 08:38:12', 'instock', 8, '2026-07-22 10:16:50'),
 (3, 'power cable', 5, 1, 'display', 'MOI', 500.00, '2026-03-17 09:51:07', 'instock', NULL, NULL),
-(4, 'power cable', 20, 1, 'store', 'KIMATHI', 600.00, '2026-03-15 10:29:47', 'instock', 1, '2026-07-09 15:18:07'),
+(4, 'power cable', 22, 1, 'store', 'KIMATHI', 600.00, '2026-03-15 10:29:47', 'instock', 1, '2026-07-04 16:41:13'),
 (5, 'HP Keyboard', 5, 1, 'store', 'MOI', NULL, '2026-06-22 10:34:24', 'instock', 1, '2026-06-22 13:34:24'),
 (6, 'USB-C Adapter', 3, 1, 'warehouse', 'MOI', NULL, '2026-06-22 10:34:24', 'instock', 1, '2026-06-22 13:34:24'),
 (7, 'power cable', 6, 1, 'store', 'KIMATHI', 500.00, '2026-03-19 08:15:54', 'instock', 1, '2026-06-26 11:16:06'),
 (8, 'power cable', 1, 8, 'display', 'MOI', NULL, '2026-03-17 09:22:16', 'instock', NULL, NULL),
 (9, 'power cable', 10, 1, 'store', 'MOI', 600.00, '2026-07-04 13:41:13', 'instock', 1, '2026-07-04 16:41:13'),
-(10, 'JBL essential 2 speaker', 1, 1, 'display', 'MOI', 20000.00, '2026-07-05 04:47:21', 'instock', 1, '2026-07-05 07:47:21');
+(10, 'JBL essential 2 speaker', 1, 1, 'display', 'MOI', NULL, '2026-07-05 04:47:21', 'instock', 1, '2026-07-05 07:47:21');
 
 -- --------------------------------------------------------
 
@@ -65,17 +65,17 @@ INSERT INTO `accessories` (`id`, `name`, `quantity`, `added_by`, `place`, `branc
 --
 
 CREATE TABLE `accessories_logs` (
-  `id` int(11) NOT NULL,
-  `accessory_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `accessory_id` int DEFAULT NULL,
   `accessory_name` varchar(100) DEFAULT NULL,
-  `quantity` int(11) DEFAULT NULL,
-  `given_to` int(11) DEFAULT NULL,
-  `given_by` int(11) DEFAULT NULL,
+  `quantity` int DEFAULT NULL,
+  `given_to` int DEFAULT NULL,
+  `given_by` int DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
   `status` enum('sold','pending_sale','returned') DEFAULT 'pending_sale',
-  `date_given` timestamp NULL DEFAULT current_timestamp(),
-  `sale_item_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `date_given` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `sale_item_id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `accessories_logs`
@@ -83,9 +83,7 @@ CREATE TABLE `accessories_logs` (
 
 INSERT INTO `accessories_logs` (`id`, `accessory_id`, `accessory_name`, `quantity`, `given_to`, `given_by`, `branch`, `status`, `date_given`, `sale_item_id`) VALUES
 (1, 4, 'power cable', 2, 7, 8, 'KIMATHI', 'sold', '2026-06-30 10:16:09', 38),
-(2, 4, 'power cable', 18, 7, 1, 'KIMATHI', 'sold', '2026-07-02 11:34:23', 36),
-(3, 4, 'power cable', 2, 7, 1, 'KIMATHI', 'returned', '2026-07-07 02:38:57', NULL),
-(4, 4, 'power cable', 2, 7, 1, 'KIMATHI', 'pending_sale', '2026-07-09 12:18:07', NULL);
+(2, 4, 'power cable', 18, 7, 1, 'KIMATHI', 'sold', '2026-07-02 11:34:23', 36);
 
 -- --------------------------------------------------------
 
@@ -94,11 +92,11 @@ INSERT INTO `accessories_logs` (`id`, `accessory_id`, `accessory_name`, `quantit
 --
 
 CREATE TABLE `activity_logs` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) DEFAULT NULL,
-  `action` varchar(255) NOT NULL,
-  `details` text DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `id` int NOT NULL,
+  `user_id` int DEFAULT NULL,
+  `action` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `details` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -574,29 +572,28 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `created_at`)
 (465, 4, 'Sold device', 'Sold device SN: 5CG0302X7Y for KES 35,000.00 in sale #24', '2026-07-05 21:38:55'),
 (466, 4, 'Add Expense', 'Added expense: Mop | Amount: KES 2,000.00 | Method: cash | Given To: Sarah | Branch: KIMATHI', '2026-07-05 21:41:06'),
 (467, 1, 'User Unlocked', 'User ID 8 has been unlocked by Victor Munene - Failed attempts reset and lock removed', '2026-07-05 22:58:24'),
-(468, 7, 'Sold smartboard', 'Sold smartboard SN: SMJJ8Y6UH for KES 150,000.00 in sale #25', '2026-07-06 17:27:59'),
-(469, 1, 'Updated smartboard group price', 'Updated price from KES 150000 to KES 170000 for smartboard group: Onescreen 5 (65 inch) – 2 smartboards updated', '2026-07-07 02:37:05'),
-(470, 1, 'Give out Accessory', 'Gave 2 accessory unit(s) (power cable) to Peninah Kalundi in KIMATHI branch (Store)', '2026-07-07 02:38:57'),
-(471, 1, 'Returned Accessory (full)', 'Returned 2 accessory unit(s) (power cable) from log ID 3. Status set to returned. <a href=\'../uploads/accessory_returns/accessory_return_3_1783391963.jpg\' target=\'_blank\'>View Photo</a>', '2026-07-07 02:39:23'),
-(472, 1, 'User Status Change', 'User ID 8 has been restricted by Victor Munene', '2026-07-07 09:56:02'),
-(473, 1, 'User Status Change', 'User ID 8 has been activated by Victor Munene', '2026-07-07 09:57:19'),
-(474, 1, 'Give out device', 'Gave device SN: 5CH78UYBO12 to salesperson Peninah Kalundi (Branch: KIMATHI)', '2026-07-07 09:59:07'),
-(475, 4, 'Add Expense', 'Added expense: Bought double sided | Amount: KES 2,500.00 | Method: cash | Given To: Victor | Branch: KIMATHI', '2026-07-07 10:04:45'),
-(476, 4, 'Sold smartboard', 'Sold smartboard SN: SMJJ8Y6UH for KES 150,000.00 in sale #26', '2026-07-07 10:06:23'),
-(477, 4, 'Sold Accessory (Display)', 'Sold Accessory (JBL essential 2 speaker) - Quantity: 1 for KES 25,000.00 in sale #26', '2026-07-07 10:06:48'),
-(478, 4, 'Sold Accessory (Display)', 'Sold Accessory (JBL essential 2 speaker) - Quantity: 1 for KES 20,000.00 in sale #27', '2026-07-07 10:08:42'),
-(479, 1, 'Added accessory price', 'Added price for accessory ID: 10 (Name: JBL essential 2 speaker) to KES 20000', '2026-07-07 13:07:18'),
-(480, 1, 'Added accessory price', 'Added price for accessory ID: 2 (Name: JBL essential 2 speaker) to KES 20000', '2026-07-07 13:07:40'),
-(481, 4, 'Sold phone', 'Sold phone SN: PH000878 for KES 20,000.00 in sale #28', '2026-07-07 13:09:28'),
-(482, 8, 'Add Repair', 'Added repair for client: Munene victor | Device: HP ELITEBOOK 840 G6 | Category ID: 1 | Problem: Broken screen | Branch: KIMATHI | Source: Client | Status: Pending', '2026-07-07 18:18:19'),
-(483, 8, 'Add Repair', 'Added repair for client: Munene victor | Device: HO ELITEBOOK 840 G9 | Category ID: 1 | Problem: Broken screen | Branch: KIMATHI | Source: Client | Status: Pending', '2026-07-08 07:34:45'),
-(484, 8, 'Add Repair', 'Added repair for client: PENINAH | Device: HP ELITEDESK 705 G4 | Category ID: 2 | Problem: Not powering | Branch: KIMATHI | Source: Client | Status: Pending', '2026-07-08 07:36:32'),
-(485, 1, 'Returned Device', 'Returned device SN: 5CH78UYBO12 from log ID 7. Action was: give_out. Status set to returned. <a href=\'../uploads/device_returns/device_return_7_1783516316.png\' target=\'_blank\'>View Photo</a>', '2026-07-08 13:11:56'),
-(486, 1, 'Updated smartboard group price', 'Updated price from KES 170000 to KES 180000 for smartboard group: Onescreen 5 (65 inch) – 1 smartboards updated', '2026-07-09 12:12:40'),
-(487, 1, 'Give out Accessory', 'Gave 2 accessory unit(s) (power cable) to Peninah Kalundi in KIMATHI branch (Store)', '2026-07-09 12:18:07'),
-(488, 1, 'Give out device', 'Gave device SN: 5CH78UYBO12 to salesperson Peninah Kalundi (Branch: KIMATHI)', '2026-07-09 14:05:30'),
-(489, 1, 'Returned Device', 'Returned device SN: 5CH78UYBO12 from log ID 8. Action was: give_out. Status set to returned. <a href=\'../uploads/device_returns/device_return_8_1783605966.jpeg\' target=\'_blank\'>View Photo</a>', '2026-07-09 14:06:06'),
-(490, 1, 'Added device', 'Added device SN: MXHLKNDCDD, Cargo: AC26.7', '2026-07-09 14:49:19');
+(468, 17, 'Add Repair', 'Added repair for device: 5CG09OZXE42 | Problem: not powering | Given By: Victor Munene | Branch: MOI | Source: In Stock | Status: Pending', '2026-07-08 07:28:20'),
+(469, 17, 'Add Repair', 'Added repair for client: Munene victor | Device: HP ELITEBOOK 840 G9 | Category ID: 1 | Problem: Faulty Keyboard | Branch: MOI | Source: Client | Status: Pending', '2026-07-08 07:29:37'),
+(470, 17, 'Add Repair', 'Added repair for client: PENINAH | Device: HP ELITEDESK 705 G4 | Category ID: 2 | Problem: Faulty ssd | Branch: MOI | Source: Client | Status: Pending', '2026-07-08 07:39:43'),
+(471, 7, 'Sold device', 'Sold device SN: 5CG1234XYZ for KES 35,000.00 in sale #25', '2026-07-08 08:15:52'),
+(472, 17, 'Add Repair', 'Added repair for returned device: 5CG1234XYZ | Problem: Faulty Keyboard | Branch: KIMATHI | Source: Return | Status: Pending', '2026-07-08 08:19:09'),
+(473, 17, 'Repair Completed', 'Repair completed for HP ELITEDESK 705 G4 (PENINAH) - Email notification sent to victormunene207@gmail.com - Cost: KES 5,000.00', '2026-07-08 08:47:26'),
+(474, 1, 'Added device', 'Added device SN: MXLFDFFFG, Cargo: AC26.8', '2026-07-09 14:33:53'),
+(475, 1, 'Added device', 'Added device SN: MGDDJDEDEEDE, Cargo: AC26.7', '2026-07-09 14:43:56'),
+(476, 8, 'Sold Accessory (Display)', 'Sold Accessory (JBL essential 2 speaker) - Quantity: 3 for KES 20,000.00 in sale #26', '2026-07-22 06:45:13'),
+(477, 8, 'Sold Accessory (Display)', 'Sold Accessory (JBL essential 2 speaker) - Quantity: 2 for KES 20,000.00 in sale #27', '2026-07-22 07:15:02'),
+(478, 8, 'Sold Accessory (Display)', 'Sold Accessory (JBL essential 2 speaker) - Quantity: 2 for KES 10.00 in sale #27', '2026-07-22 07:16:50'),
+(479, 1, 'Login Access Settings Updated', 'Login restrictions updated. Blocked days: wednesday,sunday; Working hours: 08:00-18:00', '2026-08-19 09:15:47'),
+(480, 1, 'Login Access Settings Updated', 'Login restrictions updated. Blocked days: wednesday,sunday; Working hours: 08:00-18:00', '2026-08-19 09:21:21'),
+(481, 1, 'Login Access Settings Updated', 'Login restrictions updated. Blocked days: wednesday,sunday; Working hours: 06:00-20:00', '2026-08-19 09:23:50'),
+(482, 1, 'Login Access Settings Updated', 'Login restrictions updated. Blocked days: sunday; Working hours: 06:00-20:00', '2026-08-19 09:24:14'),
+(483, 1, 'Login Access Settings Updated', 'Login restrictions updated. Blocked days: wednesday,sunday; Working hours: 08:00-18:00', '2026-08-19 09:27:29'),
+(484, 1, 'Login Access Settings Updated', 'Login restrictions updated. Blocked days: wednesday,sunday; Working hours: 08:00-20:00', '2026-08-19 09:33:11'),
+(485, 1, 'Login Access Settings Updated', 'Login restrictions updated. Blocked days: sunday; Working hours: 20:00-20:00', '2026-08-19 09:41:06'),
+(486, 1, 'Login Access Settings Updated', 'Login restrictions updated. Blocked days: sunday; Working hours: 06:00-20:00', '2026-08-19 09:42:16'),
+(487, 1, 'Login Access Settings Updated', 'Login restrictions updated. Blocked days: wednesday,sunday; Working hours: 06:00-20:00', '2026-08-19 10:01:36'),
+(488, 1, 'Login Access Settings Updated', 'Login restrictions updated. Blocked days: sunday; Working hours: 06:00-20:00', '2026-08-19 10:02:37'),
+(489, 1, 'User Status Change', 'User ID 17 has been restricted by Victor Munene', '2026-08-19 10:34:01');
 
 -- --------------------------------------------------------
 
@@ -605,8 +602,8 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `created_at`)
 --
 
 CREATE TABLE `categories` (
-  `id` int(11) NOT NULL,
-  `category_name` varchar(64) NOT NULL
+  `id` int NOT NULL,
+  `category_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -628,17 +625,17 @@ INSERT INTO `categories` (`id`, `category_name`) VALUES
 --
 
 CREATE TABLE `chargers` (
-  `id` int(11) NOT NULL,
-  `charger_type` varchar(100) NOT NULL,
-  `charger_condition` enum('new','ex-uk') NOT NULL,
-  `quantity` int(11) NOT NULL,
-  `branch` enum('KIMATHI','MOI') NOT NULL,
-  `updated_by` int(11) NOT NULL,
-  `date_updated` timestamp NOT NULL DEFAULT current_timestamp(),
-  `added_by` int(11) DEFAULT NULL,
-  `date_added` timestamp NULL DEFAULT current_timestamp(),
+  `id` int NOT NULL,
+  `charger_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `charger_condition` enum('new','ex-uk') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `quantity` int NOT NULL,
+  `branch` enum('KIMATHI','MOI') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `updated_by` int NOT NULL,
+  `date_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `added_by` int DEFAULT NULL,
+  `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `price` decimal(10,2) DEFAULT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `price`) STORED
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `price`)) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -658,17 +655,17 @@ INSERT INTO `chargers` (`id`, `charger_type`, `charger_condition`, `quantity`, `
 --
 
 CREATE TABLE `charger_logs` (
-  `id` int(11) NOT NULL,
-  `charger_id` int(11) NOT NULL,
-  `charger_type` varchar(100) NOT NULL,
-  `charger_condition` enum('new','ex_uk') NOT NULL,
-  `quantity` int(11) NOT NULL,
-  `given_by` int(11) NOT NULL,
-  `given_to` int(11) NOT NULL,
-  `branch` enum('KIMATHI','MOI') NOT NULL,
-  `date_given` timestamp NOT NULL DEFAULT current_timestamp(),
-  `status` enum('sold','pending_sale','returned') DEFAULT 'pending_sale',
-  `sale_item_id` int(11) DEFAULT NULL
+  `id` int NOT NULL,
+  `charger_id` int NOT NULL,
+  `charger_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `charger_condition` enum('new','ex_uk') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `quantity` int NOT NULL,
+  `given_by` int NOT NULL,
+  `given_to` int NOT NULL,
+  `branch` enum('KIMATHI','MOI') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `date_given` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `status` enum('sold','pending_sale','returned') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'pending_sale',
+  `sale_item_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -688,15 +685,15 @@ INSERT INTO `charger_logs` (`id`, `charger_id`, `charger_type`, `charger_conditi
 --
 
 CREATE TABLE `clients` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `client_name` varchar(100) DEFAULT NULL,
   `client_phone` varchar(50) DEFAULT NULL,
   `client_box` varchar(100) DEFAULT NULL,
   `client_email` varchar(100) DEFAULT NULL,
-  `sales_person` int(11) DEFAULT NULL,
-  `date_added` timestamp NULL DEFAULT current_timestamp(),
+  `sales_person` int DEFAULT NULL,
+  `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `clients`
@@ -705,7 +702,7 @@ CREATE TABLE `clients` (
 INSERT INTO `clients` (`id`, `client_name`, `client_phone`, `client_box`, `client_email`, `sales_person`, `date_added`, `branch`) VALUES
 (1, 'Munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-06-29 09:41:42', 'KIMATHI'),
 (2, 'peninah', '0703646909', NULL, 'vdebmunene207@gmail.com', 7, '2026-06-29 10:33:17', 'KIMATHI'),
-(7, 'Munene victor', '0711529618', '', '', 8, '2026-06-29 14:55:01', NULL),
+(7, 'Munene victor', '0711529618', 'P.O. BOX 12-95400', 'victormunene207@gmail.com', 8, '2026-06-29 14:55:01', NULL),
 (8, 'Musili Homes Limited', '0711529618', '', 'victormunene207@gmail.com', 7, '2026-07-02 08:18:58', 'KIMATHI'),
 (9, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:01', 'KIMATHI'),
 (10, 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', 7, '2026-07-04 15:32:04', 'KIMATHI'),
@@ -724,27 +721,28 @@ INSERT INTO `clients` (`id`, `client_name`, `client_phone`, `client_box`, `clien
 --
 
 CREATE TABLE `devices` (
-  `serial_number` varchar(255) NOT NULL,
-  `category_id` int(11) NOT NULL,
-  `model_name` varchar(255) DEFAULT NULL,
-  `processor` varchar(255) DEFAULT NULL,
-  `graphics` varchar(255) DEFAULT 'None',
-  `ram` int(11) DEFAULT NULL,
-  `storage_type` enum('SSD','HDD') DEFAULT 'SSD',
-  `storage_capacity` int(11) DEFAULT NULL,
-  `touch` enum('Touch','Non-touch','N/A') NOT NULL DEFAULT 'N/A',
-  `status` enum('In Stock','Faulty','Under Repair','Disposed','Sold') DEFAULT 'In Stock',
-  `device_condition` enum('New','Refurbished','Ex-Uk') DEFAULT 'Ex-Uk',
-  `date_added` timestamp NOT NULL DEFAULT current_timestamp(),
-  `added_by` int(11) DEFAULT NULL,
-  `branch` enum('KIMATHI','MOI') NOT NULL,
-  `cargo_number` varchar(50) NOT NULL DEFAULT 'NO CARGO',
+  `serial_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `category_id` int NOT NULL,
+  `model_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `processor` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `graphics` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'None',
+  `ram` int DEFAULT NULL,
+  `storage_type` enum('SSD','HDD') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'SSD',
+  `storage_capacity` int DEFAULT NULL,
+  `touch` enum('Touch','Non-touch','N/A') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'N/A',
+  `status` enum('In Stock','Faulty','Under Repair','Disposed','Sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'In Stock',
+  `device_condition` enum('New','Refurbished','Ex-Uk') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'Ex-Uk',
+  `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `added_by` int DEFAULT NULL,
+  `branch` enum('KIMATHI','MOI') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `cargo_number` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'NO CARGO',
   `price` decimal(10,2) DEFAULT NULL,
   `price_updated_at` timestamp NULL DEFAULT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
   `sold_at` datetime DEFAULT NULL,
-  `sold_by` int(11) DEFAULT NULL,
-  `place` enum('store','display','warehouse','under_repair') DEFAULT NULL
+  `sold_by` int DEFAULT NULL,
+  `place` enum('store','display','warehouse','under_repair') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `inventory_owner` enum('iman_inventory','imans_hustle') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'iman_inventory'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -756,23 +754,23 @@ INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`
 ('5CG09OZXE32', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG09OZXE33', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG09OZXE34', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
-('5CG09OZXE35', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', 40000.00, NULL, 40000.00, '2026-06-22 15:57:47', 8, NULL),
+('5CG09OZXE35', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', 40000.00, NULL, 40000.00, '2026-06-22 15:57:47', 7, NULL),
 ('5CG09OZXE36', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Sold', 'New', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 40000.00, NULL, 40000.00, '2026-06-29 15:15:10', 7, 'under_repair'),
 ('5CG09OZXE37', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 35000.00, NULL, NULL, NULL, NULL, NULL),
 ('5CG09OZXE38', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 512, 'Touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, 65000.00, '2026-06-27 17:14:07', 7, NULL),
 ('5CG09OZXE39', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 16, 'SSD', 256, 'Touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', NULL, NULL, 60000.00, '2026-07-01 13:03:15', 7, NULL),
 ('5CG09OZXE40', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'Sold', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 60000.00, '2026-04-24 11:26:11', 60000.00, '2026-06-17 19:07:54', 7, NULL),
 ('5CG09OZXE41', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'KIMATHI', 'AC16', 60000.00, '2026-04-24 11:26:11', NULL, NULL, NULL, NULL),
-('5CG09OZXE42', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', 60000.00, '2026-04-24 11:26:11', NULL, NULL, NULL, NULL),
-('5CG1234XYZ', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG09OZXE42', 1, 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN', 'None', 8, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', 60000.00, '2026-04-24 11:26:11', NULL, NULL, NULL, 'under_repair'),
+('5CG1234XYZ', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'Sold', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC16', NULL, NULL, 35000.00, '2026-07-08 11:15:52', 7, 'under_repair'),
 ('5CG12465TG09', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-07-04 10:49:24', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG12465TG10', 3, 'HP ProOne 400 G5', 'Intel Core i7-8700T', 'Intel UHD', 32, 'SSD', 1000, 'Touch', 'In Stock', 'Refurbished', '2026-07-04 10:30:27', 1, 'KIMATHI', 'AC20', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG12465TG11', 3, 'HP ProOne 400 G5', 'Intel Core i7-8700T', 'Intel UHD', 32, 'SSD', 1000, 'Touch', 'In Stock', 'Refurbished', '2026-07-04 10:49:24', 1, 'KIMATHI', 'AC20', NULL, NULL, NULL, NULL, NULL, 'display'),
 ('5CG12465TG8', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-07-04 10:30:27', 1, 'KIMATHI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG12465TG9', 2, 'HP EliteDesk 705 G4', 'AMD Ryzen 5 PRO 2600', 'AMD Radeon', 16, 'SSD', 512, 'N/A', 'In Stock', 'Refurbished', '2026-07-04 10:30:27', 1, 'MOI', 'CX37', NULL, NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ10', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', 35000.00, '2026-07-07 03:13:29', NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ11', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', 35000.00, '2026-07-07 03:13:29', NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ12', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', 35000.00, '2026-07-07 03:13:29', NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ10', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ11', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ12', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGJ13', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGJ14', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGJ15', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL, NULL),
@@ -794,7 +792,7 @@ INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`
 ('5CG7TYTUGJ31', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGJ32', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGJ33', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGJ9', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', 35000.00, '2026-07-07 03:13:29', NULL, NULL, NULL, NULL),
+('5CG7TYTUGJ9', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGl10', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGl11', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGl12', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'MOI', 'AC266', 40000.00, '2026-06-08 11:22:30', NULL, NULL, NULL, NULL),
@@ -816,10 +814,10 @@ INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`
 ('5CG7TYTUGl28', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGl29', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'MOI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG7TYTUGl30', 1, 'LENOVO THINKPAD T480s', 'INTEL CORE I7-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:35', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
-('5CG7TYTUGl6', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', 35000.00, '2026-07-07 03:13:29', NULL, NULL, NULL, NULL),
-('5CG7TYTUGl7', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', 35000.00, '2026-07-07 03:13:29', NULL, NULL, NULL, NULL),
-('5CG7TYTUGl8', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', 35000.00, '2026-07-07 03:13:29', NULL, NULL, NULL, NULL),
-('5CG7TYTUGl9', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'Sold', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', 35000.00, '2026-07-07 03:13:29', NULL, NULL, NULL, NULL),
+('5CG7TYTUGl6', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl7', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl8', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
+('5CG7TYTUGl9', 1, 'HP EliteBook 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 8, 'SSD', 256, 'Touch', 'Sold', 'Refurbished', '2026-06-08 07:07:34', 1, 'KIMATHI', 'AC266', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CG9IOK80B', 1, 'HO ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'In Stock', 'Ex-Uk', '2026-07-02 07:30:16', 8, 'MOI', 'AC26.7', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CGBAJJJUU88', 1, 'HP ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 509, 'Non-touch', 'In Stock', 'Refurbished', '2026-06-07 10:45:29', 1, 'KIMATHI', 'AC265', NULL, NULL, NULL, NULL, NULL, NULL),
 ('5CGUYUIJVIUG', 1, 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN', 'None', 16, 'SSD', 256, 'Non-touch', 'In Stock', 'Refurbished', '2026-04-22 20:28:16', 1, 'MOI', 'AC526', 30000.00, '2026-04-22 20:30:56', NULL, NULL, NULL, NULL),
@@ -831,14 +829,15 @@ INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`
 ('8CC6YHMS57', 5, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-8TH GEN', '2GB AMD RADEON R7 200', 16, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('8CC6YHMS58', 5, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-8TH GEN', '2GB AMD RADEON R7 200', 16, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2026-04-02 12:50:27', 1, 'MOI', 'AC16', NULL, NULL, NULL, NULL, NULL, NULL),
 ('ABC9012DEF', 3, 'HP ProOne 400 G5', 'Intel Core i7-8700T', 'Intel UHD', 32, 'SSD', 1000, 'Touch', 'In Stock', 'Refurbished', '2026-06-08 07:02:20', 1, 'KIMATHI', 'AC20', NULL, NULL, NULL, NULL, NULL, NULL),
+('MGDDJDEDEEDE', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON 2600', 8, 'HDD', 500, 'N/A', 'In Stock', 'Ex-Uk', '2026-07-09 14:43:56', 1, 'MOI', 'AC26.7', NULL, NULL, NULL, NULL, NULL, 'display'),
 ('MXD90IOOKLW', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON R7 430', 8, 'HDD', 500, 'N/A', 'Sold', 'Refurbished', '2026-02-21 18:48:48', 1, 'KIMATHI', 'AC3', 15000.00, '2026-03-03 18:24:20', NULL, NULL, NULL, NULL),
-('MXHLKNDCDD', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON 2600', 16, 'SSD', 256, 'N/A', 'In Stock', 'Ex-Uk', '2026-07-09 14:49:19', 1, 'KIMATHI', 'AC26.7', NULL, NULL, NULL, NULL, NULL, 'display'),
 ('MXHT89YU3', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 25000.00, '2026-07-04 07:36:45', NULL, NULL, NULL, NULL),
 ('MXHT89YU4', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'KIMATHI', 'CX37', 25000.00, '2026-07-04 07:36:45', NULL, NULL, NULL, NULL),
 ('MXHT89YU5', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 128, 'N/A', 'Sold', 'Refurbished', '2025-12-15 18:26:55', 1, 'KIMATHI', 'CX37', 25000.00, '2026-07-04 07:36:45', NULL, NULL, NULL, NULL),
 ('MXHT89YU6', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 20000.00, '2026-01-06 12:21:00', NULL, NULL, NULL, NULL),
 ('MXHT89YU7', 5, 'HP ELITEDESK 705 G4', 'INTEL CORE I5-7TH GEN', '1GB AMD RADEON VEGA 11', 16, 'SSD', 512, 'N/A', 'In Stock', 'Refurbished', '2025-12-15 18:26:55', 1, 'MOI', 'CX37', 20000.00, '2026-01-06 12:21:00', NULL, NULL, NULL, NULL),
 ('MXL8U9UYH09', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', 'None', 8, 'SSD', 256, 'N/A', 'In Stock', 'Refurbished', '2026-06-22 15:37:34', 1, 'MOI', 'CX37', NULL, NULL, NULL, NULL, NULL, NULL),
+('MXLFDFFFG', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON 2600', 8, 'HDD', 500, 'N/A', 'In Stock', 'Ex-Uk', '2026-07-09 14:33:53', 1, 'KIMATHI', 'AC26.8', NULL, NULL, NULL, NULL, NULL, 'display'),
 ('MXLI98HDD', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON 2600', 8, 'SSD', 256, 'N/A', 'In Stock', 'Ex-Uk', '2026-07-04 10:10:36', 1, 'KIMATHI', 'NO CARGO', NULL, NULL, NULL, NULL, NULL, 'display'),
 ('MXY77HJKAL', 2, 'HP ELITEDESK 705 G4', 'AMD RYZEN 5 PRO 2600', '2GB AMD RADEON R7 430', 8, 'HDD', 500, 'N/A', 'In Stock', 'Refurbished', '2026-02-21 18:46:43', 1, 'KIMATHI', 'AC3', 15000.00, '2026-03-03 18:24:20', NULL, NULL, NULL, NULL),
 ('TGBHJJRQW1', 2, 'HP ELITEDESK 705 G5', 'INTEL CORE I5-9TH GEN', 'none', 16, 'SSD', 256, 'N/A', 'Sold', 'Refurbished', '2025-12-15 18:26:54', 1, 'KIMATHI', 'CX50', 55000.00, '2026-03-25 21:32:17', NULL, NULL, NULL, 'under_repair'),
@@ -861,26 +860,26 @@ INSERT INTO `devices` (`serial_number`, `category_id`, `model_name`, `processor`
 
 CREATE TABLE `devices_logs` (
   `serial_number` varchar(50) NOT NULL,
-  `category_id` int(11) DEFAULT NULL,
+  `category_id` int DEFAULT NULL,
   `model_name` varchar(100) DEFAULT NULL,
   `processor` varchar(100) DEFAULT NULL,
   `graphics` varchar(100) DEFAULT NULL,
-  `ram` int(11) DEFAULT NULL,
+  `ram` int DEFAULT NULL,
   `storage_type` varchar(50) DEFAULT NULL,
-  `storage_capacity` int(11) DEFAULT NULL,
+  `storage_capacity` int DEFAULT NULL,
   `touch` enum('Touch','Non-touch','N/A') DEFAULT 'N/A',
   `device_condition` enum('Ex-Uk','Refurbished','New') DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
   `cargo_number` varchar(50) DEFAULT 'NO CARGO',
   `action` varchar(100) DEFAULT NULL,
-  `given_by` int(11) DEFAULT NULL,
-  `given_to` int(11) DEFAULT NULL,
+  `given_by` int DEFAULT NULL,
+  `given_to` int DEFAULT NULL,
   `date_given` datetime DEFAULT NULL,
-  `taken_by` int(11) DEFAULT NULL,
+  `taken_by` int DEFAULT NULL,
   `date_taken` datetime DEFAULT NULL,
-  `id` int(11) NOT NULL,
-  `status` enum('instock','returned','sold') DEFAULT 'instock'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `id` int NOT NULL,
+  `status` enum('instock','returned','sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'instock'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `devices_logs`
@@ -892,9 +891,7 @@ INSERT INTO `devices_logs` (`serial_number`, `category_id`, `model_name`, `proce
 ('5CG0302X7Y', 1, 'HP ELITEBOOK 745 G6', 'AMD RYZEN 7 PRO 3700u', '2GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'Non-touch', 'Ex-Uk', 'KIMATHI', 'AC26', 'give_out', 1, 7, '2026-07-04 12:38:21', NULL, NULL, 3, 'instock'),
 ('5CG0302X7Y', 1, 'HP ELITEBOOK 745 G6', 'AMD RYZEN 7 PRO 3700u', '2GB AMD RADEON VEGA 11', 8, 'SSD', 256, 'Non-touch', 'Ex-Uk', 'KIMATHI', 'AC26', 'give_out', 1, 7, '2026-07-04 12:46:06', NULL, NULL, 4, 'instock'),
 ('5CH78UYBO12', 1, 'HP ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Ex-Uk', 'KIMATHI', 'AC26.7', 'give_out', 8, 7, '2026-07-04 13:00:22', NULL, NULL, 5, 'returned'),
-('5CG12465TG09', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'Refurbished', 'KIMATHI', 'AC16', 'give_out', 1, 7, '2026-07-04 15:53:54', NULL, NULL, 6, 'instock'),
-('5CH78UYBO12', 1, 'HP ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Ex-Uk', 'KIMATHI', 'AC26.7', 'give_out', 1, 7, '2026-07-07 12:59:07', NULL, NULL, 7, 'returned'),
-('5CH78UYBO12', 1, 'HP ELITEBOOK 840 G9', 'INTEL CORE I7-12TH GEN', 'None', 16, 'SSD', 512, 'Non-touch', 'Ex-Uk', 'KIMATHI', 'AC26.7', 'give_out', 1, 7, '2026-07-09 17:05:30', NULL, NULL, 8, 'returned');
+('5CG12465TG09', 1, 'HP EliteBook 840 G6', 'Intel Core i5-8250U', 'Intel UHD Graphics', 8, 'SSD', 256, 'Non-touch', 'Refurbished', 'KIMATHI', 'AC16', 'give_out', 1, 7, '2026-07-04 15:53:54', NULL, NULL, 6, 'instock');
 
 -- --------------------------------------------------------
 
@@ -903,13 +900,13 @@ INSERT INTO `devices_logs` (`serial_number`, `category_id`, `model_name`, `proce
 --
 
 CREATE TABLE `device_updates` (
-  `id` int(11) NOT NULL,
-  `serial_number` varchar(255) NOT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `action` varchar(255) NOT NULL,
-  `old_value` text DEFAULT NULL,
-  `new_value` text DEFAULT NULL,
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `id` int NOT NULL,
+  `serial_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `updated_by` int DEFAULT NULL,
+  `action` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `old_value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `new_value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -928,16 +925,16 @@ INSERT INTO `device_updates` (`id`, `serial_number`, `updated_by`, `action`, `ol
 --
 
 CREATE TABLE `expenses` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `expense_name` varchar(100) DEFAULT NULL,
   `description` varchar(100) DEFAULT NULL,
   `payment_method` enum('cash','Mpesa') DEFAULT NULL,
   `total_amount` decimal(10,2) DEFAULT NULL,
-  `expense_date` timestamp NULL DEFAULT current_timestamp(),
-  `created_by` int(11) DEFAULT NULL,
+  `expense_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_by` int DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
   `given_to` varchar(50) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `expenses`
@@ -946,8 +943,7 @@ CREATE TABLE `expenses` (
 INSERT INTO `expenses` (`id`, `expense_name`, `description`, `payment_method`, `total_amount`, `expense_date`, `created_by`, `branch`, `given_to`) VALUES
 (1, 'Transport', 'Transport for delivery of victor\'s clients product at parklands', 'cash', 500.00, '2026-07-01 10:37:19', 4, 'KIMATHI', NULL),
 (2, 'New crimping tool', 'victor went to buy crimping toll', 'cash', 1000.00, '2026-07-05 20:42:40', 4, 'KIMATHI', 'Victor'),
-(3, 'Mop', 'Sarah asked money to go and buy 2 pcs of mops', 'cash', 2000.00, '2026-07-05 21:41:06', 4, 'KIMATHI', 'Sarah'),
-(4, 'Bought double sided', 'Victor came to ask for money to go and buy 5 psc of double sided tape', 'cash', 2500.00, '2026-07-07 10:04:45', 4, 'KIMATHI', 'Victor');
+(3, 'Mop', 'Sarah asked money to go and buy 2 pcs of mops', 'cash', 2000.00, '2026-07-05 21:41:06', 4, 'KIMATHI', 'Sarah');
 
 -- --------------------------------------------------------
 
@@ -956,17 +952,17 @@ INSERT INTO `expenses` (`id`, `expense_name`, `description`, `payment_method`, `
 --
 
 CREATE TABLE `graphic_cards` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `type` varchar(50) DEFAULT NULL,
-  `storage_capacity` int(11) DEFAULT NULL,
-  `quantity` int(11) DEFAULT NULL,
-  `added_by` int(11) DEFAULT NULL,
-  `date_added` timestamp NULL DEFAULT current_timestamp(),
+  `storage_capacity` int DEFAULT NULL,
+  `quantity` int DEFAULT NULL,
+  `added_by` int DEFAULT NULL,
+  `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `price` decimal(10,2) DEFAULT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `price`) STORED,
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `price`)) STORED,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `status` enum('instock','sold') DEFAULT 'instock'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `status` enum('instock','sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'instock'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `graphic_cards`
@@ -984,18 +980,18 @@ INSERT INTO `graphic_cards` (`id`, `type`, `storage_capacity`, `quantity`, `adde
 --
 
 CREATE TABLE `graphic_cards_logs` (
-  `id` int(11) NOT NULL,
-  `graphic_card_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `graphic_card_id` int DEFAULT NULL,
   `type` varchar(100) DEFAULT NULL,
-  `storage_capacity` int(11) DEFAULT NULL,
-  `quantity` int(11) DEFAULT NULL,
-  `given_by` int(11) DEFAULT NULL,
-  `given_to` int(11) DEFAULT NULL,
-  `date_given` timestamp NULL DEFAULT current_timestamp(),
+  `storage_capacity` int DEFAULT NULL,
+  `quantity` int DEFAULT NULL,
+  `given_by` int DEFAULT NULL,
+  `given_to` int DEFAULT NULL,
+  `date_given` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `status` enum('sold','pending_sale','returned') DEFAULT 'pending_sale',
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `sale_item_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `sale_item_id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `graphic_cards_logs`
@@ -1011,18 +1007,18 @@ INSERT INTO `graphic_cards_logs` (`id`, `graphic_card_id`, `type`, `storage_capa
 --
 
 CREATE TABLE `hdds` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `type` varchar(50) DEFAULT NULL,
-  `quantity` int(11) DEFAULT NULL,
+  `quantity` int DEFAULT NULL,
   `storage` varchar(50) DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `added_by` int(11) DEFAULT NULL,
-  `date_added` timestamp NULL DEFAULT current_timestamp(),
-  `updated_by` int(11) DEFAULT NULL,
+  `added_by` int DEFAULT NULL,
+  `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
   `date_updated` datetime DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `price`) STORED
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `price`)) STORED
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `hdds`
@@ -1042,18 +1038,18 @@ INSERT INTO `hdds` (`id`, `type`, `quantity`, `storage`, `branch`, `added_by`, `
 --
 
 CREATE TABLE `hdd_logs` (
-  `id` int(11) NOT NULL,
-  `hdd_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `hdd_id` int DEFAULT NULL,
   `type` varchar(50) DEFAULT NULL,
-  `quantity_given` int(11) DEFAULT NULL,
-  `given_to` int(11) DEFAULT NULL,
-  `given_by` int(11) DEFAULT NULL,
+  `quantity_given` int DEFAULT NULL,
+  `given_to` int DEFAULT NULL,
+  `given_by` int DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `date_given` timestamp NULL DEFAULT current_timestamp(),
+  `date_given` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `storage` varchar(50) DEFAULT NULL,
   `status` enum('sold','pending_sale','returned') DEFAULT 'pending_sale',
-  `sale_item_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `sale_item_id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `hdd_logs`
@@ -1082,29 +1078,29 @@ INSERT INTO `hdd_logs` (`id`, `hdd_id`, `type`, `quantity_given`, `given_to`, `g
 --
 
 CREATE TABLE `invoices` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `invoice_number` varchar(20) NOT NULL,
-  `quotation_id` int(11) DEFAULT NULL,
+  `quotation_id` int DEFAULT NULL,
   `client_name` varchar(100) NOT NULL,
   `client_phone` varchar(20) DEFAULT NULL,
   `client_box` varchar(100) DEFAULT NULL,
   `client_email` varchar(100) DEFAULT NULL,
   `invoice_date` date NOT NULL,
   `payment_due_date` date NOT NULL,
-  `subtotal` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `vat` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `grand_total` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `amount_paid` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `balance_due` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `subtotal` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `vat` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `grand_total` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `amount_paid` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `balance_due` decimal(10,2) NOT NULL DEFAULT '0.00',
   `payment_status` enum('paid','partial','unpaid') DEFAULT 'unpaid',
   `payment_method` enum('cash','mpesa-till','mpesa-pochi','bank-transfer') DEFAULT NULL,
   `payment_date` datetime DEFAULT NULL,
   `status` enum('draft','sent','paid','cancelled') DEFAULT 'draft',
-  `notes` text DEFAULT NULL,
-  `user_id` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `notes` text,
+  `user_id` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `invoices`
@@ -1113,8 +1109,7 @@ CREATE TABLE `invoices` (
 INSERT INTO `invoices` (`id`, `invoice_number`, `quotation_id`, `client_name`, `client_phone`, `client_box`, `client_email`, `invoice_date`, `payment_due_date`, `subtotal`, `vat`, `grand_total`, `amount_paid`, `balance_due`, `payment_status`, `payment_method`, `payment_date`, `status`, `notes`, `user_id`, `created_at`, `updated_at`) VALUES
 (1, 'INV00001', 12, 'Munene victor', '0711529618', 'P.O. BOX 12-95400', 'victormunene207@gmail.com', '2026-07-05', '2026-08-04', 25000.00, 4000.00, 29000.00, 29000.00, 0.00, 'paid', NULL, NULL, 'sent', '', 7, '2026-07-05 08:27:18', '2026-07-05 08:52:33'),
 (2, 'INV00002', NULL, 'munene', '', '', '', '2026-07-05', '2026-08-04', 175000.00, 28000.00, 203000.00, 0.00, 203000.00, 'unpaid', NULL, NULL, 'cancelled', '', 7, '2026-07-05 09:02:42', '2026-07-05 09:58:27'),
-(3, 'INV00003', NULL, 'Musili Homes Limited', '0711529618', '', 'victormunene207@gmail.com', '2026-07-05', '2026-08-04', 3500.00, 560.00, 4060.00, 0.00, 4060.00, 'unpaid', NULL, NULL, 'cancelled', '', 4, '2026-07-05 10:54:32', '2026-07-05 10:56:16'),
-(4, 'INV00004', NULL, 'peninah kalundi', '0727 733 795', '', '', '2026-07-07', '2026-08-06', 300000.00, 48000.00, 348000.00, 348000.00, 0.00, 'paid', NULL, NULL, 'draft', '', 1, '2026-07-07 02:30:45', '2026-07-07 02:35:21');
+(3, 'INV00003', NULL, 'Musili Homes Limited', '0711529618', '', 'victormunene207@gmail.com', '2026-07-05', '2026-08-04', 3500.00, 560.00, 4060.00, 0.00, 4060.00, 'unpaid', NULL, NULL, 'cancelled', '', 4, '2026-07-05 10:54:32', '2026-07-05 10:56:16');
 
 -- --------------------------------------------------------
 
@@ -1123,19 +1118,19 @@ INSERT INTO `invoices` (`id`, `invoice_number`, `quotation_id`, `client_name`, `
 --
 
 CREATE TABLE `invoice_items` (
-  `id` int(11) NOT NULL,
-  `invoice_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `invoice_id` int NOT NULL,
   `item_type` varchar(50) DEFAULT NULL,
   `item_id` varchar(50) DEFAULT NULL,
   `description` varchar(255) NOT NULL,
-  `specs` text DEFAULT NULL,
-  `quantity` int(11) NOT NULL DEFAULT 1,
+  `specs` text,
+  `quantity` int NOT NULL DEFAULT '1',
   `unit_price` decimal(10,2) NOT NULL,
   `total_price` decimal(10,2) NOT NULL,
-  `vat_rate` decimal(5,2) NOT NULL DEFAULT 0.00,
-  `vat_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `vat_rate` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `vat_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
   `total_with_vat` decimal(10,2) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `invoice_items`
@@ -1146,8 +1141,7 @@ INSERT INTO `invoice_items` (`id`, `invoice_id`, `item_type`, `item_id`, `descri
 (2, 2, 'manual', '', 'HP ELITEBOOK 745 G6', 'AMD RYZEN 7 PRO 3700u | 8GB RAM | SSD 256GB', 5, 30000.00, 150000.00, 16.00, 24000.00, 174000.00),
 (4, 2, 'manual', '', 'DELL optical mouse', '', 5, 1000.00, 5000.00, 16.00, 800.00, 5800.00),
 (5, 2, 'manual', '', 'JBL essential 2 speaker', '', 1, 20000.00, 20000.00, 16.00, 3200.00, 23200.00),
-(6, 3, 'manual', '', 'Hp Elitebook 840 g6 Keyboard', '', 1, 3500.00, 3500.00, 16.00, 560.00, 4060.00),
-(8, 4, 'manual', '', 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN | 8GB RAM | SSD 512GB', 5, 60000.00, 300000.00, 16.00, 48000.00, 348000.00);
+(6, 3, 'manual', '', 'Hp Elitebook 840 g6 Keyboard', '', 1, 3500.00, 3500.00, 16.00, 560.00, 4060.00);
 
 -- --------------------------------------------------------
 
@@ -1156,24 +1150,50 @@ INSERT INTO `invoice_items` (`id`, `invoice_id`, `item_type`, `item_id`, `descri
 --
 
 CREATE TABLE `invoice_payments` (
-  `id` int(11) NOT NULL,
-  `invoice_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `invoice_id` int NOT NULL,
   `amount` decimal(10,2) NOT NULL,
   `payment_method` enum('cash','mpesa-till','mpesa-pochi','bank-transfer') NOT NULL,
   `payment_date` datetime NOT NULL,
   `reference_number` varchar(50) DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `created_by` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `notes` text,
+  `created_by` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `invoice_payments`
 --
 
 INSERT INTO `invoice_payments` (`id`, `invoice_id`, `amount`, `payment_method`, `payment_date`, `reference_number`, `notes`, `created_by`, `created_at`) VALUES
-(1, 1, 29000.00, 'mpesa-till', '2026-07-05 11:51:36', '', '', 7, '2026-07-05 08:51:36'),
-(2, 4, 348000.00, 'mpesa-till', '2026-07-07 05:35:21', '', '', 1, '2026-07-07 02:35:21');
+(1, 1, 29000.00, 'mpesa-till', '2026-07-05 11:51:36', '', '', 7, '2026-07-05 08:51:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `login_access_settings`
+--
+
+CREATE TABLE `login_access_settings` (
+  `id` tinyint UNSIGNED NOT NULL DEFAULT '1',
+  `restrictions_enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `blocked_days` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'sunday',
+  `enforce_working_hours` tinyint(1) NOT NULL DEFAULT '1',
+  `work_start_time` time NOT NULL DEFAULT '08:00:00',
+  `work_end_time` time NOT NULL DEFAULT '18:00:00',
+  `timezone` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Africa/Nairobi',
+  `blocked_day_message` varchar(255) COLLATE utf8mb4_general_ci DEFAULT 'The system is closed today. Please log in on the next working day.',
+  `outside_hours_message` varchar(255) COLLATE utf8mb4_general_ci DEFAULT 'The system is currently outside working hours. Please try again during the allowed login period.',
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `login_access_settings`
+--
+
+INSERT INTO `login_access_settings` (`id`, `restrictions_enabled`, `blocked_days`, `enforce_working_hours`, `work_start_time`, `work_end_time`, `timezone`, `blocked_day_message`, `outside_hours_message`, `updated_by`, `updated_at`) VALUES
+(1, 1, 'sunday', 1, '06:00:00', '20:00:00', 'Africa/Nairobi', 'Login during this time is not allowed! Contact admin if its urgent.', 'Login during this time is not allowed! Contact admin if its urgent.', 1, '2026-08-19 10:02:37');
 
 -- --------------------------------------------------------
 
@@ -1182,17 +1202,17 @@ INSERT INTO `invoice_payments` (`id`, `invoice_id`, `amount`, `payment_method`, 
 --
 
 CREATE TABLE `maintenance` (
-  `id` int(11) NOT NULL,
-  `device_serial` varchar(255) NOT NULL,
-  `old_ram` int(11) DEFAULT NULL,
-  `new_ram` int(11) DEFAULT NULL,
-  `old_storage` int(11) DEFAULT NULL,
-  `new_storage` int(11) DEFAULT NULL,
-  `performed_by` int(11) DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `date_performed` timestamp NOT NULL DEFAULT current_timestamp(),
-  `old_graphics` varchar(255) DEFAULT NULL,
-  `new_graphics` varchar(255) DEFAULT NULL
+  `id` int NOT NULL,
+  `device_serial` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `old_ram` int DEFAULT NULL,
+  `new_ram` int DEFAULT NULL,
+  `old_storage` int DEFAULT NULL,
+  `new_storage` int DEFAULT NULL,
+  `performed_by` int DEFAULT NULL,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `date_performed` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `old_graphics` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `new_graphics` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -1216,18 +1236,18 @@ INSERT INTO `maintenance` (`id`, `device_serial`, `old_ram`, `new_ram`, `old_sto
 --
 
 CREATE TABLE `monitors` (
-  `serial_number` varchar(255) NOT NULL,
-  `model_name` varchar(255) NOT NULL,
-  `size_inches` int(11) NOT NULL,
-  `status` enum('In Stock','Sold') DEFAULT 'In Stock',
-  `branch` enum('KIMATHI','MOI') NOT NULL,
-  `added_by` int(11) DEFAULT NULL,
-  `date_added` timestamp NOT NULL DEFAULT current_timestamp(),
-  `sold_by` int(11) DEFAULT NULL,
+  `serial_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `model_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `size_inches` int NOT NULL,
+  `status` enum('In Stock','Sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'In Stock',
+  `branch` enum('KIMATHI','MOI') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `added_by` int DEFAULT NULL,
+  `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `sold_by` int DEFAULT NULL,
   `sold_at` timestamp NULL DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
-  `monitor_condition` enum('Ex-Uk','New','Refurbished') DEFAULT NULL
+  `monitor_condition` enum('Ex-Uk','New','Refurbished') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -1251,19 +1271,19 @@ CREATE TABLE `phones` (
   `serial_number` varchar(50) NOT NULL,
   `brand` varchar(50) DEFAULT NULL,
   `model` varchar(50) DEFAULT NULL,
-  `ram` int(11) DEFAULT NULL,
-  `storage_capacity` int(11) DEFAULT NULL,
-  `status` enum('instock','sold') DEFAULT 'instock',
+  `ram` int DEFAULT NULL,
+  `storage_capacity` int DEFAULT NULL,
+  `status` enum('instock','sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'instock',
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `date_added` timestamp NULL DEFAULT current_timestamp(),
+  `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `price` decimal(10,2) DEFAULT NULL,
   `date_sold` datetime DEFAULT NULL,
-  `sold_by` int(11) DEFAULT NULL,
+  `sold_by` int DEFAULT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
   `price_updated_at` datetime DEFAULT NULL,
-  `added_by` int(11) DEFAULT NULL,
+  `added_by` int DEFAULT NULL,
   `phone_condition` enum('New','Ex-Uk') DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `phones`
@@ -1285,17 +1305,17 @@ INSERT INTO `phones` (`serial_number`, `brand`, `model`, `ram`, `storage_capacit
 --
 
 CREATE TABLE `printers` (
-  `serial_number` varchar(255) NOT NULL,
-  `model_name` varchar(255) NOT NULL,
-  `branch` enum('KIMATHI','MOI') NOT NULL,
-  `status` enum('In Stock','Sold') DEFAULT 'In Stock',
-  `added_by` int(11) DEFAULT NULL,
-  `sold_by` int(11) DEFAULT NULL,
-  `date_added` timestamp NOT NULL DEFAULT current_timestamp(),
+  `serial_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `model_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `branch` enum('KIMATHI','MOI') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `status` enum('In Stock','Sold') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'In Stock',
+  `added_by` int DEFAULT NULL,
+  `sold_by` int DEFAULT NULL,
+  `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `date_sold` timestamp NULL DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
-  `printer_condition` enum('New','Ex-Uk','Refurbished') DEFAULT NULL
+  `printer_condition` enum('New','Ex-Uk','Refurbished') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -1317,7 +1337,7 @@ INSERT INTO `printers` (`serial_number`, `model_name`, `branch`, `status`, `adde
 --
 
 CREATE TABLE `quotations` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `quotation_number` varchar(20) NOT NULL,
   `client_name` varchar(100) NOT NULL,
   `client_phone` varchar(20) DEFAULT NULL,
@@ -1325,15 +1345,15 @@ CREATE TABLE `quotations` (
   `client_email` varchar(100) DEFAULT NULL,
   `quotation_date` date NOT NULL,
   `payment_due_date` date NOT NULL,
-  `subtotal` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `vat` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `grand_total` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `subtotal` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `vat` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `grand_total` decimal(10,2) NOT NULL DEFAULT '0.00',
   `status` enum('draft','sent','cancelled') DEFAULT 'draft',
-  `user_id` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
-  `notes` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `user_id` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `notes` text
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `quotations`
@@ -1352,12 +1372,7 @@ INSERT INTO `quotations` (`id`, `quotation_number`, `client_name`, `client_phone
 (10, 'MC10', 'Munene', '0711529618', '0711529618', 'victormunene207@gmail.com', '2026-07-05', '2026-07-12', 0.00, 0.00, 0.00, 'cancelled', 7, '2026-07-05 07:53:21', '2026-07-05 09:51:52', ''),
 (11, 'MC11', 'peninah kalundi', '0727 733 795', '', '', '2026-07-05', '2026-07-08', 200000.00, 32000.00, 232000.00, 'cancelled', 7, '2026-07-05 07:54:30', '2026-07-05 09:55:23', ''),
 (12, 'MC12', 'Munene victor', '0711529618', 'P.O. BOX 12-95400', 'victormunene207@gmail.com', '2026-07-05', '2026-07-08', 25000.00, 4000.00, 29000.00, 'sent', 7, '2026-07-05 07:57:15', '2026-07-05 08:09:50', 'The prices are exclusive VAT'),
-(13, 'MC13', 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', '2026-07-05', '2026-07-08', 200000.00, 32000.00, 232000.00, 'cancelled', 7, '2026-07-05 10:00:18', '2026-07-05 10:14:01', ''),
-(14, 'MC14', 'Munene victor', '0711529618', 'P.O. BOX 12-95400', 'victormunene207@gmail.com', '2026-07-06', '2026-07-09', 150000.00, 24000.00, 174000.00, 'sent', 1, '2026-07-06 08:18:55', '2026-07-06 08:19:49', ''),
-(15, 'MC15', 'Munene victor', '', '', '', '2026-07-07', '2026-07-10', 850000.00, 136000.00, 986000.00, 'sent', 1, '2026-07-07 09:50:43', '2026-07-07 09:53:57', ''),
-(16, 'MC16', 'peninah kalundi', '0727 733 795', '', '', '2026-07-08', '2026-07-11', 115000.00, 18400.00, 133400.00, 'sent', 1, '2026-07-08 11:38:37', '2026-07-08 11:41:26', ''),
-(17, 'MC17', 'peninah kalundi', '0727 733 795', '', '', '2026-07-08', '2026-07-11', 30000.00, 4800.00, 34800.00, 'draft', 1, '2026-07-08 20:49:56', '2026-07-08 20:50:25', ''),
-(18, 'MC18', 'Musili Homes Limited', '0711529618', '', 'victormunene207@gmail.com', '2026-07-09', '2026-07-12', 130000.00, 20800.00, 150800.00, 'draft', 1, '2026-07-09 12:09:06', '2026-07-09 12:11:04', '');
+(13, 'MC13', 'munene', '0711529618', '0711529618', 'victormunene207@gmail.com', '2026-07-05', '2026-07-08', 200000.00, 32000.00, 232000.00, 'cancelled', 7, '2026-07-05 10:00:18', '2026-07-05 10:14:01', '');
 
 -- --------------------------------------------------------
 
@@ -1366,19 +1381,19 @@ INSERT INTO `quotations` (`id`, `quotation_number`, `client_name`, `client_phone
 --
 
 CREATE TABLE `quotation_items` (
-  `id` int(11) NOT NULL,
-  `quotation_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `quotation_id` int NOT NULL,
   `item_type` enum('device','monitor','printer','smartboard','ups','phone','accessory','graphic','hdd','ram_ssd','charger','manual') NOT NULL,
   `item_id` varchar(50) DEFAULT NULL,
   `description` varchar(255) NOT NULL,
-  `specs` text DEFAULT NULL,
-  `quantity` int(11) NOT NULL DEFAULT 1,
+  `specs` text,
+  `quantity` int NOT NULL DEFAULT '1',
   `unit_price` decimal(10,2) NOT NULL,
   `total_price` decimal(10,2) NOT NULL,
-  `vat_rate` decimal(5,2) NOT NULL DEFAULT 0.00,
-  `vat_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `vat_rate` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `vat_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
   `total_with_vat` decimal(10,2) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `quotation_items`
@@ -1408,14 +1423,7 @@ INSERT INTO `quotation_items` (`id`, `quotation_id`, `item_type`, `item_id`, `de
 (27, 9, 'manual', '', 'SSD SATA 512GB', '512GB', 1, 10000.00, 10000.00, 16.00, 1600.00, 11600.00),
 (28, 9, 'manual', '', 'JBL essential 2 speaker', 'Qty available', 1, 20000.00, 20000.00, 16.00, 3200.00, 23200.00),
 (29, 11, 'manual', '', 'SMART 75-inch', '75 inch', 1, 200000.00, 200000.00, 16.00, 32000.00, 232000.00),
-(30, 13, 'manual', '', 'SMART 75-inch', '75 inch', 1, 200000.00, 200000.00, 16.00, 32000.00, 232000.00),
-(31, 14, 'manual', '', 'Onescreen 5', '65 inch', 1, 150000.00, 150000.00, 16.00, 24000.00, 174000.00),
-(32, 15, 'manual', '', 'Onescreen 5', '65 inch', 5, 170000.00, 850000.00, 16.00, 136000.00, 986000.00),
-(33, 16, 'manual', '', 'HP ELITEBOOK 840 G8', 'INTEL CORE I7-11TH GEN | 8GB RAM | SSD 512GB', 1, 60000.00, 60000.00, 16.00, 9600.00, 69600.00),
-(34, 16, 'manual', '', 'HP ELITEBOOK 840 G6', 'INTEL CORE I5-8TH GEN | 8GB RAM | SSD 256GB', 1, 35000.00, 35000.00, 16.00, 5600.00, 40600.00),
-(36, 16, 'manual', '', 'JBL essential 2 speaker', 'waterproof', 1, 20000.00, 20000.00, 16.00, 3200.00, 23200.00),
-(37, 17, 'manual', '', 'MECER PRINTER', '', 1, 30000.00, 30000.00, 16.00, 4800.00, 34800.00),
-(39, 18, 'manual', '', 'EPSON PRINTER', 'N/A', 5, 26000.00, 130000.00, 16.00, 20800.00, 150800.00);
+(30, 13, 'manual', '', 'SMART 75-inch', '75 inch', 1, 200000.00, 200000.00, 16.00, 32000.00, 232000.00);
 
 -- --------------------------------------------------------
 
@@ -1424,18 +1432,18 @@ INSERT INTO `quotation_items` (`id`, `quotation_id`, `item_type`, `item_id`, `de
 --
 
 CREATE TABLE `rams_ssds` (
-  `id` int(11) NOT NULL,
-  `category` enum('RAM','SSD') NOT NULL,
-  `type` varchar(50) NOT NULL,
-  `quantity` int(11) NOT NULL,
-  `branch` enum('KIMATHI','MOI') NOT NULL,
-  `updated_by` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `category` enum('RAM','SSD') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `quantity` int NOT NULL,
+  `branch` enum('KIMATHI','MOI') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `updated_by` int NOT NULL,
   `date_updated` datetime DEFAULT NULL,
-  `storage` int(11) NOT NULL,
-  `added_by` int(11) DEFAULT NULL,
-  `date_added` timestamp NULL DEFAULT current_timestamp(),
+  `storage` int NOT NULL,
+  `added_by` int DEFAULT NULL,
+  `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `price` decimal(10,2) DEFAULT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `price`) STORED
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `price`)) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -1460,18 +1468,18 @@ INSERT INTO `rams_ssds` (`id`, `category`, `type`, `quantity`, `branch`, `update
 --
 
 CREATE TABLE `rams_ssds_logs` (
-  `id` int(11) NOT NULL,
-  `ram_ssd_id` int(11) NOT NULL,
-  `category` enum('RAM','SSD') NOT NULL,
-  `type` varchar(50) NOT NULL,
-  `quantity_given` int(11) NOT NULL,
-  `given_to` int(11) NOT NULL,
-  `given_by` int(11) NOT NULL,
-  `branch` enum('KIMATHI','MOI') NOT NULL,
-  `date_given` timestamp NOT NULL DEFAULT current_timestamp(),
-  `storage` int(11) NOT NULL,
-  `status` enum('pending_sale','sold','returned') DEFAULT 'pending_sale',
-  `sale_item_id` int(11) DEFAULT NULL
+  `id` int NOT NULL,
+  `ram_ssd_id` int NOT NULL,
+  `category` enum('RAM','SSD') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `quantity_given` int NOT NULL,
+  `given_to` int NOT NULL,
+  `given_by` int NOT NULL,
+  `branch` enum('KIMATHI','MOI') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `date_given` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `storage` int NOT NULL,
+  `status` enum('pending_sale','sold','returned') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'pending_sale',
+  `sale_item_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -1499,14 +1507,14 @@ INSERT INTO `rams_ssds_logs` (`id`, `ram_ssd_id`, `category`, `type`, `quantity_
 --
 
 CREATE TABLE `registration_codes` (
-  `id` int(11) NOT NULL,
-  `code` varchar(50) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `role` enum('super_admin','inventory_admin','technician','software','sales','manager','cashier') NOT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `is_used` tinyint(1) DEFAULT 0,
-  `used_by` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `role` enum('super_admin','inventory_admin','technician','software','sales','manager','cashier') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_used` tinyint(1) DEFAULT '0',
+  `used_by` int DEFAULT NULL,
   `used_at` timestamp NULL DEFAULT NULL,
   `expiry` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -1516,9 +1524,9 @@ CREATE TABLE `registration_codes` (
 --
 
 INSERT INTO `registration_codes` (`id`, `code`, `email`, `role`, `created_by`, `created_at`, `is_used`, `used_by`, `used_at`, `expiry`) VALUES
-(1, '167835', 'victormunene207@gmail.com', 'manager', 1, '2026-04-14 20:06:17', 0, NULL, NULL, NULL),
 (4, '297144', 'vdebmunene207@gmail.com', 'manager', 1, '2026-04-22 19:52:46', 1, NULL, NULL, '2026-04-22 23:11:43'),
-(5, '922516', 'vdebmunene207@gmail.com', 'manager', 1, '2026-06-08 10:17:40', 0, NULL, NULL, '2026-06-08 13:37:36');
+(6, '177102', 'vdebmunene207@gmail.com', 'cashier', 1, '2026-07-08 07:25:17', 1, 17, '2026-07-08 07:26:14', '2026-07-08 10:45:09'),
+(9, '814555', 'victormunene207@gmail.com', 'manager', 1, '2026-08-19 08:17:22', 0, NULL, NULL, '2026-08-19 11:37:18');
 
 -- --------------------------------------------------------
 
@@ -1527,34 +1535,35 @@ INSERT INTO `registration_codes` (`id`, `code`, `email`, `role`, `created_by`, `
 --
 
 CREATE TABLE `repairs` (
-  `id` int(11) NOT NULL,
-  `serial_number` varchar(255) DEFAULT 'Not provided',
+  `id` int NOT NULL,
+  `serial_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'Not provided',
   `problem_description` text NOT NULL,
-  `added_by` int(11) NOT NULL,
-  `given_by` int(11) DEFAULT NULL,
+  `added_by` int NOT NULL,
+  `given_by` int DEFAULT NULL,
   `branch` enum('KIMATHI','MOI') NOT NULL,
-  `fix_status` enum('Not Fixed','Fixed','pending') DEFAULT 'pending',
-  `date_added` timestamp NULL DEFAULT current_timestamp(),
+  `fix_status` enum('Not Fixed','Fixed','pending') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'pending',
+  `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `date_fixed` timestamp NULL DEFAULT NULL,
-  `category_id` int(11) DEFAULT NULL,
+  `category_id` int DEFAULT NULL,
   `model_name` varchar(100) DEFAULT NULL,
   `client_name` varchar(50) DEFAULT NULL,
   `client_phone` varchar(50) DEFAULT NULL,
   `client_email` varchar(50) DEFAULT NULL,
-  `sales_person` int(11) DEFAULT NULL,
+  `sales_person` int DEFAULT NULL,
   `parts_used` varchar(100) DEFAULT NULL,
   `repair_cost` decimal(10,2) DEFAULT NULL,
   `source_device` enum('instock','return','client') DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `repairs`
 --
 
 INSERT INTO `repairs` (`id`, `serial_number`, `problem_description`, `added_by`, `given_by`, `branch`, `fix_status`, `date_added`, `date_fixed`, `category_id`, `model_name`, `client_name`, `client_phone`, `client_email`, `sales_person`, `parts_used`, `repair_cost`, `source_device`) VALUES
-(1, '5CG7766HHJG', 'Broken screen', 8, NULL, 'KIMATHI', 'pending', '2026-07-07 18:18:19', NULL, 1, 'HP ELITEBOOK 840 G6', 'Munene victor', '0711529618', 'victormunene207@gmail.com', NULL, NULL, NULL, 'client'),
-(2, 'TGBHJJRQW1', 'Broken screen', 8, NULL, 'KIMATHI', 'pending', '2026-07-08 07:34:45', NULL, 1, 'HO ELITEBOOK 840 G9', 'Munene victor', '0711529618', 'victormunene207@gmail.com', NULL, NULL, NULL, 'client'),
-(3, 'THJJRQW147G', 'Not powering', 8, NULL, 'KIMATHI', 'pending', '2026-07-08 07:36:32', NULL, 2, 'HP ELITEDESK 705 G4', 'PENINAH', '0727733795', 'victormunene207@gmail.com', NULL, NULL, NULL, 'client');
+(1, '5CG09OZXE42', 'not powering', 17, 1, 'MOI', 'pending', '2026-07-08 07:28:20', NULL, 1, 'HP ELITEBOOK 840 G8', NULL, NULL, NULL, NULL, NULL, NULL, 'instock'),
+(2, 'TGBHJJRQW1', 'Faulty Keyboard', 17, NULL, 'MOI', 'pending', '2026-07-08 07:29:37', NULL, 1, 'HP ELITEBOOK 840 G9', 'Munene victor', '0711529618', 'victormunene207@gmail.com', NULL, NULL, NULL, 'client'),
+(3, 'THJJRQW147G', 'Faulty ssd', 17, NULL, 'MOI', 'Fixed', '2026-07-08 07:39:43', '2026-07-08 08:47:18', 2, 'HP ELITEDESK 705 G4', 'PENINAH', '0727733795', 'victormunene207@gmail.com', NULL, 'New SSD', 5000.00, 'client'),
+(4, '5CG1234XYZ', 'Faulty Keyboard', 17, NULL, 'KIMATHI', 'pending', '2026-07-08 08:19:09', NULL, 1, 'HP EliteBook 840 G6', 'munene Limited', '0711529618', NULL, 7, NULL, NULL, 'return');
 
 -- --------------------------------------------------------
 
@@ -1563,52 +1572,52 @@ INSERT INTO `repairs` (`id`, `serial_number`, `problem_description`, `added_by`,
 --
 
 CREATE TABLE `sales` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `client_name` varchar(100) DEFAULT NULL,
   `client_phone` varchar(20) DEFAULT NULL,
   `total_amount` decimal(10,2) DEFAULT NULL,
   `sale_status` enum('active','completed','cancelled') DEFAULT 'active',
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `completed_at` datetime DEFAULT NULL,
-  `sold_by` int(11) DEFAULT NULL,
+  `sold_by` int DEFAULT NULL,
   `payment_method` enum('cash','mpesa-till','mpesa-pochi','bank-transfer') DEFAULT NULL,
   `payment_status` enum('paid','unpaid') DEFAULT NULL,
-  `completion_status` enum('pending','Completed') DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `completion_status` enum('pending','Completed') DEFAULT NULL,
+  `mpesa_receipt` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sales`
 --
 
-INSERT INTO `sales` (`id`, `client_name`, `client_phone`, `total_amount`, `sale_status`, `created_at`, `completed_at`, `sold_by`, `payment_method`, `payment_status`, `completion_status`) VALUES
-(1, 'victor', '0711529618', 105000.00, 'cancelled', '2026-06-29 08:07:44', '2026-06-29 16:07:42', 7, NULL, NULL, 'pending'),
-(2, 'Munene', '0711529618', 0.00, 'cancelled', '2026-06-29 10:26:24', '2026-06-29 15:19:11', 7, NULL, NULL, 'pending'),
-(3, 'Munene victor', '0703646909', 0.00, 'completed', '2026-06-29 10:33:53', '2026-06-29 15:16:18', 7, 'mpesa-till', 'paid', 'Completed'),
-(4, NULL, NULL, NULL, 'cancelled', '2026-06-29 10:44:43', '2026-06-29 15:21:50', 7, NULL, NULL, NULL),
-(5, 'Munene victor', '0703646909', 30000.00, 'cancelled', '2026-06-29 13:09:01', '2026-06-29 16:31:40', 7, NULL, NULL, 'pending'),
-(6, 'Munene victor', '0703646909', NULL, 'completed', '2026-06-29 13:50:15', '2026-06-29 16:51:55', 8, 'mpesa-till', 'paid', 'Completed'),
-(7, NULL, NULL, NULL, 'cancelled', '2026-06-29 13:55:45', '2026-06-29 17:05:36', 8, NULL, NULL, NULL),
-(8, NULL, NULL, NULL, 'cancelled', '2026-06-29 14:20:14', '2026-06-29 18:02:08', 8, NULL, NULL, NULL),
-(9, 'Munene victor', '0711529618', 0.00, 'cancelled', '2026-06-29 15:22:10', '2026-06-29 18:37:29', 8, NULL, NULL, 'pending'),
-(10, NULL, NULL, 34000.00, 'completed', '2026-06-29 15:37:39', '2026-06-30 18:02:12', 7, 'mpesa-till', 'paid', 'Completed'),
-(11, 'Munene victor', '0711529618', 223000.00, 'cancelled', '2026-06-29 15:38:53', '2026-06-30 13:59:18', 8, NULL, NULL, 'pending'),
-(12, NULL, NULL, NULL, 'cancelled', '2026-06-30 10:57:43', '2026-06-30 14:00:47', 7, NULL, NULL, NULL),
-(13, NULL, NULL, NULL, 'cancelled', '2026-06-30 10:57:43', '2026-06-30 18:01:55', 8, NULL, NULL, NULL),
-(14, NULL, NULL, NULL, 'cancelled', '2026-06-30 10:58:02', '2026-06-30 14:00:19', 7, NULL, NULL, NULL),
-(15, NULL, NULL, NULL, 'cancelled', '2026-06-30 10:58:02', '2026-06-30 18:01:30', 8, NULL, NULL, NULL),
-(16, 'Munene', '0711529618', 81200.00, 'cancelled', '2026-07-01 11:33:45', '2026-07-02 11:17:52', 7, NULL, NULL, 'pending'),
-(17, 'Munene victor', '0711529618', 80000.00, 'completed', '2026-07-01 15:22:45', '2026-07-06 00:19:12', 8, 'mpesa-till', 'paid', 'Completed'),
-(18, 'Munene', '0711529618', NULL, 'cancelled', '2026-07-02 08:18:16', '2026-07-02 11:19:12', 7, NULL, NULL, NULL),
-(19, 'Musili Homes', '0711529618', NULL, 'cancelled', '2026-07-02 08:20:11', '2026-07-02 11:32:56', 7, NULL, NULL, NULL),
-(20, NULL, NULL, 10800.00, 'cancelled', '2026-07-02 08:47:55', '2026-07-02 14:48:16', 7, NULL, NULL, 'pending'),
-(21, 'Musili Homes Limited', '0711529618', 10800.00, 'completed', '2026-07-02 11:48:57', '2026-07-05 23:43:52', 7, 'mpesa-till', 'paid', 'Completed'),
-(22, 'Munene', '0711529618', 1200.00, 'completed', '2026-07-05 21:32:12', '2026-07-06 00:32:49', 7, 'cash', 'paid', 'Completed'),
-(23, 'Musili Homes Limited', '0711529618', 200000.00, 'completed', '2026-07-05 21:35:11', '2026-07-06 00:35:43', 7, 'mpesa-till', 'paid', 'Completed'),
-(24, 'Victor', '0703646909', 35000.00, 'completed', '2026-07-05 21:38:42', '2026-07-06 00:39:02', 7, 'mpesa-pochi', 'paid', 'Completed'),
-(25, 'munene Limited', '0711529618', 150000.00, 'cancelled', '2026-07-06 17:27:05', '2026-07-07 13:05:26', 7, NULL, NULL, 'pending'),
-(26, 'Musili Homes Limited', '0711529618', 175000.00, 'completed', '2026-07-07 10:05:39', '2026-07-07 13:06:55', 7, 'mpesa-till', 'paid', 'Completed'),
-(27, 'munene Limited', '0711529618', 20000.00, 'completed', '2026-07-07 10:08:30', '2026-07-07 13:10:47', 7, NULL, 'unpaid', 'Completed'),
-(28, 'Musili Homes Limited', '0711529618', 0.00, 'active', '2026-07-07 13:08:36', NULL, 7, NULL, NULL, 'pending');
+INSERT INTO `sales` (`id`, `client_name`, `client_phone`, `total_amount`, `sale_status`, `created_at`, `completed_at`, `sold_by`, `payment_method`, `payment_status`, `completion_status`, `mpesa_receipt`) VALUES
+(1, 'victor', '0711529618', 105000.00, 'cancelled', '2026-06-29 08:07:44', '2026-06-29 16:07:42', 7, NULL, NULL, 'pending', NULL),
+(2, 'Munene', '0711529618', 0.00, 'cancelled', '2026-06-29 10:26:24', '2026-06-29 15:19:11', 7, NULL, NULL, 'pending', NULL),
+(3, 'Munene victor', '0703646909', 0.00, 'completed', '2026-06-29 10:33:53', '2026-06-29 15:16:18', 7, 'mpesa-till', 'paid', 'Completed', NULL),
+(4, NULL, NULL, NULL, 'cancelled', '2026-06-29 10:44:43', '2026-06-29 15:21:50', 7, NULL, NULL, NULL, NULL),
+(5, 'Munene victor', '0703646909', 30000.00, 'cancelled', '2026-06-29 13:09:01', '2026-06-29 16:31:40', 7, NULL, NULL, 'pending', NULL),
+(6, 'Munene victor', '0703646909', NULL, 'completed', '2026-06-29 13:50:15', '2026-06-29 16:51:55', 8, 'mpesa-till', 'paid', 'Completed', NULL),
+(7, NULL, NULL, NULL, 'cancelled', '2026-06-29 13:55:45', '2026-06-29 17:05:36', 8, NULL, NULL, NULL, NULL),
+(8, NULL, NULL, NULL, 'cancelled', '2026-06-29 14:20:14', '2026-06-29 18:02:08', 8, NULL, NULL, NULL, NULL),
+(9, 'Munene victor', '0711529618', 0.00, 'cancelled', '2026-06-29 15:22:10', '2026-06-29 18:37:29', 8, NULL, NULL, 'pending', NULL),
+(10, NULL, NULL, 34000.00, 'completed', '2026-06-29 15:37:39', '2026-06-30 18:02:12', 7, 'mpesa-till', 'paid', 'Completed', NULL),
+(11, 'Munene victor', '0711529618', 223000.00, 'cancelled', '2026-06-29 15:38:53', '2026-06-30 13:59:18', 8, NULL, NULL, 'pending', NULL),
+(12, NULL, NULL, NULL, 'cancelled', '2026-06-30 10:57:43', '2026-06-30 14:00:47', 7, NULL, NULL, NULL, NULL),
+(13, NULL, NULL, NULL, 'cancelled', '2026-06-30 10:57:43', '2026-06-30 18:01:55', 8, NULL, NULL, NULL, NULL),
+(14, NULL, NULL, NULL, 'cancelled', '2026-06-30 10:58:02', '2026-06-30 14:00:19', 7, NULL, NULL, NULL, NULL),
+(15, NULL, NULL, NULL, 'cancelled', '2026-06-30 10:58:02', '2026-06-30 18:01:30', 8, NULL, NULL, NULL, NULL),
+(16, 'Munene', '0711529618', 81200.00, 'cancelled', '2026-07-01 11:33:45', '2026-07-02 11:17:52', 7, NULL, NULL, 'pending', NULL),
+(17, 'Munene victor', '0711529618', 80000.00, 'completed', '2026-07-01 15:22:45', '2026-07-06 00:19:12', 8, 'mpesa-till', 'paid', 'Completed', NULL),
+(18, 'Munene', '0711529618', NULL, 'cancelled', '2026-07-02 08:18:16', '2026-07-02 11:19:12', 7, NULL, NULL, NULL, NULL),
+(19, 'Musili Homes', '0711529618', NULL, 'cancelled', '2026-07-02 08:20:11', '2026-07-02 11:32:56', 7, NULL, NULL, NULL, NULL),
+(20, NULL, NULL, 10800.00, 'cancelled', '2026-07-02 08:47:55', '2026-07-02 14:48:16', 7, NULL, NULL, 'pending', NULL),
+(21, 'Musili Homes Limited', '0711529618', 10800.00, 'completed', '2026-07-02 11:48:57', '2026-07-05 23:43:52', 7, 'mpesa-till', 'paid', 'Completed', NULL),
+(22, 'Munene', '0711529618', 1200.00, 'completed', '2026-07-05 21:32:12', '2026-07-06 00:32:49', 7, 'cash', 'paid', 'Completed', NULL),
+(23, 'Musili Homes Limited', '0711529618', 200000.00, 'completed', '2026-07-05 21:35:11', '2026-07-06 00:35:43', 7, 'mpesa-till', 'paid', 'Completed', NULL),
+(24, 'Victor', '0703646909', 35000.00, 'completed', '2026-07-05 21:38:42', '2026-07-06 00:39:02', 7, 'mpesa-pochi', 'paid', 'Completed', NULL),
+(25, 'munene Limited', '0711529618', 35000.00, 'completed', '2026-07-08 08:15:40', '2026-07-08 11:16:52', 7, 'cash', 'paid', 'Completed', NULL),
+(26, 'munene Limited', '0711529618', 60000.00, 'completed', '2026-07-22 06:45:01', '2026-07-22 09:52:21', 7, 'mpesa-till', 'paid', 'Completed', NULL),
+(27, 'Victor', '0703646909', 20.00, 'active', '2026-07-22 07:14:44', NULL, 7, NULL, NULL, 'pending', NULL);
 
 -- --------------------------------------------------------
 
@@ -1617,17 +1626,17 @@ INSERT INTO `sales` (`id`, `client_name`, `client_phone`, `total_amount`, `sale_
 --
 
 CREATE TABLE `sale_items` (
-  `id` int(11) NOT NULL,
-  `sale_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `sale_id` int DEFAULT NULL,
   `item_type` enum('device','monitors','printers','smartboards','phones','ups','ram','ssd','charger','accessory','hdd','graphic') DEFAULT NULL,
   `item_id` varchar(50) DEFAULT NULL,
   `description` varchar(200) DEFAULT NULL,
-  `quantity` int(11) DEFAULT NULL,
+  `quantity` int DEFAULT NULL,
   `unit_price` decimal(10,2) DEFAULT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `unit_price`) STORED,
-  `sales_person` int(11) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `unit_price`)) STORED,
+  `sales_person` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sale_items`
@@ -1644,9 +1653,9 @@ INSERT INTO `sale_items` (`id`, `sale_id`, `item_type`, `item_id`, `description`
 (38, 22, 'accessory', '4', 'power cable | KIMATHI | Qty: 2', 2, 600.00, 7, '2026-07-05 21:32:19'),
 (39, 23, 'smartboards', 'SB001', 'SMART 75-inch | 75 inch', 1, 200000.00, 7, '2026-07-05 21:35:20'),
 (40, 24, 'device', '5CG0302X7Y', 'HP ELITEBOOK 745 G6 | AMD RYZEN 7 PRO 3700u | 16GB RAM | SSD 256GB | 2GB AMD RADEON VEGA 11 | Non-touch', 1, 35000.00, 7, '2026-07-05 21:38:55'),
-(42, 26, 'smartboards', 'SMJJ8Y6UH', 'Onescreen 5 | 65 inch', 1, 150000.00, 7, '2026-07-07 10:06:23'),
-(43, 26, 'accessory', '2', 'JBL essential 2 speaker | KIMATHI | display', 1, 25000.00, 7, '2026-07-07 10:06:48'),
-(44, 27, 'accessory', '2', 'JBL essential 2 speaker | KIMATHI | display', 1, 20000.00, 7, '2026-07-07 10:08:42');
+(41, 25, 'device', '5CG1234XYZ', 'HP EliteBook 840 G6 | Intel Core i5-8250U | 8GB RAM | SSD 256GB | Intel UHD Graphics | Non-touch', 1, 35000.00, 7, '2026-07-08 08:15:52'),
+(42, 26, 'accessory', '2', 'JBL essential 2 speaker | KIMATHI | display', 3, 20000.00, 7, '2026-07-22 06:45:13'),
+(44, 27, 'accessory', '2', 'JBL essential 2 speaker | KIMATHI | display', 2, 10.00, 7, '2026-07-22 07:16:50');
 
 -- --------------------------------------------------------
 
@@ -1657,17 +1666,17 @@ INSERT INTO `sale_items` (`id`, `sale_id`, `item_type`, `item_id`, `description`
 CREATE TABLE `smartboards` (
   `serial_number` varchar(50) NOT NULL,
   `model` varchar(50) NOT NULL,
-  `size_inches` int(11) NOT NULL,
-  `date_added` timestamp NULL DEFAULT current_timestamp(),
+  `size_inches` int NOT NULL,
+  `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `status` enum('instock','sold') DEFAULT 'instock',
-  `added_by` int(11) DEFAULT NULL,
+  `added_by` int DEFAULT NULL,
   `branch` enum('KIMATHI','MOI') DEFAULT NULL,
-  `place` enum('store','warehouse','sold','display') DEFAULT NULL,
+  `place` enum('store','warehouse','sold','display') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
   `sold_at` datetime DEFAULT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
-  `sold_by` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `sold_by` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `smartboards`
@@ -1676,13 +1685,13 @@ CREATE TABLE `smartboards` (
 INSERT INTO `smartboards` (`serial_number`, `model`, `size_inches`, `date_added`, `status`, `added_by`, `branch`, `place`, `price`, `sold_at`, `selling_price`, `sold_by`) VALUES
 ('SB001', 'SMART 75-inch', 75, '2026-05-30 08:07:14', 'sold', 1, 'KIMATHI', 'store', 200000.00, '2026-07-06 00:35:20', 200000.00, 7),
 ('SB002', 'ViewSonic 65-inch', 65, '2026-06-20 08:07:14', 'instock', 1, 'MOI', 'warehouse', NULL, NULL, NULL, NULL),
-('SB0025TY', 'Onescreen 5', 65, '2026-03-16 08:11:59', 'instock', 1, 'MOI', 'warehouse', 180000.00, NULL, NULL, NULL),
+('SB0025TY', 'Onescreen 5', 65, '2026-03-16 08:11:59', 'instock', 1, 'MOI', 'warehouse', 150000.00, NULL, NULL, NULL),
 ('SB002S4R', 'SMART 75-inch', 75, '2026-06-20 08:11:59', 'sold', 1, 'KIMATHI', 'store', 170000.00, '2026-06-29 09:33:43', 170000.00, 7),
 ('SM5CG09OZXE60', 'Onescreen 5', 65, '2026-03-24 18:44:40', 'sold', 1, 'KIMATHI', 'store', 80000.00, '2026-06-27 17:11:18', 80000.00, 7),
 ('SM7UYYG3VV', 'SMART', 75, '2026-06-17 13:05:45', 'sold', 1, 'KIMATHI', NULL, 200000.00, '2026-06-18 12:34:13', 2050000.00, 7),
 ('SMI0OUJ', 'SMART 6065', 65, '2026-06-20 08:23:16', 'sold', 1, 'MOI', 'sold', 150000.00, '2026-07-02 10:05:34', 150000.00, NULL),
-('SMJJ8Y6UH', 'Onescreen 5', 65, '2026-07-04 07:24:04', 'sold', 1, 'KIMATHI', 'store', 150000.00, '2026-07-07 13:06:23', 150000.00, 7),
-('SRTF556DCGF', 'Onescreen 5', 65, '2026-07-04 07:24:46', 'instock', 1, 'MOI', 'store', 170000.00, NULL, NULL, NULL);
+('SMJJ8Y6UH', 'Onescreen 5', 65, '2026-07-04 07:24:04', 'instock', 1, 'KIMATHI', 'store', 150000.00, NULL, NULL, NULL),
+('SRTF556DCGF', 'Onescreen 5', 65, '2026-07-04 07:24:46', 'instock', 1, 'MOI', 'store', 150000.00, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1691,17 +1700,17 @@ INSERT INTO `smartboards` (`serial_number`, `model`, `size_inches`, `date_added`
 --
 
 CREATE TABLE `sold_accessories` (
-  `id` int(11) NOT NULL,
-  `accessory_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `accessory_id` int NOT NULL,
   `accessory_name` varchar(100) NOT NULL,
-  `quantity` int(11) NOT NULL,
+  `quantity` int NOT NULL,
   `selling_price` decimal(10,2) NOT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `selling_price`) STORED,
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `sold_by` int(11) NOT NULL,
-  `date_sold` timestamp NULL DEFAULT current_timestamp(),
-  `sale_item_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `sold_by` int NOT NULL,
+  `date_sold` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `sale_item_id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sold_accessories`
@@ -1713,8 +1722,8 @@ INSERT INTO `sold_accessories` (`id`, `accessory_id`, `accessory_name`, `quantit
 (9, 4, 'power cable', 18, 600.00, 'KIMATHI', 4, '2026-07-05 20:43:39', 36),
 (10, 2, 'JBL essential 2 speaker', 4, 20000.00, 'KIMATHI', 4, '2026-07-05 21:19:00', 37),
 (11, 4, 'power cable', 2, 600.00, 'KIMATHI', 7, '2026-07-05 21:32:19', 38),
-(12, 2, 'JBL essential 2 speaker', 1, 25000.00, 'KIMATHI', 4, '2026-07-07 10:06:48', 43),
-(13, 2, 'JBL essential 2 speaker', 1, 20000.00, 'KIMATHI', 4, '2026-07-07 10:08:42', 44);
+(12, 2, 'JBL essential 2 speaker', 3, 20000.00, 'KIMATHI', 8, '2026-07-22 06:45:13', 42),
+(14, 2, 'JBL essential 2 speaker', 2, 10.00, 'KIMATHI', 8, '2026-07-22 07:16:50', 44);
 
 -- --------------------------------------------------------
 
@@ -1723,18 +1732,18 @@ INSERT INTO `sold_accessories` (`id`, `accessory_id`, `accessory_name`, `quantit
 --
 
 CREATE TABLE `sold_chargers` (
-  `id` int(11) NOT NULL,
-  `charger_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `charger_id` int NOT NULL,
   `charger_type` varchar(100) NOT NULL,
-  `charger_condition` enum('New','ex-uk') NOT NULL,
-  `quantity` int(11) NOT NULL,
+  `charger_condition` enum('New','ex-uk') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `quantity` int NOT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `sold_by` int(11) DEFAULT NULL,
-  `date_sold` timestamp NULL DEFAULT current_timestamp(),
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `selling_price`) STORED,
-  `sale_item_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `sold_by` int DEFAULT NULL,
+  `date_sold` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED,
+  `sale_item_id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sold_chargers`
@@ -1753,18 +1762,18 @@ INSERT INTO `sold_chargers` (`id`, `charger_id`, `charger_type`, `charger_condit
 --
 
 CREATE TABLE `sold_graphics_cards` (
-  `id` int(11) NOT NULL,
-  `graphic_card_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `graphic_card_id` int DEFAULT NULL,
   `type` varchar(50) DEFAULT NULL,
-  `storage_capacity` int(11) DEFAULT NULL,
-  `quantity` int(11) DEFAULT NULL,
+  `storage_capacity` int DEFAULT NULL,
+  `quantity` int DEFAULT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `selling_price`) STORED,
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED,
   `date_sold` datetime DEFAULT NULL,
-  `sold_by` int(11) DEFAULT NULL,
+  `sold_by` int DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `sale_item_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `sale_item_id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sold_graphics_cards`
@@ -1780,18 +1789,18 @@ INSERT INTO `sold_graphics_cards` (`id`, `graphic_card_id`, `type`, `storage_cap
 --
 
 CREATE TABLE `sold_hdds` (
-  `id` int(11) NOT NULL,
-  `hdd_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `hdd_id` int DEFAULT NULL,
   `type` varchar(50) DEFAULT NULL,
   `storage` varchar(50) DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `quantity` int(11) DEFAULT NULL,
+  `quantity` int DEFAULT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `selling_price`) STORED,
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED,
   `date_sold` datetime DEFAULT NULL,
-  `sold_by` int(11) DEFAULT NULL,
-  `sale_item_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `sold_by` int DEFAULT NULL,
+  `sale_item_id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sold_hdds`
@@ -1810,19 +1819,19 @@ INSERT INTO `sold_hdds` (`id`, `hdd_id`, `type`, `storage`, `branch`, `quantity`
 --
 
 CREATE TABLE `sold_rams_ssds` (
-  `id` int(11) NOT NULL,
-  `ram_ssd_id` int(11) DEFAULT NULL,
+  `id` int NOT NULL,
+  `ram_ssd_id` int DEFAULT NULL,
   `category` enum('RAM','SSD') DEFAULT NULL,
   `type` varchar(50) DEFAULT NULL,
-  `storage` int(11) DEFAULT NULL,
+  `storage` int DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
-  `quantity` int(11) DEFAULT NULL,
+  `quantity` int DEFAULT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `selling_price`) STORED,
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `selling_price`)) STORED,
   `date_sold` datetime DEFAULT NULL,
-  `sold_by` int(11) DEFAULT NULL,
-  `sale_item_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `sold_by` int DEFAULT NULL,
+  `sale_item_id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sold_rams_ssds`
@@ -1845,18 +1854,18 @@ INSERT INTO `sold_rams_ssds` (`id`, `ram_ssd_id`, `category`, `type`, `storage`,
 CREATE TABLE `ups` (
   `serial_number` varchar(100) NOT NULL,
   `model` varchar(50) NOT NULL,
-  `capacity` int(11) NOT NULL,
+  `capacity` int NOT NULL,
   `status` enum('instock','sold') DEFAULT 'instock',
-  `added_by` int(11) DEFAULT NULL,
-  `date_added` timestamp NULL DEFAULT current_timestamp(),
+  `added_by` int DEFAULT NULL,
+  `date_added` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `price` decimal(10,2) DEFAULT NULL,
-  `sold_by` int(11) DEFAULT NULL,
+  `sold_by` int DEFAULT NULL,
   `selling_price` decimal(10,2) DEFAULT NULL,
   `date_sold` datetime DEFAULT NULL,
   `branch` enum('MOI','KIMATHI') DEFAULT NULL,
   `ups_condition` enum('New','Ex-UK','Refurbished') DEFAULT 'New',
   `price_updated_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `ups`
@@ -1875,29 +1884,32 @@ INSERT INTO `ups` (`serial_number`, `model`, `capacity`, `status`, `added_by`, `
 --
 
 CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `username` varchar(100) DEFAULT NULL,
-  `password` varchar(255) NOT NULL,
-  `role` enum('super_admin','inventory_admin','technician','maintenance','sales','manager','cashier','software') NOT NULL,
-  `is_active` tinyint(1) DEFAULT 1,
-  `full_name` varchar(200) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `id` int NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `username` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `role` enum('super_admin','inventory_admin','technician','maintenance','sales','manager','cashier','software') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `full_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `last_login` timestamp NULL DEFAULT NULL,
-  `branch` enum('KIMATHI','MOI') NOT NULL,
-  `failed_attempts` int(11) DEFAULT 0,
-  `account_locked_until` datetime DEFAULT NULL
+  `branch` enum('KIMATHI','MOI') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `failed_attempts` int DEFAULT '0',
+  `account_locked_until` datetime DEFAULT NULL,
+  `reset_code` int DEFAULT NULL,
+  `code_expiry` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `email`, `username`, `password`, `role`, `is_active`, `full_name`, `created_at`, `last_login`, `branch`, `failed_attempts`, `account_locked_until`) VALUES
-(1, 'victormunene207@gmail.com', 'vic', '$2y$10$6ldKrEpgY34WxLQXJtUaHuvC8vDXPGtAor5GZerz8ZErpMhCr3nLW', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-07-09 14:41:47', 'KIMATHI', 0, NULL),
-(4, 'munene@gmail.com', 'Vdeb', '$2y$10$m9PnQbD9v1ZY50s14T45MOV2n4bdaty74/2Y8rBlOuRY56.4OdlGi', 'cashier', 1, 'Munene vicky', '2025-12-03 12:39:40', '2026-07-07 13:08:13', 'KIMATHI', 0, NULL),
-(7, 'peninahkalundi@gmail.com', 'pesh', '$2y$10$cS2ZivexM3srJGrkihxPnumRp0RNDgdHDTX8bkGuUXphAbd9ZJSc.', 'sales', 1, 'Peninah Kalundi', '2025-12-04 18:01:17', '2026-07-07 10:13:28', 'KIMATHI', 0, NULL),
-(8, 'munene23.v@student.cuk.ac.ke', 'syovata', '$2a$12$/VBwYZBkXo6VuCCFIPFWDeLBJ5Ewbo.Z.lALJgWmckCUeT5PFmJ5.', 'technician', 1, 'Victor Syovata', '2025-12-05 22:19:21', '2026-07-08 13:18:25', 'KIMATHI', 0, NULL);
+INSERT INTO `users` (`id`, `email`, `username`, `password`, `role`, `is_active`, `full_name`, `created_at`, `last_login`, `branch`, `failed_attempts`, `account_locked_until`, `reset_code`, `code_expiry`) VALUES
+(1, 'victormunene207@gmail.com', 'vic', '$2a$12$q5sPMKAfYhS0AMXRm6BpI.W7flz8n0wmcUbBJ45BAnOa8BsxgYKSK', 'super_admin', 1, 'Victor Munene', '2025-12-03 11:42:31', '2026-08-22 12:14:33', 'KIMATHI', 0, NULL, NULL, NULL),
+(4, 'munene@gmail.com', 'Vdeb', '$2y$10$m9PnQbD9v1ZY50s14T45MOV2n4bdaty74/2Y8rBlOuRY56.4OdlGi', 'cashier', 1, 'Munene vicky', '2025-12-03 12:39:40', '2026-07-08 08:16:37', 'KIMATHI', 0, NULL, NULL, NULL),
+(7, 'peninahkalundi@gmail.com', 'pesh', '$2y$10$cS2ZivexM3srJGrkihxPnumRp0RNDgdHDTX8bkGuUXphAbd9ZJSc.', 'sales', 1, 'Peninah Kalundi', '2025-12-04 18:01:17', '2026-07-08 08:15:28', 'KIMATHI', 0, NULL, NULL, NULL),
+(8, 'munene23.v@student.cuk.ac.ke', 'syovata', '$2y$10$n.B7HT1dSzSnVuHWgbFPzeYOqZ/g3dpJjV3KqcFmdeUPQiDbBTCAi', 'cashier', 1, 'Victor Syovata', '2025-12-05 22:19:21', '2026-08-19 10:01:20', 'KIMATHI', 1, NULL, NULL, NULL),
+(17, 'vdebmunene207@gmail.com', 'vic', '$2y$10$WMn4uRN7GbmwnJzHM/TzduF8QGhSWU.phz4qnNrs6jEnq4h3lzLmG', 'technician', 0, 'munene', '2026-07-08 07:26:14', '2026-07-08 09:53:59', 'KIMATHI', 2, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1906,22 +1918,22 @@ INSERT INTO `users` (`id`, `email`, `username`, `password`, `role`, `is_active`,
 --
 
 CREATE TABLE `user_devices` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `user_id` int NOT NULL,
   `device_id` varchar(255) NOT NULL,
   `device_name` varchar(255) DEFAULT NULL,
-  `browser_info` text DEFAULT NULL,
+  `browser_info` text,
   `ip_address` varchar(45) DEFAULT NULL,
   `last_seen` datetime DEFAULT NULL,
   `first_seen` datetime DEFAULT NULL,
-  `times_seen` int(11) DEFAULT 1,
-  `is_verified` tinyint(1) DEFAULT 0,
+  `times_seen` int DEFAULT '1',
+  `is_verified` tinyint(1) DEFAULT '0',
   `verification_code` varchar(10) DEFAULT NULL,
   `code_expires_at` datetime DEFAULT NULL,
-  `failed_attempts` int(11) DEFAULT 0,
+  `failed_attempts` int DEFAULT '0',
   `locked_until` datetime DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `user_devices`
@@ -1929,15 +1941,22 @@ CREATE TABLE `user_devices` (
 
 INSERT INTO `user_devices` (`id`, `user_id`, `device_id`, `device_name`, `browser_info`, `ip_address`, `last_seen`, `first_seen`, `times_seen`, `is_verified`, `verification_code`, `code_expires_at`, `failed_attempts`, `locked_until`, `created_at`) VALUES
 (1, 1, '9434825922fdab2488a47e149a22fbf60d1d4c55e549294e745f9529fc04e74b', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '::1', '2026-07-06 02:33:53', '2026-07-06 01:27:11', 10, 1, NULL, NULL, 0, NULL, '2026-07-05 22:27:11'),
+(2, 1, '7bf794ddcdd385a20dcfe4191602f784e955a98a8d503d652715ca10e7c188e2', 'Android Device - Google Chrome', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', '192.168.0.127', '2026-07-06 01:44:12', '2026-07-06 01:31:15', 2, 1, NULL, NULL, 0, NULL, '2026-07-05 22:31:15'),
 (3, 8, '7bf794ddcdd385a20dcfe4191602f784e955a98a8d503d652715ca10e7c188e2', 'Android Device - Google Chrome', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', '192.168.0.127', '2026-07-06 01:58:37', '2026-07-06 01:56:14', 2, 1, NULL, NULL, 0, NULL, '2026-07-05 22:56:14'),
 (4, 8, '9434825922fdab2488a47e149a22fbf60d1d4c55e549294e745f9529fc04e74b', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '::1', '2026-07-06 02:05:10', '2026-07-06 02:03:33', 2, 1, NULL, NULL, 0, NULL, '2026-07-05 23:03:33'),
-(5, 1, '5ccfa2cb80080516e310f64a0e8c72cfb2ec229066f89300939af603287cc004', 'Android Device - Google Chrome', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', '154.159.252.62', '2026-07-08 23:48:48', '2026-07-06 03:18:46', 21, 1, NULL, NULL, 0, NULL, '2026-07-06 00:18:46'),
-(6, 1, '013c0ff5c30adfdda184d3c07c5b5846661193729c8a8f7de51ec151fe232df1', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '197.248.142.9', '2026-07-09 17:41:47', '2026-07-06 08:50:47', 12, 1, NULL, NULL, 0, NULL, '2026-07-06 05:50:47'),
-(7, 1, '9e897de9873ac9df2735bc7b5212d21dece09e381e1acf9632409cab9a1b3845', 'Mac Computer - Safari', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15', '197.248.142.9', '2026-07-06 09:24:59', '2026-07-06 09:24:59', 1, 1, NULL, NULL, 0, NULL, '2026-07-06 06:24:59'),
-(8, 8, '013c0ff5c30adfdda184d3c07c5b5846661193729c8a8f7de51ec151fe232df1', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '197.248.142.9', '2026-07-08 14:15:35', '2026-07-06 16:14:06', 5, 1, NULL, NULL, 0, NULL, '2026-07-06 13:14:06'),
-(9, 7, '5ccfa2cb80080516e310f64a0e8c72cfb2ec229066f89300939af603287cc004', 'Android Device - Google Chrome', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', '2c0f:fe38:210d:d98f:1:1:8418:4976', '2026-07-07 13:13:28', '2026-07-06 20:26:51', 2, 1, NULL, NULL, 0, NULL, '2026-07-06 17:26:51'),
-(10, 8, '5ccfa2cb80080516e310f64a0e8c72cfb2ec229066f89300939af603287cc004', 'Android Device - Google Chrome', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', '197.248.142.9', '2026-07-08 16:18:25', '2026-07-07 05:28:33', 4, 1, NULL, NULL, 0, NULL, '2026-07-07 02:28:33'),
-(11, 4, '5ccfa2cb80080516e310f64a0e8c72cfb2ec229066f89300939af603287cc004', 'Android Device - Google Chrome', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', '2c0f:fe38:2100:7a1:1:1:8547:203', '2026-07-07 16:08:13', '2026-07-07 13:03:00', 3, 1, NULL, NULL, 0, NULL, '2026-07-07 10:03:00');
+(5, 1, 'e2a5e1db750b6676f588e0143f49a94239d74c62b4b2abe2e35098fef1e0d660', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '::1', '2026-07-09 17:31:36', '2026-07-06 17:11:46', 8, 1, NULL, NULL, 0, NULL, '2026-07-06 14:11:46'),
+(6, 17, 'e2a5e1db750b6676f588e0143f49a94239d74c62b4b2abe2e35098fef1e0d660', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '::1', '2026-07-08 12:53:59', '2026-07-08 10:26:23', 4, 1, NULL, NULL, 0, NULL, '2026-07-08 07:26:23'),
+(7, 7, 'e2a5e1db750b6676f588e0143f49a94239d74c62b4b2abe2e35098fef1e0d660', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '::1', '2026-07-08 11:15:28', '2026-07-08 11:14:23', 2, 1, NULL, NULL, 0, NULL, '2026-07-08 08:14:23'),
+(8, 4, 'e2a5e1db750b6676f588e0143f49a94239d74c62b4b2abe2e35098fef1e0d660', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '::1', '2026-07-08 11:16:37', '2026-07-08 11:16:37', 1, 1, NULL, NULL, 0, NULL, '2026-07-08 08:16:37'),
+(9, 8, 'e2a5e1db750b6676f588e0143f49a94239d74c62b4b2abe2e35098fef1e0d660', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', '::1', '2026-07-08 12:23:06', '2026-07-08 11:49:25', 4, 1, NULL, NULL, 0, NULL, '2026-07-08 08:49:25'),
+(10, 1, '8a15aec7dd53d2334946f0786511c83a87191a4f17356c9bde9ea38673e197aa', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '::1', '2026-08-01 10:59:59', '2026-07-14 13:50:10', 5, 1, NULL, NULL, 0, NULL, '2026-07-14 10:50:10'),
+(11, 8, '8a15aec7dd53d2334946f0786511c83a87191a4f17356c9bde9ea38673e197aa', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '::1', '2026-07-22 10:14:16', '2026-07-20 18:23:58', 5, 1, NULL, NULL, 0, NULL, '2026-07-20 15:23:58'),
+(12, 1, '0187e239df23f09e1b4c137e90a78ce07dd7bac83a488e9ceceead6827a60bfd', 'Android Device - Google Chrome', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36', '192.168.100.76', '2026-07-28 15:40:38', '2026-07-28 15:33:59', 2, 1, NULL, NULL, 0, NULL, '2026-07-28 12:33:59'),
+(13, 8, '0187e239df23f09e1b4c137e90a78ce07dd7bac83a488e9ceceead6827a60bfd', 'Android Device - Google Chrome', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36', '192.168.100.76', '2026-07-28 15:40:56', '2026-07-28 15:40:56', 1, 1, NULL, NULL, 0, NULL, '2026-07-28 12:40:56'),
+(14, 1, '503ab594d71fae57dcb09889cfd34c819b785f908d3d718130aa69b04029b94d', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '192.168.100.99', '2026-08-19 12:23:09', '2026-08-19 11:03:24', 2, 1, NULL, NULL, 0, NULL, '2026-08-19 08:03:24'),
+(15, 1, '70a67f6ca96e39f23641117eb98c487cab5801d8479c59d0260fc29b0729a779', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '::1', '2026-08-22 15:14:33', '2026-08-19 12:13:57', 2, 1, NULL, NULL, 0, NULL, '2026-08-19 09:13:57'),
+(16, 8, '87f3d5727bf78e46d64d78734810047cb427366aa9c5b84242f8d4cc68c6cc12', 'Android Device - Google Chrome', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36', '192.168.100.76', '2026-08-19 12:42:27', '2026-08-19 12:42:27', 1, 1, NULL, NULL, 0, NULL, '2026-08-19 09:42:27'),
+(17, 8, '503ab594d71fae57dcb09889cfd34c819b785f908d3d718130aa69b04029b94d', 'Windows PC - Google Chrome', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '192.168.100.99', '2026-08-19 12:58:57', '2026-08-19 12:58:57', 1, 1, NULL, NULL, 0, NULL, '2026-08-19 09:58:57');
 
 --
 -- Indexes for dumped tables
@@ -2174,6 +2193,12 @@ ALTER TABLE `invoice_payments`
   ADD PRIMARY KEY (`id`),
   ADD KEY `invoice_id` (`invoice_id`),
   ADD KEY `created_by` (`created_by`);
+
+--
+-- Indexes for table `login_access_settings`
+--
+ALTER TABLE `login_access_settings`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `maintenance`
@@ -2433,199 +2458,199 @@ ALTER TABLE `user_devices`
 -- AUTO_INCREMENT for table `accessories`
 --
 ALTER TABLE `accessories`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `accessories_logs`
 --
 ALTER TABLE `accessories_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=491;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=490;
 
 --
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `chargers`
 --
 ALTER TABLE `chargers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `charger_logs`
 --
 ALTER TABLE `charger_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `clients`
 --
 ALTER TABLE `clients`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `devices_logs`
 --
 ALTER TABLE `devices_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `device_updates`
 --
 ALTER TABLE `device_updates`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `expenses`
 --
 ALTER TABLE `expenses`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `graphic_cards`
 --
 ALTER TABLE `graphic_cards`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `graphic_cards_logs`
 --
 ALTER TABLE `graphic_cards_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `hdds`
 --
 ALTER TABLE `hdds`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `hdd_logs`
 --
 ALTER TABLE `hdd_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `invoices`
 --
 ALTER TABLE `invoices`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `invoice_items`
 --
 ALTER TABLE `invoice_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `invoice_payments`
 --
 ALTER TABLE `invoice_payments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `maintenance`
 --
 ALTER TABLE `maintenance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `quotations`
 --
 ALTER TABLE `quotations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `quotation_items`
 --
 ALTER TABLE `quotation_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `rams_ssds`
 --
 ALTER TABLE `rams_ssds`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `rams_ssds_logs`
 --
 ALTER TABLE `rams_ssds_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `registration_codes`
 --
 ALTER TABLE `registration_codes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `repairs`
 --
 ALTER TABLE `repairs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `sales`
 --
 ALTER TABLE `sales`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `sale_items`
 --
 ALTER TABLE `sale_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT for table `sold_accessories`
 --
 ALTER TABLE `sold_accessories`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `sold_chargers`
 --
 ALTER TABLE `sold_chargers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `sold_graphics_cards`
 --
 ALTER TABLE `sold_graphics_cards`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `sold_hdds`
 --
 ALTER TABLE `sold_hdds`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `sold_rams_ssds`
 --
 ALTER TABLE `sold_rams_ssds`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `user_devices`
 --
 ALTER TABLE `user_devices`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- Constraints for dumped tables
@@ -2681,6 +2706,7 @@ ALTER TABLE `clients`
 ALTER TABLE `devices`
   ADD CONSTRAINT `devices_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`),
   ADD CONSTRAINT `devices_ibfk_2` FOREIGN KEY (`added_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_serial_number_devices_logs` FOREIGN KEY (`serial_number`) REFERENCES `devices` (`serial_number`) ON UPDATE CASCADE,
   ADD CONSTRAINT `sold_by` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
@@ -2807,9 +2833,9 @@ ALTER TABLE `rams_ssds_logs`
 -- Constraints for table `repairs`
 --
 ALTER TABLE `repairs`
-  ADD CONSTRAINT `fk_added_by_repairs` FOREIGN KEY (`added_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_added_by_repairs` FOREIGN KEY (`added_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_category_repairs` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_given_by_repair` FOREIGN KEY (`given_by`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_given_by_repair` FOREIGN KEY (`given_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_sales_person_repairs` FOREIGN KEY (`sales_person`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --

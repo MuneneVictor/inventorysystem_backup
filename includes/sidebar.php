@@ -62,6 +62,30 @@
                     ]
                 ];
             }
+
+            // IMAN'S HUSTLE section
+                if (in_array($role, ['super_admin','manager','inventory_admin'])) {
+                $imanhusitems = [
+                    ['Inventory Overview', '../imanhus/overview', 'fas fa-boxes-stacked'],
+                ];
+                if ($role === 'super_admin') {
+                    $imanhusitems[] = ['Instock', '../imanhus/instock', 'fas fa-box'];
+                    $imanhusitems[] = ['Sold', '../imanhus/sold', 'fas fa-money-bill-wave'];
+                }
+                $sections['IMAN\'S HUSTLE'] = ['icon' => 'fas fa-briefcase', 'items' => $imanhusitems];
+                }
+
+                // IMAN'S INVENTORY section
+                if (in_array($role, ['super_admin','inventory_admin'])) {
+                $imaninvitems = [
+                    ['Inventory Overview', '../imaninv/overview', 'fas fa-boxes-stacked'],
+                ];
+                if ($role === 'super_admin') {
+                    $imaninvitems[] = ['Instock', '../imaninv/instock', 'fas fa-box'];
+                    $imaninvitems[] = ['Sold', '../imaninv/sold', 'fas fa-money-bill-wave'];
+                }
+                $sections['IMAN\'S INVENTORY'] = ['icon' => 'fas fa-boxes-stacked', 'items' => $imaninvitems];
+                }
             // Devices section
             if (in_array($role, ['super_admin','manager','inventory_admin'])) {
                 $deviceItems = [

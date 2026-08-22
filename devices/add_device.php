@@ -27,7 +27,7 @@ try {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Validate required fields
-        $required = ['serial_number', 'category_id', 'model_name', 'processor', 'ram', 'storage_type', 'storage_capacity', 'branch'];
+        $required = ['serial_number', 'category_id', 'model_name', 'processor', 'ram', 'storage_type', 'storage_capacity', 'branch', 'inventory_owner'];
         foreach ($required as $field) {
             if (empty($_POST[$field])) {
                 throw new Exception("Field '$field' is required.");
@@ -43,6 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $storage_type = $_POST['storage_type'];
         $storage_capacity = (int)$_POST['storage_capacity'];
         $branch = $_POST['branch']; // Already validated
+        $inventory_owner = $_POST['inventory_owner'];
+        if (!in_array($inventory_owner, ['iman_inventory', 'imans_hustle'], true)) {
+            throw new Exception('Invalid inventory ownership selected.');
+        }
         $added_by = (int)$_SESSION['user_id'];
 
         // Get category name for touch and place logic
@@ -85,9 +89,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Insert
         $insert = $conn->prepare("
             INSERT INTO devices
-            (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, added_by, cargo_number, device_condition, branch, place)
+            (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, added_by, cargo_number, device_condition, branch, place, inventory_owner)
             VALUES
-            (:serial_number, :category_id, :model_name, :processor, :graphics, :ram, :storage_type, :storage_capacity, :touch, :status, :added_by, :cargo_number, :device_condition, :branch, :place)
+            (:serial_number, :category_id, :model_name, :processor, :graphics, :ram, :storage_type, :storage_capacity, :touch, :status, :added_by, :cargo_number, :device_condition, :branch, :place, :inventory_owner)
         ");
         $insert->execute([
             'serial_number' => $serial_number,
@@ -104,14 +108,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'cargo_number' => $cargo_number,
             'device_condition' => $device_condition,
             'branch' => $branch,
-            'place' => $place
+            'place' => $place,
+            'inventory_owner' => $inventory_owner
         ]);
 
         // Log activity
         $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (:uid, 'Added device', :details)");
         $log->execute([
             'uid' => $added_by,
-            'details' => "Added device SN: $serial_number" . ($cargo_number !== "NO CARGO" ? ", Cargo: $cargo_number" : "")
+            'details' => "Added device SN: $serial_number, Inventory: " . ($inventory_owner === 'imans_hustle' ? "Iman's Hustle" : "Iman Inventory") . ($cargo_number !== "NO CARGO" ? ", Cargo: $cargo_number" : "")
         ]);
 
         $success = "Device added successfully!";
@@ -695,6 +700,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <option value="KIMATHI" <?= isset($_POST['branch']) && $_POST['branch'] == 'KIMATHI' ? 'selected' : '' ?>>KIMATHI</option>
                             <option value="MOI" <?= isset($_POST['branch']) && $_POST['branch'] == 'MOI' ? 'selected' : '' ?>>MOI</option>
                         </select>
+                    </div>
+
+                    <!-- Inventory Ownership -->
+                    <div class="form-group">
+                        <label>Inventory Ownership <span class="required">*</span></label>
+                        <select name="inventory_owner" required>
+                            <option value="">-- Select Inventory --</option>
+                            <option value="iman_inventory" <?= isset($_POST['inventory_owner']) && $_POST['inventory_owner'] === 'iman_inventory' ? 'selected' : '' ?>>Iman Inventory</option>
+                            <option value="imans_hustle" <?= isset($_POST['inventory_owner']) && $_POST['inventory_owner'] === 'imans_hustle' ? 'selected' : '' ?>>Iman's Hustle</option>
+                        </select>
+                        <small style="color:#6b7280; margin-top:.35rem; display:block;">Choose who this device belongs to.</small>
                     </div>
 
                     <!-- Model Name -->

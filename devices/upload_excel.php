@@ -31,11 +31,11 @@ $user_branch = $user['branch'] ?? 'KIMATHI';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
     $fileTmpPath = $_FILES['excel_file']['tmp_name'];
     $fileName = $_FILES['excel_file']['name'];
-    $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+    $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
     $allowedExtensions = ['xlsx', 'xls', 'csv'];
 
-    if (!in_array($fileExtension, $allowedExtensions)) {
+    if (!in_array($fileExtension, $allowedExtensions, true)) {
         $error = "Invalid file type. Please upload Excel file (.xlsx, .xls, .csv).";
     } else {
         try {
@@ -43,158 +43,229 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
             $sheet = $spreadsheet->getActiveSheet();
             $rows = $sheet->toArray();
 
-            // Assume first row is header
-            $header = array_map(function($h) {
-                return strtolower(trim($h ?? ''));
+            if (empty($rows)) {
+                throw new Exception('The uploaded file is empty.');
+            }
+
+            // The simplified upload format has only 3 columns.
+            $header = array_map(function ($h) {
+                return strtolower(trim((string)($h ?? '')));
             }, $rows[0]);
             unset($rows[0]);
 
-            // Check required columns
-            $requiredColumns = ['serial_number', 'category', 'model_name', 'processor', 'ram', 'storage_type', 'storage_capacity'];
+            $requiredColumns = ['serial_number', 'category', 'specs'];
             $missingColumns = array_diff($requiredColumns, $header);
-            
-            if (!empty($missingColumns)) {
-                $error = "Missing required columns: " . implode(', ', $missingColumns);
-            } else {
-                // Check optional columns
-                $hasBranchColumn = in_array('branch', $header);
-                $hasCargoNumberColumn = in_array('cargo_number', $header);
-                $hasGraphicsColumn = in_array('graphics', $header);
-                $hasTouchColumn = in_array('touch', $header);
-                $hasConditionColumn = in_array('device_condition', $header);
 
+            if (!empty($missingColumns)) {
+                $error = "Missing required columns: " . implode(', ', $missingColumns) .
+                         ". The file must contain only/at least: serial_number, category, specs.";
+            } else {
                 $addedCount = 0;
                 $duplicateCount = 0;
-                $invalidCategoryCount = 0;
                 $invalidDataCount = 0;
 
-                // Fetch all categories once for performance
+                // Fetch all categories once for performance.
                 $catStmt = $conn->prepare("SELECT id, category_name FROM categories");
                 $catStmt->execute();
                 $categoriesRaw = $catStmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                // Build mapping: original name -> id AND lowercase name -> id
+
                 $catMap = [];
-                $catLowerMap = [];
                 foreach ($categoriesRaw as $cat) {
-                    $original = trim($cat['category_name']);
-                    $lower = strtolower($original);
-                    $catMap[$original] = $cat['id'];
-                    $catLowerMap[$lower] = $cat['id'];
+                    $catMap[strtolower(trim($cat['category_name']))] = [
+                        'id' => $cat['id'],
+                        'name' => trim($cat['category_name'])
+                    ];
                 }
 
                 foreach ($rows as $rowIndex => $row) {
-                    // Ensure row has same number of columns as header
                     $rowPadded = array_pad($row, count($header), '');
                     $data = array_combine($header, $rowPadded);
-                    $rowNumber = $rowIndex + 2; // For error reporting (1-indexed, +1 for header)
+                    $rowNumber = $rowIndex + 2;
 
-                    // Validate required fields
-                    $serial_number = trim($data['serial_number']);
-                    $category_name_raw = trim($data['category']);
-                    $model_name = trim($data['model_name']);
-                    $processor = trim($data['processor']);
-                    $ram = (int)$data['ram'];
-                    $storage_type = strtoupper(trim($data['storage_type']));
-                    $storage_capacity = (int)$data['storage_capacity'];
-                    
-                    // Normalize category name: remove extra spaces, handle case‑insensitivity
-                    $category_name_normalized = trim($category_name_raw);
-                    $category_lower = strtolower($category_name_normalized);
-                    
-                    // Try to find category ID: first exact match, then case‑insensitive
-                    $category_id = null;
-                    if (isset($catMap[$category_name_normalized])) {
-                        $category_id = $catMap[$category_name_normalized];
-                    } elseif (isset($catLowerMap[$category_lower])) {
-                        $category_id = $catLowerMap[$category_lower];
-                        // Optionally log that we used case‑insensitive match
-                        error_log("Category '$category_name_raw' matched to '" . array_search($category_id, $catMap) . "' via case‑insensitive lookup.");
-                    }
-                    
-                    // Validate data types and ranges
-                    $rowErrors = [];
-                    
-                    if (empty($serial_number)) {
-                        $rowErrors[] = "Serial number is empty";
-                    }
-                    
-                    if (empty($category_name_raw)) {
-                        $rowErrors[] = "Category is empty";
-                    } elseif (!$category_id) {
-                        $rowErrors[] = "Category '$category_name_raw' not found in database. Available: " . implode(', ', array_keys($catMap));
-                    }
-                    
-                    if (empty($model_name)) {
-                        $rowErrors[] = "Model name is empty";
-                    }
-                    
-                    if ($ram < 1 || $ram > 256) {
-                        $rowErrors[] = "RAM must be between 1 and 256 GB";
-                    }
-                    
-                    if (!in_array($storage_type, ['SSD', 'HDD'])) {
-                        $rowErrors[] = "Storage type must be SSD or HDD";
-                    }
-                    
-                    if ($storage_capacity < 1 || $storage_capacity > 4000) {
-                        $rowErrors[] = "Storage capacity must be between 1 and 4000 GB";
-                    }
-                    
-                    // Optional fields with defaults
-                    $graphics = $hasGraphicsColumn && !empty($data['graphics']) ? trim($data['graphics']) : 'None';
-                    $touch = $hasTouchColumn && !empty($data['touch']) ? trim($data['touch']) : null;
-                    $device_condition = $hasConditionColumn && !empty($data['device_condition']) ? trim($data['device_condition']) : 'Refurbished';
-                    $cargo_number = $hasCargoNumberColumn && !empty(trim($data['cargo_number'])) ? trim($data['cargo_number']) : null;
-                    
-                    // Validate device condition
-                    if (!in_array($device_condition, ['New', 'Refurbished'])) {
-                        $device_condition = 'Refurbished';
-                    }
-                    
-                    // Validate touch field (only for laptops/AIO, but we'll accept any value)
-                    if ($touch && !in_array($touch, ['Touch', 'Non-touch', 'N/A'])) {
-                        $touch = 'N/A';
-                    }
-                    
-                    // Get branch
-                    if ($hasBranchColumn && !empty(trim($data['branch']))) {
-                        $branch = strtoupper(trim($data['branch']));
-                        if (!in_array($branch, ['KIMATHI', 'MOI'])) {
-                            $branch = $user_branch;
-                        }
-                    } else {
-                        $branch = $user_branch;
-                    }
-                    
-                    // --- NEW: Determine 'place' based on category ---
-                    // If category is 'Laptop' (case-insensitive) then place = 'store', else 'display'
-                    $place = 'display'; // default
-                    if (strtolower($category_name_raw) === 'laptop') {
-                        $place = 'store';
-                    }
-                    
-                    $status = 'In Stock';
-                    
-                    if (!empty($rowErrors)) {
-                        $invalidDataCount++;
-                        $invalidDataErrors[] = "Row $rowNumber (SN: $serial_number): " . implode(', ', $rowErrors);
+                    $serial_number = trim((string)($data['serial_number'] ?? ''));
+                    $category_name_raw = trim((string)($data['category'] ?? ''));
+                    $specsRaw = trim((string)($data['specs'] ?? ''));
+                    $inventoryRaw = trim((string)($data['inventory_owner'] ?? ''));
+
+                    // Skip completely blank rows.
+                    if ($serial_number === '' && $category_name_raw === '' && $specsRaw === '' && $inventoryRaw === '') {
                         continue;
                     }
 
-                    // Check for duplicate serial number
-                    $stmt = $conn->prepare("SELECT serial_number FROM devices WHERE serial_number = :serial");
+                    $rowErrors = [];
+
+                    if ($serial_number === '') {
+                        $rowErrors[] = 'Serial number is empty';
+                    }
+
+                    if ($category_name_raw === '') {
+                        $rowErrors[] = 'Category is empty';
+                    }
+
+                    $categoryKey = strtolower($category_name_raw);
+                    $category_id = $catMap[$categoryKey]['id'] ?? null;
+
+                    if ($category_name_raw !== '' && !$category_id) {
+                        $rowErrors[] = "Category '$category_name_raw' not found. Available: " .
+                                       implode(', ', array_column($categoriesRaw, 'category_name'));
+                    }
+
+                    if ($specsRaw === '') {
+                        $rowErrors[] = 'Specs are empty';
+                    }
+
+                    /*
+                     * SPECS FIXED ORDER:
+                     * 0 Model | 1 Processor | 2 RAM | 3 Storage | 4 Graphics |
+                     * 5 Touch | 6 Condition | 7 Cargo | 8 Branch
+                     *
+                     * Both | and comma are accepted as separators. Pipe (|) is recommended.
+                     * Optional fields can use "-". Trailing optional fields may be omitted.
+                     */
+                    $parts = preg_split('/\s*[|,]\s*/', $specsRaw);
+                    $parts = array_map('trim', $parts ?: []);
+
+                    $model_name      = $parts[0] ?? '';
+                    $processor       = $parts[1] ?? '';
+                    $ramRaw          = $parts[2] ?? '';
+                    $storageRaw      = $parts[3] ?? '';
+                    $graphics        = $parts[4] ?? '';
+                    $touchRaw        = $parts[5] ?? '';
+                    $conditionRaw    = $parts[6] ?? '';
+                    $cargo_number    = $parts[7] ?? '';
+                    $branchRaw       = $parts[8] ?? '';
+
+                    if ($model_name === '' || $model_name === '-') {
+                        $rowErrors[] = 'Model is missing from specs (position 1)';
+                    }
+
+                    if ($processor === '' || $processor === '-') {
+                        $rowErrors[] = 'Processor is missing from specs (position 2)';
+                    }
+
+                    // RAM: accept 8, 8GB, 16 GB, etc.
+                    $ram = 0;
+                    if (preg_match('/(\d{1,3})/', $ramRaw, $ramMatch)) {
+                        $ram = (int)$ramMatch[1];
+                    }
+                    if ($ram < 1 || $ram > 256) {
+                        $rowErrors[] = 'RAM is missing/invalid. Use values such as 8GB, 16GB or 32GB';
+                    }
+
+                    // Storage: user writes one value such as 512GB SSD or 1TB HDD.
+                    $storageUpper = strtoupper(trim($storageRaw));
+                    $storage_type = null;
+                    $storage_capacity = 0;
+
+                    // NVMe is an SSD technology, so treat NVME as SSD.
+                    if (preg_match('/\b(SSD|NVME)\b/i', $storageUpper)) {
+                        $storage_type = 'SSD';
+                    } elseif (preg_match('/\bHDD\b/i', $storageUpper)) {
+                        $storage_type = 'HDD';
+                    }
+
+                    if (preg_match('/(\d+(?:\.\d+)?)\s*TB\b/i', $storageUpper, $storageMatch)) {
+                        $storage_capacity = (int)round(((float)$storageMatch[1]) * 1000);
+                    } elseif (preg_match('/(\d+(?:\.\d+)?)\s*GB\b/i', $storageUpper, $storageMatch)) {
+                        $storage_capacity = (int)round((float)$storageMatch[1]);
+                    } elseif (preg_match('/\b(\d{2,4})\b/', $storageUpper, $storageMatch)) {
+                        $storage_capacity = (int)$storageMatch[1];
+                    }
+
+                    if (!$storage_type) {
+                        $rowErrors[] = "Storage '$storageRaw' must include SSD or HDD (e.g. 512GB SSD or 1TB HDD)";
+                    }
+
+                    if ($storage_capacity < 1 || $storage_capacity > 4000) {
+                        $rowErrors[] = "Storage capacity '$storageRaw' is invalid";
+                    }
+
+                    // Graphics is optional.
+                    if ($graphics === '' || $graphics === '-') {
+                        $graphics = 'None';
+                    }
+
+                    // Touch is optional: blank / - defaults to N/A.
+                    $touchKey = strtolower(str_replace([' ', '_'], '-', trim($touchRaw)));
+                    if ($touchRaw === '' || $touchRaw === '-') {
+                        $touch = 'N/A';
+                    } elseif (in_array($touchKey, ['touch', 'touchscreen', 'touch-screen'], true)) {
+                        $touch = 'Touch';
+                    } elseif (in_array($touchKey, ['non-touch', 'nontouch', 'non--touch'], true)) {
+                        $touch = 'Non-touch';
+                    } elseif (in_array($touchKey, ['n/a', 'na'], true)) {
+                        $touch = 'N/A';
+                    } else {
+                        $touch = 'N/A';
+                        $rowErrors[] = "Invalid touch value '$touchRaw'. Use Touch, Non-touch or -";
+                    }
+
+                    // Condition is optional. Database default/standard is Ex-Uk.
+                    $conditionKey = strtolower(trim($conditionRaw));
+                    if ($conditionRaw === '' || $conditionRaw === '-') {
+                        $device_condition = 'Ex-Uk';
+                    } elseif (in_array($conditionKey, ['ex-uk', 'ex uk', 'exuk'], true)) {
+                        $device_condition = 'Ex-Uk';
+                    } elseif (in_array($conditionKey, ['refurbished', 'refurb', 'ref'], true)) {
+                        $device_condition = 'Refurbished';
+                    } elseif ($conditionKey === 'new') {
+                        $device_condition = 'New';
+                    } else {
+                        $device_condition = 'Ex-Uk';
+                        $rowErrors[] = "Invalid condition '$conditionRaw'. Use Ex-Uk, Refurbished, New or -";
+                    }
+
+                    // Cargo is optional.
+                    if ($cargo_number === '' || $cargo_number === '-') {
+                        $cargo_number = 'NO CARGO';
+                    }
+
+                    // Branch is optional. Blank / - uses logged-in user's branch.
+                    if ($branchRaw === '' || $branchRaw === '-') {
+                        $branch = $user_branch;
+                    } else {
+                        $branch = strtoupper(trim($branchRaw));
+                        if (!in_array($branch, ['KIMATHI', 'MOI'], true)) {
+                            $rowErrors[] = "Invalid branch '$branchRaw'. Use KIMATHI, MOI or -";
+                        }
+                    }
+
+                    // Inventory ownership is optional. Missing / - defaults to Iman's Hustle.
+                    $inventoryKey = strtolower(preg_replace('/[^a-z0-9]/i', '', $inventoryRaw));
+                    if ($inventoryRaw === '' || $inventoryRaw === '-') {
+                        $inventory_owner = 'imans_hustle';
+                    } elseif (in_array($inventoryKey, ['imanhustle', 'imanshustle'], true)) {
+                        $inventory_owner = 'imans_hustle';
+                    } elseif (in_array($inventoryKey, ['imaninventory', 'imansinventory'], true)) {
+                        $inventory_owner = 'iman_inventory';
+                    } else {
+                        $inventory_owner = 'imans_hustle';
+                        $rowErrors[] = "Invalid inventory '$inventoryRaw'. Use Iman Inventory, Iman Hustle or leave blank.";
+                    }
+
+                    // Laptop devices go to store by default; all other categories go to display.
+                    $place = (strtolower($category_name_raw) === 'laptop') ? 'store' : 'display';
+                    $status = 'In Stock';
+
+                    if (!empty($rowErrors)) {
+                        $invalidDataCount++;
+                        $invalidDataErrors[] = "Row $rowNumber (SN: " . ($serial_number ?: 'N/A') . "): " .
+                                               implode('; ', $rowErrors);
+                        continue;
+                    }
+
+                    // Duplicate serial check.
+                    $stmt = $conn->prepare("SELECT serial_number FROM devices WHERE serial_number = :serial LIMIT 1");
                     $stmt->execute(['serial' => $serial_number]);
-                    if ($stmt->rowCount() > 0) {
+                    if ($stmt->fetchColumn()) {
                         $duplicateCount++;
                         $skippedSerials[] = $serial_number;
                         continue;
                     }
 
-                    // Insert device – now including 'place'
-                    $insert = $conn->prepare("INSERT INTO devices 
-                        (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, device_condition, added_by, branch, cargo_number, place) 
-                        VALUES (:serial_number, :category_id, :model_name, :processor, :graphics, :ram, :storage_type, :storage_capacity, :touch, :status, :device_condition, :added_by, :branch, :cargo_number, :place)");
+                    $insert = $conn->prepare("INSERT INTO devices
+                        (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, device_condition, added_by, branch, cargo_number, place, inventory_owner)
+                        VALUES (:serial_number, :category_id, :model_name, :processor, :graphics, :ram, :storage_type, :storage_capacity, :touch, :status, :device_condition, :added_by, :branch, :cargo_number, :place, :inventory_owner)");
 
                     $insert->execute([
                         'serial_number' => $serial_number,
@@ -211,16 +282,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                         'added_by' => $added_by,
                         'branch' => $branch,
                         'cargo_number' => $cargo_number,
-                        'place' => $place
+                        'place' => $place,
+                        'inventory_owner' => $inventory_owner
                     ]);
 
-                    // Log activity
-                    $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) 
+                    $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details)
                                            VALUES (:user_id, :action, :details)");
                     $log->execute([
                         'user_id' => $added_by,
-                        'action'  => 'Bulk upload',
-                        'details' => "Added device $serial_number ($model_name) via Excel upload to branch: $branch, place: $place"
+                        'action' => 'Bulk upload',
+                        'details' => "Added device $serial_number ($model_name) via simplified Excel upload to branch: $branch, place: $place, inventory: $inventory_owner"
                     ]);
 
                     $addedCount++;
@@ -230,11 +301,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                 if ($duplicateCount > 0) {
                     $success .= " $duplicateCount duplicate serial(s) were skipped.";
                 }
-                if ($invalidCategoryCount > 0) {
-                    $success .= " $invalidCategoryCount device(s) skipped due to invalid category.";
-                }
                 if ($invalidDataCount > 0) {
-                    $success .= " $invalidDataCount device(s) skipped due to invalid data.";
+                    $success .= " $invalidDataCount row(s) were skipped due to invalid data.";
                 }
             }
         } catch (Exception $e) {
@@ -651,43 +719,68 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             </h2>
         </div>
         <div class="card-body">
-            <!-- Instructions Box -->
+            <!-- Simplified Upload Instructions -->
             <div class="info-box">
-                <h3><i class="fas fa-info-circle"></i> Excel File Requirements</h3>
+                <h3><i class="fas fa-info-circle"></i> Simplified Excel Format</h3>
+                <p style="font-size:0.9rem; color:var(--gray-600); margin-bottom:1rem;">
+                    Your Excel file uses <strong>4 columns</strong>. The first 3 are required; <strong>inventory_owner</strong> is optional and defaults to Iman's Hustle.
+                </p>
                 <table>
                     <thead>
-                        <tr><th>Column Name</th><th>Required</th><th>Description</th><th>Valid Values / Format</th></tr>
+                        <tr><th>Column</th><th>Required</th><th>What to enter</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td>serial_number</td><td class="required">Required</td><td>Unique device serial number</td><td>Alphanumeric, max 255 chars</td></tr>
-                        <tr><td>category</td><td class="required">Required</td><td>Device category name</td><td><?= implode(', ', $allCategories) ?></td></tr>
-                        <tr><td>model_name</td><td class="required">Required</td><td>Device model name</td><td>e.g., HP EliteBook 840 G6</td></tr>
-                        <tr><td>processor</td><td class="required">Required</td><td>CPU model</td><td>e.g., Intel Core i5-8250U</td></tr>
-                        <tr><td>ram</td><td class="required">Required</td><td>RAM size in GB</td><td>Number between 1-256</td></tr>
-                        <tr><td>storage_type</td><td class="required">Required</td><td>Storage type</td><td>SSD or HDD</td></tr>
-                        <tr><td>storage_capacity</td><td class="required">Required</td><td>Storage size in GB</td><td>Number between 1-4000</td></tr>
-                        <tr><td>graphics</td><td class="optional">Optional</td><td>Graphics card</td><td>e.g., Intel UHD Graphics (default: None)</td></tr>
-                        <tr><td>touch</td><td class="optional">Optional</td><td>Touch screen</td><td>Touch, Non-touch, N/A (default: N/A)</td></tr>
-                        <tr><td>device_condition</td><td class="optional">Optional</td><td>Device condition</td><td>New or Refurbished (default: Refurbished)</td></tr>
-                        <tr><td>cargo_number</td><td class="optional">Optional</td><td>Cargo shipment number</td><td>e.g., AC16, CX37 (max 50 chars)</td></tr>
-                        <tr><td>branch</td><td class="optional">Optional</td><td>Assigned branch</td><td>KIMATHI or MOI (defaults to your branch)</td></tr>
+                        <tr><td><strong>serial_number</strong></td><td class="required">Required</td><td>Unique device serial number</td></tr>
+                        <tr><td><strong>category</strong></td><td class="required">Required</td><td><?= htmlspecialchars(implode(', ', $allCategories)) ?></td></tr>
+                        <tr><td><strong>specs</strong></td><td class="required">Required</td><td>All device specifications in the fixed order below</td></tr>
+                        <tr><td><strong>inventory_owner</strong></td><td class="optional">Optional</td><td>Iman Inventory or Iman Hustle. Blank / - defaults to Iman Hustle.</td></tr>
                     </tbody>
                 </table>
+
+                <div style="margin-top:1.25rem; padding:1rem; border:1px solid var(--gray-200); border-radius:var(--radius-md); background:white;">
+                    <strong style="display:block; margin-bottom:.5rem;">Specs must follow this order:</strong>
+                    <div class="template-example" style="margin-top:0;">
+                        MODEL | PROCESSOR | RAM | STORAGE | GRAPHICS | TOUCH | CONDITION | CARGO | BRANCH
+                    </div>
+                    <p style="font-size:.82rem; color:var(--gray-600); margin-top:.8rem;">
+                        Use <strong>|</strong> as the preferred separator. A comma is also accepted. Use <strong>-</strong> for an optional value you do not have.
+                    </p>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h3><i class="fas fa-magic"></i> Automatic Defaults and Storage Detection</h3>
+                <table>
+                    <tbody>
+                        <tr><td><strong>Graphics</strong></td><td>If blank or <strong>-</strong></td><td>None</td></tr>
+                        <tr><td><strong>Touch</strong></td><td>If blank or <strong>-</strong></td><td>N/A</td></tr>
+                        <tr><td><strong>Condition</strong></td><td>If blank or <strong>-</strong></td><td>Ex-Uk</td></tr>
+                        <tr><td><strong>Cargo</strong></td><td>If blank or <strong>-</strong></td><td>NO CARGO</td></tr>
+                        <tr><td><strong>Branch</strong></td><td>If blank or <strong>-</strong></td><td>Your assigned branch</td></tr>
+                        <tr><td><strong>Inventory Owner</strong></td><td>If blank, <strong>-</strong>, or column omitted</td><td>Iman Hustle</td></tr>
+                    </tbody>
+                </table>
+                <p style="font-size:.82rem; color:var(--gray-600); margin-top:1rem;">
+                    For storage, write the capacity and type together, for example <strong>256GB SSD</strong>, <strong>512 SSD</strong>, <strong>1TB HDD</strong>, or <strong>1TB NVMe</strong>. NVMe is stored as SSD. If SSD/HDD is missing, the row is rejected instead of guessing the wrong storage type.
+                </p>
             </div>
 
             <!-- Template Example -->
             <div class="info-box">
                 <h3><i class="fas fa-file-alt"></i> Sample Excel Template</h3>
                 <div class="template-example">
-                    serial_number | category | model_name | processor | ram | storage_type | storage_capacity | graphics | touch | device_condition | cargo_number | branch<br>
+                    serial_number | category | specs | inventory_owner<br>
                     ----------------------------------------------------------------<br>
-                    5CG1234XYZ | Laptop | HP EliteBook 840 G6 | Intel Core i5-8250U | 8 | SSD | 256 | Intel UHD Graphics | Non-touch | Refurbished | AC16 | KIMATHI<br>
-                    8CC5678ABC | Desktop | HP EliteDesk 705 G4 | AMD Ryzen 5 PRO 2600 | 16 | SSD | 512 | AMD Radeon | N/A | New | CX37 | MOI<br>
-                    ABC9012DEF | AIO | HP ProOne 400 G5 | Intel Core i7-8700T | 32 | SSD | 1000 | Intel UHD | Touch | Refurbished | AC20 | KIMATHI
+                    5CG1234XYZ | Laptop | HP EliteBook 840 G6 | Core i5 8th Gen | 16GB | 512GB SSD | Intel UHD Graphics | Non-touch | Ex-Uk | AC16 | KIMATHI | Iman Inventory<br><br>
+                    8CC5678ABC | Desktop | HP EliteDesk 705 G4 | Ryzen 5 PRO 2600 | 16GB | 1TB HDD | AMD Radeon | - | Refurbished | - | MOI | Iman Hustle<br><br>
+                    ABC9012DEF | Laptop | Dell Latitude 5420 | Core i5 11th Gen | 8GB | 256GB SSD
                 </div>
                 <p style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--gray-500);">
-                    <i class="fas fa-download"></i> 
-                    <a href="#" id="downloadTemplate" style="color: var(--primary); text-decoration: none;">Download CSV Template</a>
+                    <i class="fas fa-download"></i>
+                    <a href="#" id="downloadTemplate" style="color: var(--primary); text-decoration: none;">Download 4-Column CSV Template</a>
+                </p>
+                <p style="margin-top:.65rem; font-size:.78rem; color:var(--gray-500);">
+                    The third example stops after Storage. Because all remaining fields are optional, Graphics becomes None, Touch becomes N/A, Condition becomes Ex-Uk, Cargo becomes NO CARGO, and Branch becomes your assigned branch.
                 </p>
             </div>
 
@@ -740,12 +833,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Download template functionality
     document.getElementById('downloadTemplate').addEventListener('click', function(e) {
         e.preventDefault();
-        
-        const csvContent = "serial_number,category,model_name,processor,ram,storage_type,storage_capacity,graphics,touch,device_condition,cargo_number,branch\n" +
-            "5CG1234XYZ,Laptop,HP EliteBook 840 G6,Intel Core i5-8250U,8,SSD,256,Intel UHD Graphics,Non-touch,Refurbished,AC16,KIMATHI\n" +
-            "8CC5678ABC,Desktop,HP EliteDesk 705 G4,AMD Ryzen 5 PRO 2600,16,SSD,512,AMD Radeon,N/A,New,CX37,MOI\n" +
-            "ABC9012DEF,AIO,HP ProOne 400 G5,Intel Core i7-8700T,32,SSD,1000,Intel UHD,Touch,Refurbished,AC20,KIMATHI";
-        
+
+        const csvContent =
+            'serial_number,category,specs,inventory_owner\n' +
+            '5CG1234XYZ,Laptop,"HP EliteBook 840 G6 | Core i5 8th Gen | 16GB | 512GB SSD | Intel UHD Graphics | Non-touch | Ex-Uk | AC16 | KIMATHI",Iman Inventory\n' +
+            '8CC5678ABC,Desktop,"HP EliteDesk 705 G4 | Ryzen 5 PRO 2600 | 16GB | 1TB HDD | AMD Radeon | - | Refurbished | - | MOI",Iman Hustle\n' +
+            'ABC9012DEF,Laptop,"Dell Latitude 5420 | Core i5 11th Gen | 8GB | 256GB SSD",';
+
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

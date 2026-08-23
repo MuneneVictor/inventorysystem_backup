@@ -1,22 +1,22 @@
 <?php
-// Database connection settings
-$host = "localhost";     // your server
-$dbname = "inventory_db";  // your database name
-$username = "root";      // your MySQL username
-$password = "@MUNENE";          // your MySQL password
+require_once __DIR__ . '/../vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+$dotenv->safeLoad();
+
+$host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'localhost';
+$dbname = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: '';
+$username = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: '';
+$password = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: '';
 
 try {
-    // Create PDO instance
-    $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
-
-    // Enable errors for debugging (remove or change before production)
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // Emulate prepares off for better protection
-    $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-
+    $conn = new PDO("mysql:host={$host};dbname={$dbname};charset=utf8mb4",$username,$password,[
+        PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES=>False
+    ]);
 } catch (PDOException $e) {
-    // Stop execution and show error
-    die("Database Connection Failed: " . $e->getMessage());
+    http_response_code(500);
+    error_log('Database connection failed: '.$e->getMessage());
+    exit('Database connection failed. Please contact the administrator.');
 }
-?>

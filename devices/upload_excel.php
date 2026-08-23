@@ -233,13 +233,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                     // Inventory ownership is optional. Missing / - defaults to Iman's Hustle.
                     $inventoryKey = strtolower(preg_replace('/[^a-z0-9]/i', '', $inventoryRaw));
                     if ($inventoryRaw === '' || $inventoryRaw === '-') {
-                        $inventory_owner = 'imans_hustle';
+                        $inventory_owner = 'iman_inventory';
                     } elseif (in_array($inventoryKey, ['imanhustle', 'imanshustle'], true)) {
                         $inventory_owner = 'imans_hustle';
                     } elseif (in_array($inventoryKey, ['imaninventory', 'imansinventory'], true)) {
                         $inventory_owner = 'iman_inventory';
                     } else {
-                        $inventory_owner = 'imans_hustle';
+                        $inventory_owner = 'iman_inventory';
                         $rowErrors[] = "Invalid inventory '$inventoryRaw'. Use Iman Inventory, Iman Hustle or leave blank.";
                     }
 
@@ -723,7 +723,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             <div class="info-box">
                 <h3><i class="fas fa-info-circle"></i> Simplified Excel Format</h3>
                 <p style="font-size:0.9rem; color:var(--gray-600); margin-bottom:1rem;">
-                    Your Excel file uses <strong>4 columns</strong>. The first 3 are required; <strong>inventory_owner</strong> is optional and defaults to Iman's Hustle.
+                    Your Excel file uses <strong>4 columns</strong>. The first 3 are required; <strong>inventory_owner</strong> is optional and defaults to Iman's inventory.
                 </p>
                 <table>
                     <thead>
@@ -733,7 +733,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                         <tr><td><strong>serial_number</strong></td><td class="required">Required</td><td>Unique device serial number</td></tr>
                         <tr><td><strong>category</strong></td><td class="required">Required</td><td><?= htmlspecialchars(implode(', ', $allCategories)) ?></td></tr>
                         <tr><td><strong>specs</strong></td><td class="required">Required</td><td>All device specifications in the fixed order below</td></tr>
-                        <tr><td><strong>inventory_owner</strong></td><td class="optional">Optional</td><td>Iman Inventory or Iman Hustle. Blank / - defaults to Iman Hustle.</td></tr>
+                        <tr><td><strong>inventory_owner</strong></td><td class="optional">Optional</td><td>Iman Inventory or Iman Hustle. Blank / - defaults to Iman inventory.</td></tr>
                     </tbody>
                 </table>
 

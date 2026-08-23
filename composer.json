@@ -1,5 +1,5 @@
 {
-    "name": "victor..",
+    "name": "munenevictor/inventory-system",
     "autoload": {
         "psr-4": {
             "Victor\\InventorySystem\\": "src/"

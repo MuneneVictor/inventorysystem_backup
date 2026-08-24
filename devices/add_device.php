@@ -27,7 +27,7 @@ try {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Validate required fields
-        $required = ['serial_number', 'category_id', 'model_name', 'processor', 'ram', 'storage_type', 'storage_capacity', 'branch', 'inventory_owner'];
+        $required = ['serial_number', 'category_id', 'model_name', 'processor', 'ram', 'storage_type', 'storage_capacity', 'branch'];
         foreach ($required as $field) {
             if (empty($_POST[$field])) {
                 throw new Exception("Field '$field' is required.");
@@ -43,10 +43,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $storage_type = $_POST['storage_type'];
         $storage_capacity = (int)$_POST['storage_capacity'];
         $branch = $_POST['branch']; // Already validated
-        $inventory_owner = $_POST['inventory_owner'];
-        if (!in_array($inventory_owner, ['iman_inventory', 'imans_hustle'], true)) {
+        $inventory_owner = trim($_POST['inventory_owner'] ?? '');
+        if ($inventory_owner === '') {
+            $inventory_owner = null;
+        } elseif (!in_array($inventory_owner, ['iman_inventory', 'imans_hustle'], true)) {
             throw new Exception('Invalid inventory ownership selected.');
         }
+        // Optional owner-specific fields. Normal inventory devices leave these NULL.
+        $asset_id = trim($_POST['asset_id'] ?? '') ?: null;
+        $manufacturer = trim($_POST['manufacturer'] ?? '') ?: null;
+        $model_upper = strtoupper($model_name);
+        if (preg_match('/\bHP\b|HEWLETT[ -]?PACKARD/', $model_upper)) $manufacturer = 'HP';
+        elseif (preg_match('/\bDELL\b/', $model_upper)) $manufacturer = 'Dell';
+        elseif (preg_match('/\bLENOVO\b|THINKPAD|THINKCENTRE|IDEAPAD/', $model_upper)) $manufacturer = 'Lenovo';
+        elseif (preg_match('/\bTOSHIBA\b|DYNABOOK/', $model_upper)) $manufacturer = 'Toshiba';
+        elseif (preg_match('/\bAPPLE\b|MACBOOK|IMAC/', $model_upper)) $manufacturer = 'Apple';
+        $form_factor = trim($_POST['form_factor'] ?? '') ?: null;
+        $grade = trim($_POST['grade'] ?? '') ?: null;
+        $buying_price = (isset($_POST['buying_price']) && $_POST['buying_price'] !== '') ? (float)$_POST['buying_price'] : null;
+        $owner_selling_price = (isset($_POST['owner_selling_price']) && $_POST['owner_selling_price'] !== '') ? (float)$_POST['owner_selling_price'] : null;
+        $owner_profit = ($buying_price !== null && $owner_selling_price !== null) ? ($owner_selling_price - $buying_price) : null;
+        $owner_notes = trim($_POST['owner_notes'] ?? '') ?: null;
+        $symetic = trim($_POST['symetic'] ?? '') ?: null;
+        $dollar_value = trim($_POST['dollar_value'] ?? '') ?: null;
+        $webcam = trim($_POST['webcam'] ?? '') ?: null;
+        $owner_location = trim($_POST['owner_location'] ?? '') ?: null;
         $added_by = (int)$_SESSION['user_id'];
 
         // Get category name for touch and place logic
@@ -89,9 +110,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Insert
         $insert = $conn->prepare("
             INSERT INTO devices
-            (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, added_by, cargo_number, device_condition, branch, place, inventory_owner)
+            (serial_number, category_id, model_name, processor, graphics, ram, storage_type, storage_capacity, touch, status, added_by, cargo_number, device_condition, branch, place, inventory_owner, asset_id, manufacturer, form_factor, grade, buying_price, price, owner_profit, owner_notes, symetic, dollar_value, webcam, owner_location)
             VALUES
-            (:serial_number, :category_id, :model_name, :processor, :graphics, :ram, :storage_type, :storage_capacity, :touch, :status, :added_by, :cargo_number, :device_condition, :branch, :place, :inventory_owner)
+            (:serial_number, :category_id, :model_name, :processor, :graphics, :ram, :storage_type, :storage_capacity, :touch, :status, :added_by, :cargo_number, :device_condition, :branch, :place, :inventory_owner, :asset_id, :manufacturer, :form_factor, :grade, :buying_price, :price, :owner_profit, :owner_notes, :symetic, :dollar_value, :webcam, :owner_location)
         ");
         $insert->execute([
             'serial_number' => $serial_number,
@@ -109,14 +130,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'device_condition' => $device_condition,
             'branch' => $branch,
             'place' => $place,
-            'inventory_owner' => $inventory_owner
+            'inventory_owner' => $inventory_owner,
+            'asset_id' => $asset_id, 'manufacturer' => $manufacturer, 'form_factor' => $form_factor,
+            'grade' => $grade, 'buying_price' => $buying_price, 'price' => $owner_selling_price,
+            'owner_profit' => $owner_profit, 'owner_notes' => $owner_notes, 'symetic' => $symetic,
+            'dollar_value' => $dollar_value, 'webcam' => $webcam, 'owner_location' => $owner_location
         ]);
 
         // Log activity
         $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (:uid, 'Added device', :details)");
         $log->execute([
             'uid' => $added_by,
-            'details' => "Added device SN: $serial_number, Inventory: " . ($inventory_owner === 'imans_hustle' ? "Iman's Hustle" : "Iman Inventory") . ($cargo_number !== "NO CARGO" ? ", Cargo: $cargo_number" : "")
+            'details' => "Added device SN: $serial_number" . ($inventory_owner ? ", Inventory: " . ($inventory_owner === 'imans_hustle' ? "Iman's Hustle" : "Iman Inventory") : "") . ($cargo_number !== "NO CARGO" ? ", Cargo: $cargo_number" : "")
         ]);
 
         $success = "Device added successfully!";
@@ -699,18 +724,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <option value="">-- Select Branch --</option>
                             <option value="KIMATHI" <?= isset($_POST['branch']) && $_POST['branch'] == 'KIMATHI' ? 'selected' : '' ?>>KIMATHI</option>
                             <option value="MOI" <?= isset($_POST['branch']) && $_POST['branch'] == 'MOI' ? 'selected' : '' ?>>MOI</option>
+                            <option value="WAREHOUSE" <?= isset($_POST['branch']) && $_POST['branch'] == 'WAREHOUSE' ? 'selected' : '' ?>>WAREHOUSE</option>
                         </select>
                     </div>
 
                     <!-- Inventory Ownership -->
                     <div class="form-group">
-                        <label>Inventory Ownership <span class="required">*</span></label>
-                        <select name="inventory_owner" required>
+                        <label>Inventory Ownership <span class="optional" style="color:#9ca3af; font-weight:400;">(Optional)</span></label>
+                        <select name="inventory_owner" id="inventory_owner">
                             <option value="">-- Select Inventory --</option>
                             <option value="iman_inventory" <?= isset($_POST['inventory_owner']) && $_POST['inventory_owner'] === 'iman_inventory' ? 'selected' : '' ?>>Iman Inventory</option>
                             <option value="imans_hustle" <?= isset($_POST['inventory_owner']) && $_POST['inventory_owner'] === 'imans_hustle' ? 'selected' : '' ?>>Iman's Hustle</option>
                         </select>
-                        <small style="color:#6b7280; margin-top:.35rem; display:block;">Choose who this device belongs to.</small>
+                        <small style="color:#6b7280; margin-top:.35rem; display:block;">Leave blank if this device does not belong to either inventory.</small>
+                    </div>
+
+                    <div id="ownerSpecificFields" style="display:none; grid-column:1/-1;">
+                        <div class="form-grid" style="margin-top:0;">
+                            <div class="form-group"><label>Asset ID</label><input type="text" name="asset_id" value="<?= htmlspecialchars($_POST['asset_id'] ?? '') ?>"></div>
+                            <div class="form-group"><label>Manufacturer (MFG)</label><input type="text" name="manufacturer" value="<?= htmlspecialchars($_POST['manufacturer'] ?? '') ?>"></div>
+                            <div class="form-group"><label>Grade</label><input type="text" name="grade" value="<?= htmlspecialchars($_POST['grade'] ?? '') ?>"></div>
+                            <div class="form-group"><label>Buying Price (B.P)</label><input type="number" step="0.01" min="0" name="buying_price" value="<?= htmlspecialchars($_POST['buying_price'] ?? '') ?>"></div>
+                            <div class="form-group"><label>Selling Price (S.P)</label><input type="number" step="0.01" min="0" name="owner_selling_price" value="<?= htmlspecialchars($_POST['owner_selling_price'] ?? '') ?>"></div>
+                            <div class="form-group" style="grid-column:1/-1;"><label>Notes</label><input type="text" name="owner_notes" value="<?= htmlspecialchars($_POST['owner_notes'] ?? '') ?>"></div>
+                        </div>
+                        <div id="hustleFields" class="form-grid" style="display:none;margin-top:0;">
+                            <div class="form-group"><label>Form Factor</label><input type="text" name="form_factor" value="<?= htmlspecialchars($_POST['form_factor'] ?? '') ?>"></div>
+                        </div>
+                        <div id="inventoryFields" class="form-grid" style="display:none;margin-top:0;">
+                            <div class="form-group"><label>Buying Price (USD) — Symetic</label><input type="text" name="symetic" value="<?= htmlspecialchars($_POST['symetic'] ?? '') ?>"></div>
+                            <div class="form-group"><label>Selling Price (USD) — $</label><input type="text" name="dollar_value" value="<?= htmlspecialchars($_POST['dollar_value'] ?? '') ?>"></div>
+                            <div class="form-group"><label>Webcam</label><input type="text" name="webcam" value="<?= htmlspecialchars($_POST['webcam'] ?? '') ?>"></div>
+                            <div class="form-group"><label>Location</label><input type="text" name="owner_location" value="<?= htmlspecialchars($_POST['owner_location'] ?? '') ?>"></div>
+                        </div>
                     </div>
 
                     <!-- Model Name -->
@@ -989,6 +1035,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         window.addEventListener('resize', adjustMainContent);
         window.addEventListener('orientationchange', adjustMainContent);
     });
+</script>
+
+
+<script>
+(function(){const owner=document.getElementById('inventory_owner'),wrap=document.getElementById('ownerSpecificFields'),hus=document.getElementById('hustleFields'),inv=document.getElementById('inventoryFields');function t(){if(!owner||!wrap)return;wrap.style.display=owner.value?'block':'none';if(hus)hus.style.display=owner.value==='imans_hustle'?'grid':'none';if(inv)inv.style.display=owner.value==='iman_inventory'?'grid':'none';}owner?.addEventListener('change',t);t();})();
 </script>
 
 </body>

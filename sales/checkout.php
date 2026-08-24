@@ -65,7 +65,7 @@ if ($sale['sale_status'] === 'completed') {
 function returnItemToStock($conn, $item_type, $item_id, $sale_item_id, $quantity) {
     switch ($item_type) {
         case 'device':
-            $stmt = $conn->prepare("UPDATE devices SET status = 'In Stock', sold_at = NULL, sold_by = NULL, selling_price = NULL WHERE serial_number = ?");
+            $stmt = $conn->prepare("UPDATE devices SET status = 'In Stock', place = 'display', sold_at = NULL, sold_by = NULL, selling_price = NULL WHERE serial_number = ?");
             $stmt->execute([$item_id]);
             break;
         case 'monitors':
@@ -181,9 +181,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($_SESSION['current_sale_id']);
             $conn->commit();
 
-            $success_message = "Sale #$sale_id cancelled. All items returned to stock.";
-            $redirect_after = true;
-            $redirect_url = "make_sale.php";
+            $_SESSION['flash_success'] = "Sale #$sale_id cancelled. All items returned to stock.";
+            header("Location: make_sale.php");
+            exit;
 
         } catch (Exception $e) {
             $conn->rollBack();
@@ -209,9 +209,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unset($_SESSION['current_sale_id']);
                 $conn->commit();
 
-                $success_message = "Sale #$sale_id completed successfully.";
-                $redirect_after = true;
-                $redirect_url = "make_sale.php";
+                $_SESSION['flash_success'] = "Sale #$sale_id completed successfully.";
+                header("Location: make_sale.php");
+                exit;
 
             } catch (Exception $e) {
                 $conn->rollBack();
@@ -219,11 +219,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-}
-
-// If redirect needed, store success message in session and we'll display it on the target page.
-if ($redirect_after) {
-    $_SESSION['success'] = $success_message;
 }
 
 // Handle success/error messages from session (for remove_item)
@@ -931,11 +926,6 @@ date_default_timezone_set('Africa/Nairobi');
         <?php endif; ?>
     });
 
-    <?php if ($redirect_after): ?>
-        setTimeout(function() {
-            window.location.href = "<?= $redirect_url ?>";
-        }, 3000);
-    <?php endif; ?>
 </script>
 
 <?php require_once "../includes/footer.php"; ?>

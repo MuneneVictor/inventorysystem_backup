@@ -132,7 +132,8 @@ if (isset($_POST['sell_device'])) {
                 UPDATE devices 
                 SET status = 'Sold', 
                     selling_price = ?, 
-                    sold_at = NOW(), 
+                    sold_at = NOW(),
+                    place = 'sold',
                     sold_by = ? 
                 WHERE serial_number = ?
             ");
@@ -207,8 +208,9 @@ if (isset($_POST['sell_bulk_devices'])) {
                         UPDATE devices 
                         SET status = 'Sold', 
                             selling_price = ?, 
-                            sold_at = NOW(), 
-                            sold_by = ? 
+                            sold_at = NOW(),
+                            place = 'sold',
+                            sold_by = ?
                         WHERE serial_number = ?
                     ");
                     $update->execute([$price, $sales_person, $serial]);

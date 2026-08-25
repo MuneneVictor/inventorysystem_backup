@@ -57,6 +57,21 @@ function monNumber($value): ?float {
     $raw = trim($raw);
     return is_numeric($raw) ? (float)$raw : null;
 }
+function monStatus($value): ?string {
+    $raw = strtolower(trim((string)$value));
+
+    // Same behavior as the device bulk uploader:
+    // blank or "-" status automatically means In Stock.
+    if ($raw === '' || $raw === '-') return 'In Stock';
+
+    $key = preg_replace('/[^a-z]/', '', $raw);
+
+    if ($key === 'sold') return 'Sold';
+    if (in_array($key, ['instock', 'stock', 'available'], true)) return 'In Stock';
+
+    return null;
+}
+
 function monManufacturer($value, string $model): ?string {
     $value = trim((string)$value);
     if ($value !== '' && $value !== '-') return $value;
@@ -97,18 +112,18 @@ if (in_array($templateMode, $allowedModes, true)) {
     $sheet = $book->getActiveSheet();
     if ($templateMode === 'normal') {
         $sheet->setTitle('Normal Monitors');
-        $headers = ['serial_number','model_name','size_inches'];
-        $sample = ['SN001','Dell P2419H',24];
+        $headers = ['serial_number','model_name','size_inches','status'];
+        $sample = ['SN001','Dell P2419H',24,'In Stock'];
         $filename = 'monitor_normal_upload_template.xlsx';
     } elseif ($templateMode === 'imans_hustle') {
         $sheet->setTitle("Iman Hustle Monitors");
-        $headers = ['Asset ID','MFG','Model','Form Factor','Size','Serial','Grade','B.P','S.P','PROFIT','NOTES'];
-        $sample = ['IH-M001','Dell','P2419H','Monitor','24','MON001','A','5000','8500','3500',''];
+        $headers = ['Asset ID','MFG','Model','Form Factor','Size','Serial','Grade','B.P','S.P','PROFIT','NOTES','Status'];
+        $sample = ['IH-M001','Dell','P2419H','Monitor','24','MON001','A','5000','8500','3500','','In Stock'];
         $filename = 'iman_hustle_monitor_upload_template.xlsx';
     } else {
         $sheet->setTitle('Iman Inventory Monitors');
-        $headers = ['Asset ID','Symetic','$','BP','SP','PROFIT','MFG','Model','Size','Serial #','Grade','Notes','LOCATION'];
-        $sample = ['II-M001','40','65','5200','8500','3300','Dell','P2419H','24','MON001','A','','WAREHOUSE'];
+        $headers = ['Asset ID','Symetic','$','BP','SP','PROFIT','MFG','Model','Size','Serial #','Grade','Notes','LOCATION','Status'];
+        $sample = ['II-M001','40','65','5200','8500','3300','Dell','P2419H','24','MON001','A','','WAREHOUSE','In Stock'];
         $filename = 'iman_inventory_monitor_upload_template.xlsx';
     }
     foreach ($headers as $i=>$h) {
@@ -159,20 +174,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             $headers = array_map('monCleanHeader', array_shift($rows));
 
             if ($uploadMode === 'normal') {
-                if ($headers !== ['serial_number','model_name','size_inches']) {
-                    throw new Exception('Normal Monitor header must be: serial_number, model_name, size_inches');
+                if ($headers !== ['serial_number','model_name','size_inches','status']) {
+                    throw new Exception('Normal Monitor header must be: serial_number, model_name, size_inches, status');
                 }
             } elseif ($uploadMode === 'imans_hustle') {
-                if (count($headers) < 11) throw new Exception("Iman's Hustle monitor sheet must contain 11 columns from Asset ID through NOTES.");
+                if (count($headers) < 12) throw new Exception("Iman's Hustle monitor sheet must contain 12 columns from Asset ID through Status.");
             } else {
-                if (count($headers) < 13) throw new Exception('Iman Inventory monitor sheet must contain 13 columns from Asset ID through LOCATION.');
+                if (count($headers) < 14) throw new Exception('Iman Inventory monitor sheet must contain 14 columns from Asset ID through Status.');
             }
 
             $insert = $conn->prepare("INSERT INTO monitors
                 (serial_number,model_name,size_inches,status,branch,added_by,date_added,inventory_owner,
                  asset_id,manufacturer,form_factor,grade,buying_price,price,owner_profit,owner_notes,
-                 symetic,dollar_value,owner_location)
-                VALUES (?,?,?,'In Stock',?,?,NOW(),?,?,?,?,?,?,?,?,?,?,?,?)");
+                 symetic,dollar_value,owner_location,selling_price,sold_at)
+                VALUES (?,?,?,?,?,?,NOW(),?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
             $check = $conn->prepare('SELECT serial_number FROM monitors WHERE serial_number=? LIMIT 1');
             $count=0;$duplicates=0;$invalid=0;
             foreach ($rows as $i=>$row) {
@@ -180,12 +195,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 if (!array_filter($row,fn($v)=>trim((string)$v)!=='')) continue;
 
                 $serial='';$model='';$size='';$owner=null;$branch=$batchBranch;
+                $status='In Stock';$statusRaw='';$actualSellingPrice=null;$soldAt=null;
                 $asset=null;$mfg=null;$form=null;$grade=null;$bp=null;$sp=null;$profit=null;$notes=null;$symetic=null;$dollar=null;$ownerLocation=null;
 
                 if ($uploadMode==='normal') {
                     $serial=trim((string)($row[0]??''));
                     $model=trim((string)($row[1]??''));
                     $size=trim((string)($row[2]??''));
+                    $statusRaw=trim((string)($row[3]??''));
                 } elseif ($uploadMode==='imans_hustle') {
                     // Asset ID | MFG | Model | Form Factor | Size | Serial | Grade | B.P | S.P | PROFIT | NOTES
                     $asset=trim((string)($row[0]??'')) ?: null;
@@ -200,6 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                     $profit=monNumber($row[9]??'');
                     if ($profit===null && $bp!==null && $sp!==null) $profit=$sp-$bp;
                     $notes=trim((string)($row[10]??'')) ?: null;
+                    $statusRaw=trim((string)($row[11]??''));
                     $owner='imans_hustle';
                     $branch=$user_branch ?: 'KIMATHI';
                     $mfg=monManufacturer($mfg,$model);
@@ -219,6 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                     $grade=trim((string)($row[10]??'')) ?: null;
                     $notes=trim((string)($row[11]??'')) ?: null;
                     $ownerLocation=trim((string)($row[12]??'')) ?: null;
+                    $statusRaw=trim((string)($row[13]??''));
                     $owner='iman_inventory';
                     [$branch,$normalizedLocation]=monOwnerBranch($ownerLocation,$user_branch ?: 'KIMATHI');
                     if ($ownerLocation===null && $normalizedLocation!==null) $ownerLocation=$normalizedLocation;
@@ -226,6 +245,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 }
 
                 $errs=[];
+
+                $parsedStatus=monStatus($statusRaw);
+                if ($parsedStatus===null) {
+                    $errs[]='Status must be Sold or In Stock.';
+                } else {
+                    $status=$parsedStatus;
+                }
+
+                if ($status==='Sold') {
+                    if ($uploadMode!=='normal') {
+                        if ($sp===null || $sp<=0) {
+                            $errs[]='Sold monitor requires a valid SP (selling price).';
+                        } else {
+                            $actualSellingPrice=$sp;
+                            $soldAt=date('Y-m-d H:i:s');
+                        }
+                    }
+                } else {
+                    $actualSellingPrice=null;
+                    $soldAt=null;
+                }
+
                 if ($serial==='') $errs[]='Serial number is required.';
                 if ($model==='') $errs[]='Model name is required.';
                 if ($size==='' || !is_numeric($size) || (float)$size<=0 || (float)$size>100) $errs[]='Size must be numeric between 1 and 100.';
@@ -235,7 +276,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 }
                 if ($errs) {$invalid++;$rowErrors[]="Row $rowNo (SN: ".($serial?:'N/A').'): '.implode(' ',$errs);continue;}
 
-                $insert->execute([$serial,$model,(float)$size,$branch,$user_id,$owner,$asset,$mfg,$form,$grade,$bp,$sp,$profit,$notes,$symetic,$dollar,$ownerLocation]);
+                $insert->execute([
+                    $serial,
+                    $model,
+                    (float)$size,
+                    $status,
+                    $branch,
+                    $user_id,
+                    $owner,
+                    $asset,
+                    $mfg,
+                    $form,
+                    $grade,
+                    $bp,
+                    $sp,
+                    $profit,
+                    $notes,
+                    $symetic,
+                    $dollar,
+                    $ownerLocation,
+                    $actualSellingPrice,
+                    $soldAt
+                ]);
                 $count++;
             }
             if ($count>0) {
@@ -260,7 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 <?php if($rowErrors):?><div class="alert warn"><strong>Rows not uploaded:</strong><ul><?php foreach($rowErrors as $e):?><li><?=htmlspecialchars($e)?></li><?php endforeach;?></ul></div><?php endif;?>
 <section class="box"><form method="post" enctype="multipart/form-data"><div class="grid"><div class="g"><label>Upload Type</label><select name="upload_mode" id="upload_mode"><option value="normal" <?=$uploadMode==='normal'?'selected':''?>>Normal Monitors</option><?php if($canUploadOwnerInventory):?><option value="imans_hustle" <?=$uploadMode==='imans_hustle'?'selected':''?>>Iman's Hustle</option><option value="iman_inventory" <?=$uploadMode==='iman_inventory'?'selected':''?>>Iman Inventory</option><?php endif;?></select></div>
 <div class="g" id="normalBranch"><label>Branch</label><?php if(in_array($user_role,['super_admin','inventory_admin'],true)):?><select name="branch"><option value="">-- Select Branch --</option><option>KIMATHI</option><option>MOI</option></select><?php else:?><input value="<?=htmlspecialchars($user_branch)?>" disabled><?php endif;?></div><div class="g"><label>Excel File</label><input type="file" name="file" accept=".xlsx,.xls,.csv" required></div></div>
-<div id="normalPanel" class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><strong>Normal Monitor Format</strong><a class="btn" href="?download_template=normal"><i class="fas fa-download"></i> Download .xlsx</a></div><div class="format"><table><tr><th>serial_number</th><th>model_name</th><th>size_inches</th></tr><tr><td>SN001</td><td>Dell P2419H</td><td>24</td></tr></table></div></div>
-<?php if($canUploadOwnerInventory):?><div id="hustlePanel" class="panel hidden"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><strong>Iman's Hustle Monitor Format</strong><a class="btn" href="?download_template=imans_hustle"><i class="fas fa-download"></i> Download .xlsx</a></div><div class="format"><table><tr><?php foreach(['Asset ID','MFG','Model','Form Factor','Size','Serial','Grade','B.P','S.P','PROFIT','NOTES'] as $h):?><th><?=$h?></th><?php endforeach;?></tr></table></div><p class="help">No Storage column is used. These rows are assigned to Iman's Hustle. The logged-in user's assigned branch is used.</p></div>
-<div id="inventoryPanel" class="panel hidden"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><strong>Iman Inventory Monitor Format</strong><a class="btn" href="?download_template=iman_inventory"><i class="fas fa-download"></i> Download .xlsx</a></div><div class="format"><table><tr><?php foreach(['Asset ID','Symetic','$','BP','SP','PROFIT','MFG','Model','Size','Serial #','Grade','Notes','LOCATION'] as $h):?><th><?=$h?></th><?php endforeach;?></tr></table></div><p class="help">LOCATION may be WAREHOUSE, MOI or KIMATHI. Blank LOCATION uses your assigned branch. No Storage column is used.</p></div><?php endif;?><button class="btn full" style="margin-top:1rem"><i class="fas fa-upload"></i> Upload and Process</button></form></section></main>
+<div id="normalPanel" class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><strong>Normal Monitor Format</strong><a class="btn" href="?download_template=normal"><i class="fas fa-download"></i> Download .xlsx</a></div><div class="format"><table><tr><th>serial_number</th><th>model_name</th><th>size_inches</th><th>status</th></tr><tr><td>SN001</td><td>Dell P2419H</td><td>24</td><td>In Stock</td></tr></table></div></div>
+<?php if($canUploadOwnerInventory):?><div id="hustlePanel" class="panel hidden"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><strong>Iman's Hustle Monitor Format</strong><a class="btn" href="?download_template=imans_hustle"><i class="fas fa-download"></i> Download .xlsx</a></div><div class="format"><table><tr><?php foreach(['Asset ID','MFG','Model','Form Factor','Size','Serial','Grade','B.P','S.P','PROFIT','NOTES','Status'] as $h):?><th><?=$h?></th><?php endforeach;?></tr></table></div><p class="help">No Storage column is used. Status may be Sold or In Stock. If Status is blank, it automatically becomes In Stock. Sold rows use S.P as the actual selling price; In Stock rows remain available. These rows are assigned to Iman's Hustle. The logged-in user's assigned branch is used.</p></div>
+<div id="inventoryPanel" class="panel hidden"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><strong>Iman Inventory Monitor Format</strong><a class="btn" href="?download_template=iman_inventory"><i class="fas fa-download"></i> Download .xlsx</a></div><div class="format"><table><tr><?php foreach(['Asset ID','Symetic','$','BP','SP','PROFIT','MFG','Model','Size','Serial #','Grade','Notes','LOCATION','Status'] as $h):?><th><?=$h?></th><?php endforeach;?></tr></table></div><p class="help">LOCATION may be WAREHOUSE, MOI or KIMATHI. Blank LOCATION uses your assigned branch. Status may be Sold or In Stock. If Status is blank, it automatically becomes In Stock. Sold rows use SP as the actual selling price; In Stock rows remain available. No Storage column is used.</p></div><?php endif;?><button class="btn full" style="margin-top:1rem"><i class="fas fa-upload"></i> Upload and Process</button></form></section></main>
 <script>const mode=document.getElementById('upload_mode');function changeMode(){const v=mode.value;['normalPanel','hustlePanel','inventoryPanel'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden')});const id=v==='normal'?'normalPanel':(v==='imans_hustle'?'hustlePanel':'inventoryPanel');const target=document.getElementById(id);if(target)target.classList.remove('hidden');document.getElementById('normalBranch').style.display=v==='normal'?'flex':'none';}mode.addEventListener('change',changeMode);changeMode();</script><?php require_once "../includes/footer.php";?></body></html>

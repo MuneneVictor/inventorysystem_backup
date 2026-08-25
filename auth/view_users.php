@@ -872,6 +872,9 @@ unset($_SESSION['success'], $_SESSION['error']);
                 <a href="view_users.php" class="btn btn-secondary">
                     <i class="fas fa-undo"></i> Reset
                 </a>
+                <a href="add_user.php" class="btn btn-success">
+                    <i class="fas fa-user-plus"></i> Add New User
+                </a>
                 <a href="generate_code.php" class="btn btn-secondary">
                     <i class="fas fa-key"></i> Generate Code
                 </a>

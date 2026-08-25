@@ -11,16 +11,29 @@ if (!in_array($_SESSION['role'], ['super_admin', 'inventory_admin', 'manager']))
 $user_id = (int) $_SESSION['user_id'];
 $user_role = $_SESSION['role'];
 
-// Get user's branch (if not super_admin)
-$user_branch = null;
-if ($user_role !== 'super_admin') {
-    $stmt = $conn->prepare("SELECT branch FROM users WHERE id = ?");
-    $stmt->execute([$user_id]);
-    $user_branch = $stmt->fetchColumn();
-    if (!$user_branch) {
-        die("Your account has no branch assigned. Contact administrator.");
-    }
+// Get current user's branch and email
+$stmt = $conn->prepare("SELECT branch, email FROM users WHERE id = ?");
+$stmt->execute([$user_id]);
+$current_user = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+$user_branch = $current_user['branch'] ?? null;
+$user_email = strtolower(trim((string)($current_user['email'] ?? '')));
+
+if ($user_role !== 'super_admin' && !$user_branch) {
+    die("Your account has no branch assigned. Contact administrator.");
 }
+
+/**
+ * Inventory-admin emails allowed to assign monitor ownership.
+ * Add more emails here when needed.
+ */
+$ownerUploadAllowedEmails = [
+    'stephanie@mombasacomputers.co.ke',
+];
+
+$canAssignOwnerInventory =
+    in_array($user_role, ['super_admin', 'manager'], true) ||
+    ($user_role === 'inventory_admin' && in_array($user_email, $ownerUploadAllowedEmails, true));
 
 $error = "";
 $success = "";
@@ -30,10 +43,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $model = trim($_POST['model_name'] ?? '');
     $size = (int) ($_POST['size_inches'] ?? 0);
 
+    $inventory_owner = null;
+    $ownerRaw = trim((string)($_POST['inventory_owner'] ?? ''));
+
+    if ($ownerRaw !== '') {
+        if (!$canAssignOwnerInventory) {
+            $error = "You do not have permission to assign monitors to Iman Inventory or Iman's Hustle.";
+        } elseif (in_array($ownerRaw, ['iman_inventory', 'imans_hustle'], true)) {
+            $inventory_owner = $ownerRaw;
+        } else {
+            $error = "Invalid inventory ownership selected.";
+        }
+    }
+
     // Branch determination
-    if ($user_role === 'super_admin') {
+    if (in_array($user_role, ['super_admin', 'inventory_admin'], true)) {
         $branch = $_POST['branch'] ?? '';
-        if (!$branch) $error = "Please select a branch.";
+        if (!in_array($branch, ['KIMATHI', 'MOI'], true)) $error = "Please select a valid branch.";
     } else {
         $branch = $user_branch;
     }
@@ -50,16 +76,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Monitor with this serial number already exists.";
         } else {
             $insert = $conn->prepare("
-                INSERT INTO monitors (serial_number, model_name, size_inches, status, branch, added_by)
-                VALUES (?, ?, ?, 'In Stock', ?, ?)
+                INSERT INTO monitors (
+                    serial_number,
+                    model_name,
+                    size_inches,
+                    status,
+                    branch,
+                    added_by,
+                    inventory_owner
+                )
+                VALUES (?, ?, ?, 'In Stock', ?, ?, ?)
             ");
-            $insert->execute([$serial, $model, $size, $branch, $user_id]);
+            $insert->execute([$serial, $model, $size, $branch, $user_id, $inventory_owner]);
 
             // Log activity
-            $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Added monitor', ?)");
-            $log->execute([$user_id, "Added monitor SN: $serial ($model) to $branch branch"]);
+            $ownerLabel = $inventory_owner === 'iman_inventory'
+                ? 'Iman Inventory'
+                : ($inventory_owner === 'imans_hustle' ? "Iman's Hustle" : 'Normal Inventory');
 
-            $success = "Monitor added successfully to $branch branch!";
+            $log = $conn->prepare("INSERT INTO activity_logs (user_id, action, details) VALUES (?, 'Added monitor', ?)");
+            $log->execute([$user_id, "Added monitor SN: $serial ($model) to $branch branch; ownership: $ownerLabel"]);
+
+            $success = "Monitor added successfully to $branch branch ($ownerLabel)!";
         }
     }
 }
@@ -165,8 +203,8 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                 <?php endif; ?>
 
                 <div class="info-box">
-                    <?php if ($user_role === 'super_admin'): ?>
-                        <strong><i class="fas fa-store"></i> You can add monitors to any branch.</strong>
+                    <?php if (in_array($user_role, ['super_admin', 'inventory_admin'], true)): ?>
+                        <strong><i class="fas fa-store"></i> You can add monitors to either branch.</strong>
                     <?php else: ?>
                         <strong><i class="fas fa-store"></i> Your branch: <?= htmlspecialchars($user_branch) ?></strong>
                     <?php endif; ?>
@@ -185,7 +223,23 @@ $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
                         <label>Size (inches)</label>
                         <input type="number" name="size_inches" required min="10" placeholder="e.g., 24">
                     </div>
-                    <?php if ($user_role === 'super_admin'): ?>
+
+                    <div class="form-group">
+                        <label>Inventory Ownership <span style="font-weight:400;color:var(--gray-500);">(Optional)</span></label>
+                        <select name="inventory_owner">
+                            <option value="">None / Normal Inventory</option>
+                            <?php if ($canAssignOwnerInventory): ?>
+                                <option value="iman_inventory">Iman Inventory</option>
+                                <option value="imans_hustle">Iman's Hustle</option>
+                            <?php endif; ?>
+                        </select>
+                        <?php if (!$canAssignOwnerInventory): ?>
+                            <small style="display:block;margin-top:.4rem;color:var(--gray-500);">
+                                Your account can add normal monitors only.
+                            </small>
+                        <?php endif; ?>
+                    </div>
+                    <?php if (in_array($user_role, ['super_admin', 'inventory_admin'], true)): ?>
                         <div class="form-group">
                             <label>Branch</label>
                             <select name="branch" required>

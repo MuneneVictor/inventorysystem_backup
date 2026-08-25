@@ -360,6 +360,18 @@ $roles = ['manager','inventory_admin','technician','software','sales', 'cashier'
             transform: translateY(-1px);
         }
 
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+            text-decoration: none;
+            margin-bottom: .75rem;
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+
         /* Info Box */
         .info-box {
             background: var(--gray-50);
@@ -522,6 +534,10 @@ $roles = ['manager','inventory_admin','technician','software','sales', 'cashier'
                             <i class="fas fa-info-circle"></i> This determines what permissions the user will have.
                         </div>
                     </div>
+
+                    <a href="add_user.php" class="btn btn-secondary">
+                        <i class="fas fa-user-plus"></i> Add User Manually
+                    </a>
 
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-paper-plane"></i> Generate & Send Code

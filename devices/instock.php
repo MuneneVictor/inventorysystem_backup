@@ -7,8 +7,19 @@ $role = $_SESSION['role'];
 $user_id = (int) $_SESSION['user_id'];
 
 // Allowed roles: super_admin, inventory_admin, manager
-if (!in_array($role, ['super_admin', 'inventory_admin', 'manager'])) {
-    die("ACCESS DENIED.");
+$userEmail = strtolower(trim($_SESSION['email'] ?? ''));
+$allowedEmails = [
+    'stephanie@mombasacomputers.co.ke',
+   ];
+$hasAccess =
+    $role === 'super_admin'|| $role === 'manager' ||
+    (
+        $role === 'inventory_admin' &&
+        in_array($userEmail, $allowedEmails, true)
+    );
+
+if (!$hasAccess) {
+    die('You Don\'t have Permission to view this page.');
 }
 
 // Manager branch restriction
@@ -19,6 +30,211 @@ if ($role === 'manager') {
     $user_data = $user_stmt->fetch(PDO::FETCH_ASSOC);
     $user_branch = $user_data['branch'] ?? '';
 }
+
+
+// One-time security token for Update Sale Details.
+if (empty($_SESSION['instock_sale_csrf'])) {
+    $_SESSION['instock_sale_csrf'] = bin2hex(random_bytes(32));
+}
+
+// Active salespeople used in the Update Sale Details dialog.
+$salesStmt = $conn->prepare("
+    SELECT id, full_name
+    FROM users
+    WHERE role = 'sales'
+      AND is_active = 1
+    ORDER BY full_name ASC
+");
+$salesStmt->execute();
+$salesPeople = $salesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Update sale details directly from In-Stock Devices.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_sale_details'])) {
+    $csrf = (string)($_POST['csrf_token'] ?? '');
+    $serialPost = trim((string)($_POST['serial_number'] ?? ''));
+    $salesPerson = (int)($_POST['sales_person'] ?? 0);
+    $sellingPrice = (float)($_POST['selling_price'] ?? 0);
+    $paymentStatus = trim((string)($_POST['payment_status'] ?? ''));
+    $paymentMethod = trim((string)($_POST['payment_method'] ?? ''));
+    $saleNotes = trim((string)($_POST['sale_notes'] ?? ''));
+
+    try {
+        if (!hash_equals($_SESSION['instock_sale_csrf'], $csrf)) {
+            throw new Exception('Security validation failed. Please try again.');
+        }
+
+        if ($serialPost === '') {
+            throw new Exception('Serial number is required.');
+        }
+
+        if ($salesPerson <= 0) {
+            throw new Exception('Please select a salesperson.');
+        }
+
+        if ($sellingPrice <= 0) {
+            throw new Exception('Please enter a valid selling price.');
+        }
+
+        if (!in_array($paymentStatus, ['paid', 'unpaid'], true)) {
+            throw new Exception('Please select Paid or Unpaid.');
+        }
+
+        $allowedPaymentMethods = [
+            'cash',
+            'mpesa-till',
+            'mpesa-pochi',
+            'bank-transfer'
+        ];
+
+        if ($paymentMethod !== '' && !in_array($paymentMethod, $allowedPaymentMethods, true)) {
+            throw new Exception('Invalid payment method selected.');
+        }
+
+        $paymentMethodDb = $paymentMethod !== '' ? $paymentMethod : null;
+
+        // Confirm salesperson is still active.
+        $salesUserStmt = $conn->prepare("
+            SELECT id, full_name
+            FROM users
+            WHERE id = ?
+              AND role = 'sales'
+              AND is_active = 1
+            LIMIT 1
+        ");
+        $salesUserStmt->execute([$salesPerson]);
+        $salesUser = $salesUserStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$salesUser) {
+            throw new Exception('Selected salesperson is not available.');
+        }
+
+        $conn->beginTransaction();
+
+        $deviceStmt = $conn->prepare("
+            SELECT *
+            FROM devices
+            WHERE serial_number = ?
+              AND status = 'In Stock'
+            FOR UPDATE
+        ");
+        $deviceStmt->execute([$serialPost]);
+        $device = $deviceStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$device) {
+            throw new Exception('Device was not found in stock.');
+        }
+
+        // Keep manager branch restrictions intact.
+        if ($role === 'manager' && $user_branch !== '' && $device['branch'] !== $user_branch) {
+            throw new Exception('You cannot sell a device from another branch.');
+        }
+
+        $description = trim(
+            (($device['manufacturer'] ?? '') . ' ' . ($device['model_name'] ?? ''))
+        );
+
+        if ($description === '') {
+            $description = $device['model_name'] ?? $serialPost;
+        }
+
+        // Notes are optional. Blank notes do not erase an existing owner_notes value.
+        $updateDevice = $conn->prepare("
+            UPDATE devices
+            SET status = 'Sold',
+                place = 'sold',
+                selling_price = ?,
+                sold_at = NOW(),
+                sold_by = ?,
+                owner_notes = COALESCE(NULLIF(?, ''), owner_notes)
+            WHERE serial_number = ?
+        ");
+        $updateDevice->execute([
+            $sellingPrice,
+            $salesPerson,
+            $saleNotes,
+            $serialPost
+        ]);
+
+        $saleStmt = $conn->prepare("
+            INSERT INTO sales (
+                total_amount,
+                sale_status,
+                completed_at,
+                sold_by,
+                payment_method,
+                payment_status,
+                completion_status
+            )
+            VALUES (?, 'completed', NOW(), ?, ?, ?, 'Completed')
+        ");
+        $saleStmt->execute([
+            $sellingPrice,
+            $salesPerson,
+            $paymentMethodDb,
+            $paymentStatus
+        ]);
+
+        $saleId = (int)$conn->lastInsertId();
+
+        $saleItemStmt = $conn->prepare("
+            INSERT INTO sale_items (
+                sale_id,
+                item_type,
+                item_id,
+                description,
+                quantity,
+                unit_price,
+                sales_person
+            )
+            VALUES (?, 'device', ?, ?, 1, ?, ?)
+        ");
+        $saleItemStmt->execute([
+            $saleId,
+            $serialPost,
+            $description,
+            $sellingPrice,
+            $salesPerson
+        ]);
+
+        $methodLabel = $paymentMethodDb ?? 'Not specified';
+        $notesLog = $saleNotes !== '' ? "; notes: {$saleNotes}" : '';
+
+        $logStmt = $conn->prepare("
+            INSERT INTO activity_logs (user_id, action, details)
+            VALUES (?, 'Updated sale details', ?)
+        ");
+        $logStmt->execute([
+            $user_id,
+            "Marked device SN: {$serialPost} as sold; salesperson: {$salesUser['full_name']}; " .
+            "price: KES " . number_format($sellingPrice, 2) .
+            "; payment status: {$paymentStatus}; payment method: {$methodLabel}{$notesLog}; sale #{$saleId}"
+        ]);
+
+        $conn->commit();
+
+        $_SESSION['instock_sale_success'] =
+            "Sale details updated successfully for {$serialPost}. Sale #{$saleId} created.";
+    } catch (Throwable $e) {
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
+
+        $_SESSION['instock_sale_error'] = $e->getMessage();
+    }
+
+    // Post/Redirect/Get keeps the page from resubmitting the sale.
+    $queryString = $_SERVER['QUERY_STRING'] ?? '';
+    header('Location: instock.php' . ($queryString !== '' ? '?' . $queryString : ''));
+    exit;
+}
+
+$flashSuccess = $_SESSION['instock_sale_success'] ?? '';
+$flashError = $_SESSION['instock_sale_error'] ?? '';
+
+unset(
+    $_SESSION['instock_sale_success'],
+    $_SESSION['instock_sale_error']
+);
 
 // Helper: build device specifications string (like sales_logs)
 function buildDeviceSpecs($device) {
@@ -164,6 +380,143 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
         .footer { text-align: center; padding: 1.5rem 0 0.5rem; margin-top: 1.5rem; font-size: 0.85rem; color: var(--gray-400); border-top: 1px solid var(--gray-200); }
         .btn-view { background: #3b82f6; color: white; border: none; border-radius: var(--radius-sm); padding: 0.3rem 0.6rem; font-size: 0.75rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; }
         .btn-view:hover { background: #2563eb; }
+
+        .btn-sale {
+            background: #166534;
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 0.4rem 0.65rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            white-space: nowrap;
+        }
+
+        .btn-sale:hover {
+            background: #14532d;
+        }
+
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+        }
+
+        .alert-success {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .sale-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.58);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 1rem;
+        }
+
+        .sale-modal.open {
+            display: flex;
+        }
+
+        .sale-modal-dialog {
+            width: min(520px, 100%);
+            max-height: 92vh;
+            overflow-y: auto;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 24px 60px rgba(0,0,0,.22);
+        }
+
+        .sale-modal-header {
+            padding: 1.15rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .sale-modal-header h3 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .modal-close {
+            border: 0;
+            background: transparent;
+            color: var(--gray-500);
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        .sale-modal-body {
+            padding: 1.25rem;
+        }
+
+        .sale-device-label {
+            margin-bottom: 1rem;
+            padding: .8rem .9rem;
+            border-radius: 8px;
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            font-size: .85rem;
+        }
+
+        .sale-form-group {
+            margin-bottom: 1rem;
+        }
+
+        .sale-form-group label {
+            display: block;
+            margin-bottom: .4rem;
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--gray-600);
+        }
+
+        .sale-form-group input,
+        .sale-form-group select,
+        .sale-form-group textarea {
+            width: 100%;
+            padding: .7rem .8rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            background: white;
+            font: inherit;
+        }
+
+        .sale-form-group textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: .75rem;
+            justify-content: flex-end;
+            padding-top: .4rem;
+        }
+
+        .modal-actions .btn {
+            width: auto;
+        }
         @media (max-width: 1200px) { .main-content { margin-left: 0 !important; width: 100% !important; padding: 1.5rem 1rem 1rem !important; padding-top: 5rem !important; } }
         @media (max-width: 768px) { 
             .filter-grid { grid-template-columns: 1fr; }
@@ -192,6 +545,20 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <span>In-Stock Devices</span>
         </div>
     </div>
+
+    <?php if ($flashSuccess): ?>
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            <?= htmlspecialchars($flashSuccess) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($flashError): ?>
+        <div class="alert alert-error">
+            <i class="fas fa-exclamation-circle"></i>
+            <?= htmlspecialchars($flashError) ?>
+        </div>
+    <?php endif; ?>
 
     <div class="stats-row">
         <div class="stat-card">
@@ -306,15 +673,118 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <?= $device['price'] !== null ? number_format($device['price'], 2) : '—' ?>
                             </td>
                             <td>
-                                <a href="view_device.php?sn=<?= urlencode($device['serial_number']) ?>" class="btn-view">
-                                    <i class="fas fa-eye"></i> View
-                                </a>
+                                <button
+                                    type="button"
+                                    class="btn-sale open-sale-modal"
+                                    data-serial="<?= htmlspecialchars($device['serial_number'], ENT_QUOTES) ?>"
+                                    data-model="<?= htmlspecialchars($device['model_name'] ?? '-', ENT_QUOTES) ?>"
+                                >
+                                    <i class="fas fa-cash-register"></i> Update Sale Details
+                                </button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
         <?php endif; ?>
+    </div>
+
+
+    <div class="sale-modal" id="saleDetailsModal" aria-hidden="true">
+        <div class="sale-modal-dialog">
+            <div class="sale-modal-header">
+                <h3><i class="fas fa-cash-register"></i> Update Sale Details</h3>
+                <button type="button" class="modal-close" id="closeSaleModal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="sale-modal-body">
+                <div class="sale-device-label">
+                    <strong id="saleDeviceModel">-</strong><br>
+                    Serial: <code id="saleDeviceSerial">-</code>
+                </div>
+
+                <form method="POST" id="saleDetailsForm">
+                    <input type="hidden" name="update_sale_details" value="1">
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="<?= htmlspecialchars($_SESSION['instock_sale_csrf']) ?>"
+                    >
+                    <input type="hidden" name="serial_number" id="saleSerialInput">
+
+                    <div class="sale-form-group">
+                        <label for="sales_person">Sales Person</label>
+                        <select name="sales_person" id="sales_person" required>
+                            <option value="">-- Select Sales Person --</option>
+                            <?php foreach ($salesPeople as $salesPersonRow): ?>
+                                <option value="<?= (int)$salesPersonRow['id'] ?>">
+                                    <?= htmlspecialchars($salesPersonRow['full_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="sale-form-group">
+                        <label for="selling_price">Selling Price (KES)</label>
+                        <input
+                            type="number"
+                            name="selling_price"
+                            id="selling_price"
+                            min="0.01"
+                            step="0.01"
+                            required
+                            placeholder="Enter actual selling price"
+                        >
+                    </div>
+
+                    <div class="sale-form-group">
+                        <label for="payment_status">Payment Status</label>
+                        <select name="payment_status" id="payment_status" required>
+                            <option value="">-- Select --</option>
+                            <option value="paid">Paid</option>
+                            <option value="unpaid">Unpaid</option>
+                        </select>
+                    </div>
+
+                    <div class="sale-form-group">
+                        <label for="payment_method">
+                            Payment Method
+                            <span style="font-weight:400;color:var(--gray-500);">(Optional)</span>
+                        </label>
+                        <select name="payment_method" id="payment_method">
+                            <option value="">-- Not specified --</option>
+                            <option value="cash">Cash</option>
+                            <option value="mpesa-till">M-Pesa Till</option>
+                            <option value="mpesa-pochi">M-Pesa Pochi</option>
+                            <option value="bank-transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+
+                    <div class="sale-form-group">
+                        <label for="sale_notes">
+                            Notes
+                            <span style="font-weight:400;color:var(--gray-500);">(Optional)</span>
+                        </label>
+                        <textarea
+                            name="sale_notes"
+                            id="sale_notes"
+                            placeholder="Enter sale notes, reference, customer details, or any other relevant note"
+                        ></textarea>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelSaleModal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn">
+                            <i class="fas fa-save"></i> Save Sale Details
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <div class="footer">
@@ -333,6 +803,55 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     window.addEventListener('resize', adjustMainContent);
     adjustMainContent();
+
+    const saleModal = document.getElementById('saleDetailsModal');
+    const saleSerialInput = document.getElementById('saleSerialInput');
+    const saleDeviceSerial = document.getElementById('saleDeviceSerial');
+    const saleDeviceModel = document.getElementById('saleDeviceModel');
+    const closeSaleModal = document.getElementById('closeSaleModal');
+    const cancelSaleModal = document.getElementById('cancelSaleModal');
+    const saleDetailsForm = document.getElementById('saleDetailsForm');
+
+    function openSaleDetailsModal(serial, model) {
+        saleSerialInput.value = serial;
+        saleDeviceSerial.textContent = serial;
+        saleDeviceModel.textContent = model || '-';
+        saleModal.classList.add('open');
+        saleModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSaleDetailsModal() {
+        saleModal.classList.remove('open');
+        saleModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        saleDetailsForm.reset();
+        saleSerialInput.value = '';
+    }
+
+    document.querySelectorAll('.open-sale-modal').forEach(button => {
+        button.addEventListener('click', function () {
+            openSaleDetailsModal(
+                this.dataset.serial,
+                this.dataset.model
+            );
+        });
+    });
+
+    closeSaleModal.addEventListener('click', closeSaleDetailsModal);
+    cancelSaleModal.addEventListener('click', closeSaleDetailsModal);
+
+    saleModal.addEventListener('click', function (event) {
+        if (event.target === saleModal) {
+            closeSaleDetailsModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && saleModal.classList.contains('open')) {
+            closeSaleDetailsModal();
+        }
+    });
 </script>
 
 <?php require_once "../includes/footer.php"; ?>

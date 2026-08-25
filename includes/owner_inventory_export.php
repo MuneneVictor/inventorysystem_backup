@@ -11,7 +11,20 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-$role=$_SESSION['role'];$uid=(int)$_SESSION['user_id'];if(!in_array($role,['super_admin','inventory_admin','manager'],true))die('ACCESS DENIED.');
+$role=$_SESSION['role'];$uid=(int)$_SESSION['user_id'];$userEmail = strtolower(trim($_SESSION['email'] ?? ''));
+$allowedEmails = [
+    'stephanie@mombasacomputers.co.ke',
+   ];
+$hasAccess =
+    $role === 'super_admin' ||
+    (
+        $role === 'inventory_admin' &&
+        in_array($userEmail, $allowedEmails, true)
+    );
+
+if (!$hasAccess) {
+    die('You Don\'t have Permission to view this page.');
+}
 $mode=trim($_GET['report']??'overview');if(!in_array($mode,['overview','instock','sold'],true))$mode='overview';
 $user_branch='';if($role==='manager'){$q=$conn->prepare('SELECT branch FROM users WHERE id=?');$q->execute([$uid]);$user_branch=(string)($q->fetchColumn()?:'');}
 $serial=trim($_GET['serial']??'');$model=trim($_GET['model']??'');$branch=trim($_GET['branch']??'');$category=trim($_GET['category']??'');$status=trim($_GET['status']??'');$df=trim($_GET['date_from']??'');$dt=trim($_GET['date_to']??'');if($mode==='overview'){if($df==='')$df=date('Y-m-01');if($dt==='')$dt=date('Y-m-d');}

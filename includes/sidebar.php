@@ -1,4 +1,9 @@
-
+<?php
+$userEmail = strtolower(trim($_SESSION['email'] ?? ''));
+$allowedEmails = [
+    'stephanie@mombasacomputers.co.ke',
+];
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -49,7 +54,7 @@
             $sections = [];
 
 
-             if ($role === 'super_admin'){
+             if ($role === 'super_admin' ) {
                 $sections['REPORTS'] = [
                     'icon' => 'fas fa-chart-line',
                     'items' => [
@@ -64,7 +69,7 @@
             }
 
             // IMAN'S HUSTLE section
-                if (in_array($role, ['super_admin','manager','inventory_admin'])) {
+                if ($role === 'super_admin' || in_array($userEmail, $allowedEmails, true)) {
                 $imanhusitems = [
                     ['Inventory Overview', '../imanhus/overview', 'fas fa-boxes-stacked'],
                 ];
@@ -76,7 +81,7 @@
                 }
 
                 // IMAN'S INVENTORY section
-                if (in_array($role, ['super_admin','inventory_admin'])) {
+                if ($role === 'super_admin' || in_array($userEmail, $allowedEmails, true)) {
                 $imaninvitems = [
                     ['Inventory Overview', '../imaninv/overview', 'fas fa-boxes-stacked'],
                 ];
@@ -93,11 +98,13 @@
                     ['Bulk Upload', '../devices/upload_excel', 'fas fa-file-upload'],
                     ['Device List', '../devices/device_list', 'fas fa-list'],
                     ['In Stock', '../devices/instock', 'fas fa-box'],
-                    ['Sold', '../devices/sold', 'fas fa-money-bill-wave'],
                     ['Search Device', '../devices/search', 'fas fa-search'],
                     ['Give out Device', '../devices/give_device', 'fas fa-gift'],
                     ['Device Logs', '../devices/device_logs', 'fas fa-clipboard-list'],
                 ];
+                 if ($role === 'super_admin' || in_array($userEmail, $allowedEmails, true)){
+                      $deviceItems[] = ['Sold', '../devices/sold', 'fas fa-money-bill-wave'];
+                    }
                 if ($role === 'super_admin' || $role === 'manager') {
                     $deviceItems[] = ['Price list', '../devices/price_list', 'fas fa-dollar-sign'];
                 }
@@ -390,7 +397,7 @@
                 $sections['ADMIN'] = [
                     'icon' => 'fas fa-cogs',
                     'items' => [
-                        ['Add New user', '../auth/generate_code', 'fas fa-key'],
+                        ['Add New user', '../auth/add_user', 'fas fa-user-plus'],
                         ['View Users', '../auth/view_users', 'fas fa-users'],
                         ['Settings', '../auth/settings', 'fas fa-cog'],
                     ]

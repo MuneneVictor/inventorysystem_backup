@@ -239,6 +239,32 @@ require_once "../includes/header.php";
             color: var(--primary);
         }
 
+        .page-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            padding: .7rem 1rem;
+            border-radius: .6rem;
+            background: var(--primary);
+            color: #fff;
+            text-decoration: none;
+            font-size: .82rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .header-action:hover {
+            background: var(--primary-light);
+        }
+
         .breadcrumb {
             color: var(--gray-500);
             font-size: .85rem;
@@ -407,6 +433,12 @@ require_once "../includes/header.php";
                 flex-direction: column-reverse;
             }
 
+            .page-header-row {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .header-action,
             .btn {
                 width: 100%;
             }
@@ -419,7 +451,12 @@ require_once "../includes/header.php";
 
 <div class="main-content">
     <div class="page-header">
-        <h1><i class="fas fa-user-plus"></i> Add New User</h1>
+        <div class="page-header-row">
+            <h1><i class="fas fa-user-plus"></i> Add New User</h1>
+            <a href="generate_code.php" class="header-action">
+                <i class="fas fa-paper-plane"></i> Send Registration Invite Code
+            </a>
+        </div>
         <div class="breadcrumb">
             <a href="../dashboard/superadmindashboard.php"><i class="fas fa-home"></i> Dashboard</a>
             <span> / </span>

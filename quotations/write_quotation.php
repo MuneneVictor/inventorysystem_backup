@@ -161,7 +161,18 @@ $activeQuotations = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="page-header">
         <h1><i class="fas fa-file-invoice"></i> Write Quotation</h1>
         <div class="breadcrumb">
-            <a href="../dashboard.php">Dashboard</a> / Write Quotation
+            <?php if($user_role === 'sales'): ?>
+                <a href="../dashboard/salesdashboard.php">Dashboard</a> /
+            <?php endif; ?>
+            <?php if($user_role === 'super_admin'): ?>
+                <a href="../dashboard/superadmindashboard.php">Dashboard</a> /
+            <?php endif; ?>
+            <?php if($user_role === 'manager'): ?>
+                <a href="../dashboard/managerdashboard.php">Dashboard</a> /
+            <?php endif; ?>
+            <?php if($user_role === 'technician'): ?>
+                <a href="../dashboard/techniciandashboard.php">Dashboard</a> /
+            <?php endif; ?> Write Quotation
         </div>
     </div>
 

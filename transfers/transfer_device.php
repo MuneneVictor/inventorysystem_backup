@@ -13,18 +13,56 @@ $user_id = (int) $_SESSION['user_id'];
 $user_role = $_SESSION['role'];
 $user_name = $_SESSION['name'] ?? ($_SESSION['full_name'] ?? 'User');
 
-// Get user's branch
-$user_branch = null;
-if ($user_role !== 'super_admin') {
-    $stmt = $conn->prepare("SELECT branch FROM users WHERE id = ?");
-    $stmt->execute([$user_id]);
-    $user_branch = $stmt->fetchColumn();
-    if (!$user_branch) die("Your account has no branch assigned.");
+// Get user's branch and email
+$stmt = $conn->prepare("SELECT branch, email FROM users WHERE id = ?");
+$stmt->execute([$user_id]);
+$currentUser = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+$user_branch = $currentUser['branch'] ?? null;
+$userEmail = strtolower(trim((string)($currentUser['email'] ?? '')));
+
+if ($user_role !== 'super_admin' && !$user_branch) {
+    die("Your account has no branch assigned.");
 }
 
-$is_super_admin = ($user_role === 'super_admin');
-$availableBranches = ['KIMATHI', 'MOI'];
+/**
+ * Inventory-admin emails allowed to transfer from ANY branch,
+ * the same way a Super Admin can.
+ *
+ * Add more email addresses here when needed.
+ */
+$allowedEmails = [
+    'stephanie@mombasacomputers.co.ke',
+    'munene23.v@student.cuk.ac.ke',
+];
+
+$hasFullTransferAccess =
+    $user_role === 'super_admin' ||
+    (
+        $user_role === 'inventory_admin' &&
+        in_array($userEmail, $allowedEmails, true)
+    );
+
+$availableBranches = ['KIMATHI', 'MOI', 'WAREHOUSE'];
 $error = $success = "";
+
+/**
+ * Devices can be transferred between any of the valid locations,
+ * as long as source and destination are different:
+ *
+ * - KIMATHI <-> MOI
+ * - KIMATHI <-> WAREHOUSE
+ * - MOI <-> WAREHOUSE
+ */
+function isAllowedDeviceTransferRoute(string $fromBranch, string $toBranch): bool
+{
+    $validBranches = ['KIMATHI', 'MOI', 'WAREHOUSE'];
+
+    return in_array($fromBranch, $validBranches, true)
+        && in_array($toBranch, $validBranches, true)
+        && $fromBranch !== $toBranch;
+}
+
 $foundDevices = [];
 $notFoundSerials = [];
 $singleDevice = null;
@@ -41,13 +79,15 @@ if (isset($_POST['search_serial'])) {
     $to_branch = $_POST['to_branch'] ?? null;
     $delivered_by = trim($_POST['delivered_by'] ?? '');
 
-    if (!$is_super_admin) $from_branch = $user_branch;
+    if (!$hasFullTransferAccess) $from_branch = $user_branch;
 
     if (empty($input)) $error = "Please enter serial number(s).";
     elseif (empty($from_branch) || empty($to_branch)) $error = "Please select both source and destination branches.";
+    elseif (!in_array($from_branch, $availableBranches, true) || !in_array($to_branch, $availableBranches, true)) $error = "Invalid source or destination branch.";
     elseif ($from_branch === $to_branch) $error = "Source and destination branches cannot be the same.";
+    elseif (!isAllowedDeviceTransferRoute($from_branch, $to_branch)) $error = "Invalid transfer route. Source and destination must be different valid locations.";
     elseif (empty($delivered_by)) $error = "Please enter the name of the person delivering the devices.";
-    elseif (!$is_super_admin && $from_branch !== $user_branch) $error = "You can only transfer devices from your own branch.";
+    elseif (!$hasFullTransferAccess && $from_branch !== $user_branch) $error = "You can only transfer devices from your own branch.";
     else {
         $serials = preg_split('/[\s,]+/', $input);
         $serials = array_filter(array_map('trim', $serials));
@@ -90,8 +130,10 @@ if (isset($_POST['transfer_device'])) {
     $delivered_by = $_SESSION['delivered_by'] ?? '';
 
     if (!$from_branch || !$to_branch) $error = "Branch information missing. Please search again.";
+    elseif (!in_array($from_branch, $availableBranches, true) || !in_array($to_branch, $availableBranches, true)) $error = "Invalid source or destination branch.";
+    elseif (!isAllowedDeviceTransferRoute($from_branch, $to_branch)) $error = "Invalid transfer route. Source and destination must be different valid locations.";
     elseif (empty($delivered_by)) $error = "Delivery information missing. Please search again.";
-    elseif (!$is_super_admin && $from_branch !== $user_branch) $error = "You can only transfer devices from your own branch.";
+    elseif (!$hasFullTransferAccess && $from_branch !== $user_branch) $error = "You can only transfer devices from your own branch.";
     else {
         $stmt = $conn->prepare("SELECT * FROM devices WHERE serial_number = ? AND status = 'In Stock' AND branch = ?");
         $stmt->execute([$serial, $from_branch]);
@@ -117,8 +159,10 @@ if (isset($_POST['transfer_bulk_devices'])) {
 
     if (empty($selectedSerials)) $error = "No devices selected for transfer.";
     elseif (!$from_branch || !$to_branch) $error = "Branch information missing. Please search again.";
+    elseif (!in_array($from_branch, $availableBranches, true) || !in_array($to_branch, $availableBranches, true)) $error = "Invalid source or destination branch.";
+    elseif (!isAllowedDeviceTransferRoute($from_branch, $to_branch)) $error = "Invalid transfer route. Source and destination must be different valid locations.";
     elseif (empty($delivered_by)) $error = "Delivery information missing. Please search again.";
-    elseif (!$is_super_admin && $from_branch !== $user_branch) $error = "You can only transfer devices from your own branch.";
+    elseif (!$hasFullTransferAccess && $from_branch !== $user_branch) $error = "You can only transfer devices from your own branch.";
     else {
         $transferredCount = 0;
         $transferredSerials = [];
@@ -229,29 +273,28 @@ else $greeting = 'Good evening';
                     <div class="branch-selector">
                         <div>
                             <label>Transfer From:</label>
-                            <select name="from_branch" <?= !$is_super_admin ? 'disabled' : '' ?> required>
+                            <select name="from_branch" id="from_branch" <?= !$hasFullTransferAccess ? 'disabled' : '' ?> required>
                                 <option value="">Select Source Branch</option>
                                 <?php foreach ($availableBranches as $branch): ?>
-                                    <?php if ($is_super_admin || $branch == $user_branch): ?>
-                                        <option value="<?= $branch ?>" <?= (!$is_super_admin && $branch == $user_branch) ? 'selected' : '' ?>><?= $branch ?></option>
+                                    <?php if ($hasFullTransferAccess || $branch == $user_branch): ?>
+                                        <option value="<?= $branch ?>" <?= (!$hasFullTransferAccess && $branch == $user_branch) ? 'selected' : '' ?>><?= $branch ?></option>
                                     <?php endif; ?>
                                 <?php endforeach; ?>
                             </select>
-                            <?php if (!$is_super_admin): ?>
+                            <?php if (!$hasFullTransferAccess): ?>
                                 <input type="hidden" name="from_branch" value="<?= htmlspecialchars($user_branch) ?>">
                                 <small>You can only transfer from your branch: <strong><?= htmlspecialchars($user_branch) ?></strong></small>
                             <?php endif; ?>
                         </div>
                         <div>
                             <label>Transfer To:</label>
-                            <select name="to_branch" required>
+                            <select name="to_branch" id="to_branch" required>
                                 <option value="">Select Destination Branch</option>
                                 <?php foreach ($availableBranches as $branch): ?>
-                                    <?php if ($is_super_admin || $branch != $user_branch): ?>
-                                        <option value="<?= $branch ?>"><?= $branch ?></option>
-                                    <?php endif; ?>
+                                    <option value="<?= htmlspecialchars($branch) ?>"><?= htmlspecialchars($branch) ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <small>Allowed routes: KIMATHI ↔ MOI, KIMATHI ↔ WAREHOUSE, and MOI ↔ WAREHOUSE.</small>
                         </div>
                     </div>
                     <div class="form-group">
@@ -331,6 +374,51 @@ else $greeting = 'Good evening';
 function selectAllCheckboxes(source) {
     document.querySelectorAll('input[name="selected_serials[]"]').forEach(cb => cb.checked = source.checked);
 }
+
+(function () {
+    const fromSelect = document.getElementById('from_branch');
+    const toSelect = document.getElementById('to_branch');
+
+    if (!fromSelect || !toSelect) return;
+
+    const allowedRoutes = {
+        WAREHOUSE: ['KIMATHI', 'MOI'],
+        KIMATHI: ['MOI', 'WAREHOUSE'],
+        MOI: ['KIMATHI', 'WAREHOUSE']
+    };
+
+    function updateDestinationOptions() {
+        let fromBranch = fromSelect.value;
+
+        // For users without full transfer access the visible select is disabled;
+        // use the hidden source branch value instead.
+        if (!fromBranch) {
+            const hiddenFrom = document.querySelector('input[type="hidden"][name="from_branch"]');
+            if (hiddenFrom) fromBranch = hiddenFrom.value;
+        }
+
+        const allowed = allowedRoutes[fromBranch] || [];
+
+        Array.from(toSelect.options).forEach(option => {
+            if (option.value === '') {
+                option.hidden = false;
+                option.disabled = false;
+                return;
+            }
+
+            const valid = allowed.includes(option.value);
+            option.hidden = !valid;
+            option.disabled = !valid;
+        });
+
+        if (!allowed.includes(toSelect.value)) {
+            toSelect.value = '';
+        }
+    }
+
+    fromSelect.addEventListener('change', updateDestinationOptions);
+    updateDestinationOptions();
+})();
 </script>
 <?php require_once "../includes/footer.php"; ?>
 </body>

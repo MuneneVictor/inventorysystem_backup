@@ -176,6 +176,15 @@ function normalBranchFromSpecs($branchRaw, $userBranch) {
     if ($branch === '' || $branch === '-') return $userBranch;
     return in_array($branch, ['KIMATHI','MOI','WAREHOUSE'], true) ? $branch : $userBranch;
 }
+
+function ownerUploadStatus($v, array &$rowErrors) {
+    $raw = strtolower(trim((string)$v));
+    if ($raw === '' || $raw === '-') return 'In Stock';
+    if ($raw === 'sold') return 'Sold';
+    if (in_array($raw, ['instock','in stock','in-stock'], true)) return 'In Stock';
+    $rowErrors[] = "Status must be Sold or In Stock";
+    return 'In Stock';
+}
 function isMonitorRow($mode, $category, $model, $formFactor, $processor, $ramRaw, $storageRaw) {
     $category = strtolower(trim((string)$category));
     $model = strtolower(trim((string)$model));
@@ -309,13 +318,13 @@ if (in_array($templateMode, $allowedUploadModes, true)) {
         $filename = 'normal_inventory_upload_template.xlsx';
     } elseif ($templateMode === 'imans_hustle') {
         $sheet->setTitle("Iman Hustle");
-        $headers = ['Asset ID','MFG','Model','Form Factor','CPU','Ram','Storage','Serial','Grade','B.P','S.P','PROFIT','NOTES'];
-        $sample = ['IH-001','HP','EliteBook 840 G8','Laptop','Core i5 11th Gen','16GB','512GB SSD','5CG1234XYZ','A','250','350','100',''];
+        $headers = ['Asset ID','MFG','Model','Form Factor','CPU','Ram','Storage','Serial','Grade','B.P','S.P','PROFIT','NOTES','Status'];
+        $sample = ['IH-001','HP','EliteBook 840 G8','Laptop','Core i5 11th Gen','16GB','512GB SSD','5CG1234XYZ','A','250','350','100','','In Stock'];
         $filename = 'iman_hustle_upload_template.xlsx';
     } else {
         $sheet->setTitle('Iman Inventory');
-        $headers = ['Asset ID','Symetic','$','BP','SP','PROFIT','MFG','Model','CPU','RAM','Storage','Serial #','Grade','Touch Screen','Webcam','Notes','LOCATION'];
-        $sample = ['II-001','250','350','32000','45000','13000','HP','EliteBook 840 G8','Core i5 11th Gen','16GB','512GB SSD','5CG1234XYZ','A','Non-touch','Yes','','WAREHOUSE'];
+        $headers = ['Asset ID','Symetic','$','BP','SP','PROFIT','MFG','Model','CPU','RAM','Storage','Serial #','Grade','Touch Screen','Webcam','Notes','LOCATION','Status'];
+        $sample = ['II-001','250','350','32000','45000','13000','HP','EliteBook 840 G8','Core i5 11th Gen','16GB','512GB SSD','5CG1234XYZ','A','Non-touch','Yes','','WAREHOUSE','In Stock'];
         $filename = 'iman_inventory_upload_template.xlsx';
     }
 
@@ -367,7 +376,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                  inventory_owner, device_condition, added_by, branch, cargo_number, place, asset_id, manufacturer, form_factor, grade,
                  buying_price, price, owner_profit, owner_notes, symetic, dollar_value, webcam, owner_location)
                 VALUES
-                (:serial_number,:category_id,:model_name,:processor,:graphics,:ram,:storage_type,:storage_capacity,:touch,'In Stock',
+                (:serial_number,:category_id,:model_name,:processor,:graphics,:ram,:storage_type,:storage_capacity,:touch,:status,
                  :inventory_owner,'Ex-Uk',:added_by,:branch,'NO CARGO',:place,:asset_id,:manufacturer,:form_factor,:grade,
                  :buying_price,:price,:owner_profit,:owner_notes,:symetic,:dollar_value,:webcam,:owner_location)");
             $dup = $conn->prepare('SELECT * FROM devices WHERE serial_number = ? LIMIT 1');
@@ -381,7 +390,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                 $d = [
                     'asset_id'=>null,'manufacturer'=>null,'form_factor'=>null,'grade'=>null,'buying_price'=>null,'price'=>null,
                     'owner_profit'=>null,'owner_notes'=>null,'symetic'=>null,'dollar_value'=>null,'webcam'=>null,'owner_location'=>null,
-                    'graphics'=>'None','touch'=>'N/A','inventory_owner'=>null
+                    'graphics'=>'None','touch'=>'N/A','inventory_owner'=>null,'status'=>'In Stock'
                 ];
                 $rowErrors = [];
                 $place = 'store';
@@ -434,6 +443,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                     $d['owner_profit']=numericValue($row[11]??'');
                     if ($d['owner_profit']===null && $d['buying_price']!==null && $d['price']!==null) $d['owner_profit']=$d['price']-$d['buying_price'];
                     $d['owner_notes']=trim((string)($row[12]??'')) ?: null;
+                    $d['status']=ownerUploadStatus($row[13]??'', $rowErrors);
+                    if ($d['status']==='Sold' && $d['price']===null) {
+                        $rowErrors[]='Selling price (S.P) is required when Status is Sold';
+                    }
                     $d['inventory_owner']='imans_hustle';
                     $cat = categoryFromFormFactor($d['form_factor'], $catMap);
                     $d['category_id']=(int)($cat['id']??0);
@@ -473,6 +486,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                     $d['webcam']=trim((string)($row[14]??'')) ?: null;
                     $d['owner_notes']=trim((string)($row[15]??'')) ?: null;
                     $d['owner_location']=trim((string)($row[16]??'')) ?: null;
+                    $d['status']=ownerUploadStatus($row[17]??'', $rowErrors);
+                    if ($d['status']==='Sold' && $d['price']===null) {
+                        $rowErrors[]='Selling price (SP) is required when Status is Sold';
+                    }
                     $d['inventory_owner']='iman_inventory';
                     $cat = categoryFromModel($d['model_name'], $catMap);
                     $d['category_id']=(int)($cat['id']??0);
@@ -591,7 +608,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                 $insert->execute([
                     'serial_number'=>$serial,'category_id'=>$d['category_id'],'model_name'=>$d['model_name'],'processor'=>$d['processor'],
                     'graphics'=>$d['graphics'],'ram'=>$d['ram'],'storage_type'=>$d['storage_type'],'storage_capacity'=>$d['storage_capacity'],
-                    'touch'=>$d['touch'],'inventory_owner'=>$d['inventory_owner'],'added_by'=>$added_by,'branch'=>$branch,
+                    'touch'=>$d['touch'],'status'=>$d['status'],'inventory_owner'=>$d['inventory_owner'],'added_by'=>$added_by,'branch'=>$branch,
                     'place'=>$place,'asset_id'=>$d['asset_id'],'manufacturer'=>$d['manufacturer'],
                     'form_factor'=>$d['form_factor'],'grade'=>$d['grade'],'buying_price'=>$d['buying_price'],'price'=>$d['price'],
                     'owner_profit'=>$d['owner_profit'],'owner_notes'=>$d['owner_notes'],'symetic'=>$d['symetic'],
@@ -656,19 +673,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
 <?php if($canUploadOwnerInventory):?>
 <div id="hustleFormat" class="format-panel hidden">
 <h3>Iman's Hustle — Upload Exactly As Existing Sheet</h3>
-<div class="help">Do not rearrange the workbook. The system reads the existing 13 columns in this exact order.</div>
+<div class="help">Do not rearrange the workbook. The system reads the existing columns with the new Status column appended at the end.</div>
 <a class="template-btn" href="?download_template=imans_hustle"><i class="fas fa-file-excel"></i> Download Iman's Hustle .xlsx Template</a>
-<div class="format"><table><tr><?php foreach(['Asset ID','MFG','Model','Form Factor','CPU','Ram','Storage','Serial','Grade','B.P','S.P','PROFIT','NOTES'] as $h):?><th><?=htmlspecialchars($h)?></th><?php endforeach;?></tr><tr><td>IH-001</td><td>HP</td><td>EliteBook 840 G8</td><td>Laptop</td><td>Core i5 11th Gen</td><td>16GB</td><td>512GB SSD</td><td>5CG1234XYZ</td><td>A</td><td>250</td><td>350</td><td>100</td><td>-</td></tr></table></div>
-<ul class="rules"><li>Select a default device category once for the batch.</li><li>If Form Factor matches an existing system category, that category is used automatically.</li><li>Select a default branch/location once for the batch.</li><li>The uploaded computer devices are automatically assigned to Iman's Hustle.</li></ul>
+<div class="format"><table><tr><?php foreach(['Asset ID','MFG','Model','Form Factor','CPU','Ram','Storage','Serial','Grade','B.P','S.P','PROFIT','NOTES','Status'] as $h):?><th><?=htmlspecialchars($h)?></th><?php endforeach;?></tr><tr><td>IH-001</td><td>HP</td><td>EliteBook 840 G8</td><td>Laptop</td><td>Core i5 11th Gen</td><td>16GB</td><td>512GB SSD</td><td>5CG1234XYZ</td><td>A</td><td>250</td><td>350</td><td>100</td><td>-</td><td>In Stock</td></tr></table></div>
+<ul class="rules"><li>Select a default device category once for the batch.</li><li>If Form Factor matches an existing system category, that category is used automatically.</li><li>Select a default branch/location once for the batch.</li><li>The uploaded computer devices are automatically assigned to Iman's Hustle.</li><li><strong>Status:</strong> use Sold or In Stock. Blank automatically becomes In Stock.</li><li>If Status is <strong>Sold</strong>, S.P is required and is stored as the device selling price. No sale details are inserted.</li></ul>
 <div class="monitor-note"><strong>Monitor rule:</strong> monitor/display/screen rows are skipped. Rows with a model but no CPU, RAM and Storage are also treated as monitors and are not inserted into devices.</div>
 </div>
 
 <div id="inventoryFormat" class="format-panel hidden">
 <h3>Iman Inventory — Upload Exactly As Existing Sheet</h3>
-<div class="help">Do not rearrange the workbook. The system reads the existing 17 columns in this exact order.</div>
+<div class="help">Do not rearrange the workbook. The system reads the existing columns with the new Status column appended at the end.</div>
 <a class="template-btn" href="?download_template=iman_inventory"><i class="fas fa-file-excel"></i> Download Iman Inventory .xlsx Template</a>
-<div class="format"><table><tr><?php foreach(['Asset ID','Symetic','$','BP','SP','PROFIT','MFG','Model','CPU','RAM','Storage','Serial #','Grade','Touch Screen','Webcam','Notes','LOCATION'] as $h):?><th><?=htmlspecialchars($h)?></th><?php endforeach;?></tr><tr><td>II-001</td><td>250</td><td>350</td><td>32000</td><td>45000</td><td>13000</td><td>HP</td><td>EliteBook 840 G8</td><td>Core i5 11th Gen</td><td>16GB</td><td>512GB SSD</td><td>5CG1234XYZ</td><td>A</td><td>Non-touch</td><td>Yes</td><td>-</td><td>WAREHOUSE</td></tr></table></div>
-<ul class="rules"><li><strong>Symetic</strong> = buying price in dollars and <strong>$</strong> = selling price in dollars.</li><li>LOCATION can be WAREHOUSE, MOI or KIMATHI.</li><li>Select a default category because this workbook has no category column.</li><li>The uploaded computer devices are automatically assigned to Iman Inventory.</li></ul>
+<div class="format"><table><tr><?php foreach(['Asset ID','Symetic','$','BP','SP','PROFIT','MFG','Model','CPU','RAM','Storage','Serial #','Grade','Touch Screen','Webcam','Notes','LOCATION','Status'] as $h):?><th><?=htmlspecialchars($h)?></th><?php endforeach;?></tr><tr><td>II-001</td><td>250</td><td>350</td><td>32000</td><td>45000</td><td>13000</td><td>HP</td><td>EliteBook 840 G8</td><td>Core i5 11th Gen</td><td>16GB</td><td>512GB SSD</td><td>5CG1234XYZ</td><td>A</td><td>Non-touch</td><td>Yes</td><td>-</td><td>WAREHOUSE</td><td>In Stock</td></tr></table></div>
+<ul class="rules"><li><strong>Symetic</strong> = buying price in dollars and <strong>$</strong> = selling price in dollars.</li><li>LOCATION can be WAREHOUSE, MOI or KIMATHI.</li><li>Select a default category because this workbook has no category column.</li><li>The uploaded computer devices are automatically assigned to Iman Inventory.</li><li><strong>Status:</strong> use Sold or In Stock. Blank automatically becomes In Stock.</li><li>If Status is <strong>Sold</strong>, SP is required and is stored as the device selling price. Only the devices table is inserted; no sale details are created.</li></ul>
 <div class="monitor-note"><strong>Monitor rule:</strong> monitor rows are skipped. A row with model/serial but no CPU, RAM and Storage is treated as a monitor and must be uploaded through Monitor Bulk Upload.</div>
 </div>
 <?php endif;?>

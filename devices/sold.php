@@ -469,7 +469,7 @@ $total_revenue = array_sum(array_column($devices, 'selling_price'));
         <div class="search-title">
             <i class="fas fa-filter"></i> Filter Sold Devices
         </div>
-        <form method="GET" class="search-grid">
+        <form method="GET" class="search-grid" id="soldFilterForm">
             <div class="search-group">
                 <label>Category</label>
                 <select name="category">
@@ -510,7 +510,7 @@ $total_revenue = array_sum(array_column($devices, 'selling_price'));
 
             <div class="search-group">
                 <label>Serial Number</label>
-                <input type="text" name="serial_number" placeholder="Scan or type serial number" value="<?= htmlspecialchars($search_serial) ?>" autofocus>
+                <input type="text" name="serial_number" id="soldSerialSearch" placeholder="Scan or type serial number" value="<?= htmlspecialchars($search_serial) ?>" autocomplete="off" autofocus>
             </div>
 
             <div class="search-group">
@@ -642,6 +642,46 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', adjustMainContent);
     window.addEventListener('orientationchange', adjustMainContent);
 });
+</script>
+
+
+<script>
+(function(){
+    const form = document.getElementById('soldFilterForm');
+    const serialInput = document.getElementById('soldSerialSearch');
+    if (!form || !serialInput) return;
+
+    let timer = null;
+    let controller = null;
+    async function ajaxSearch(){
+        if (controller) controller.abort();
+        controller = new AbortController();
+        const params = new URLSearchParams(new FormData(form));
+        const url = form.action || window.location.pathname;
+        try {
+            const response = await fetch(url + '?' + params.toString(), {
+                headers: {'X-Requested-With':'XMLHttpRequest'},
+                signal: controller.signal
+            });
+            if (!response.ok) throw new Error('Search request failed');
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const newStats = doc.querySelector('.stats-row');
+            const newTable = doc.querySelector('.table-wrapper');
+            const stats = document.querySelector('.stats-row');
+            const table = document.querySelector('.table-wrapper');
+            if (newStats && stats) stats.innerHTML = newStats.innerHTML;
+            if (newTable && table) table.innerHTML = newTable.innerHTML;
+            history.replaceState(null, '', url + (params.toString() ? '?' + params.toString() : ''));
+        } catch(e){
+            if (e.name !== 'AbortError') console.error(e);
+        }
+    }
+    serialInput.addEventListener('input', function(){
+        clearTimeout(timer);
+        timer = setTimeout(ajaxSearch, 300);
+    });
+})();
 </script>
 
 </body>

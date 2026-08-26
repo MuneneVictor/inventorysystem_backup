@@ -250,7 +250,7 @@ $total=count($devices);$inStock=count(array_filter($devices,fn($d)=>$d['status']
 </style></head><body><?php include __DIR__.'/sidebar.php';?><main class="main"><section class="head"><h1><i class="fas fa-boxes-stacked"></i> <?=htmlspecialchars($ownerLabel)?> — <?=htmlspecialchars($pageTitle)?></h1><div style="color:var(--m)">Owner-specific inventory, including devices and monitors.</div><div class="tabs"><a class="<?=$reportMode==='overview'?'active':''?>" href="overview.php">Overview</a><a class="<?=$reportMode==='instock'?'active':''?>" href="instock.php">In Stock</a><a class="<?=$reportMode==='sold'?'active':''?>" href="sold.php">Sold</a></div></section>
 <?php if($flashSuccess):?><div class="flash ok"><i class="fas fa-check-circle"></i> <?=htmlspecialchars($flashSuccess)?></div><?php endif;?><?php if($flashError):?><div class="flash err"><i class="fas fa-exclamation-circle"></i> <?=htmlspecialchars($flashError)?></div><?php endif;?>
 <section class="stats"><div class="card"><div class="n"><?=$total?></div><div class="l"><?= $reportMode==='overview'?'TOTAL ITEMS':'MATCHING ITEMS' ?></div></div><?php if($reportMode==='overview'):?><div class="card"><div class="n"><?=$inStock?></div><div class="l">IN STOCK</div></div><div class="card"><div class="n"><?=$sold?></div><div class="l">SOLD</div></div><?php endif;?><?php if($reportMode==='sold'):?><div class="card"><div class="n">KES <?=number_format($revenue,2)?></div><div class="l">ACTUAL SALES VALUE</div></div><?php endif;?></section>
-<section class="filters"><form class="grid" method="get"><div class="g"><label>Serial</label><input name="serial" value="<?=htmlspecialchars($serial)?>"></div><div class="g"><label>Model</label><input name="model" value="<?=htmlspecialchars($model)?>"></div><div class="g"><label>Category</label><select name="category"><option value="">All</option><option value="monitor" <?=$category==='monitor'?'selected':''?>>Monitor</option><?php foreach($cats as $c):?><option value="<?=$c['id']?>" <?=$category===(string)$c['id']?'selected':''?>><?=htmlspecialchars($c['category_name'])?></option><?php endforeach;?></select></div><?php if($role!=='manager'):?><div class="g"><label>Branch</label><select name="branch"><option value="">All</option><option <?=$branch==='KIMATHI'?'selected':''?>>KIMATHI</option><option <?=$branch==='MOI'?'selected':''?>>MOI</option><option <?=$branch==='WAREHOUSE'?'selected':''?>>WAREHOUSE</option></select></div><?php endif;?><?php if($reportMode==='overview'):?><div class="g"><label>Status</label><select name="status"><option value="">All</option><option <?=$status==='In Stock'?'selected':''?>>In Stock</option><option <?=$status==='Sold'?'selected':''?>>Sold</option></select></div><?php endif;?><?php if($reportMode==='overview'||$reportMode==='sold'):?><div class="g"><label><?=$reportMode==='sold'?'Sold From':'Added From'?></label><input type="date" name="date_from" value="<?=htmlspecialchars($date_from)?>"></div><div class="g"><label><?=$reportMode==='sold'?'Sold To':'Added To'?></label><input type="date" name="date_to" value="<?=htmlspecialchars($date_to)?>"></div><?php endif;?><div class="filter-actions"><button class="btn"><i class="fas fa-search"></i> Filter</button><a class="btn secondary" href="<?=$reportMode?>.php">Reset</a><a class="btn excel" href="export_excel.php?<?=htmlspecialchars(http_build_query(array_merge($_GET,['report'=>$reportMode])))?>"><i class="fas fa-file-excel"></i> Export Excel</a></div></form></section>
+<section class="filters"><form class="grid" method="get" id="inventoryFilterForm"><div class="g"><label>Serial</label><input name="serial" id="serialSearch" autocomplete="off" value="<?=htmlspecialchars($serial)?>"></div><div class="g"><label>Model</label><input name="model" value="<?=htmlspecialchars($model)?>"></div><div class="g"><label>Category</label><select name="category"><option value="">All</option><option value="monitor" <?=$category==='monitor'?'selected':''?>>Monitor</option><?php foreach($cats as $c):?><option value="<?=$c['id']?>" <?=$category===(string)$c['id']?'selected':''?>><?=htmlspecialchars($c['category_name'])?></option><?php endforeach;?></select></div><?php if($role!=='manager'):?><div class="g"><label>Branch</label><select name="branch"><option value="">All</option><option <?=$branch==='KIMATHI'?'selected':''?>>KIMATHI</option><option <?=$branch==='MOI'?'selected':''?>>MOI</option><option <?=$branch==='WAREHOUSE'?'selected':''?>>WAREHOUSE</option></select></div><?php endif;?><?php if($reportMode==='overview'):?><div class="g"><label>Status</label><select name="status"><option value="">All</option><option <?=$status==='In Stock'?'selected':''?>>In Stock</option><option <?=$status==='Sold'?'selected':''?>>Sold</option></select></div><?php endif;?><?php if($reportMode==='overview'||$reportMode==='sold'):?><div class="g"><label><?=$reportMode==='sold'?'Sold From':'Added From'?></label><input type="date" name="date_from" value="<?=htmlspecialchars($date_from)?>"></div><div class="g"><label><?=$reportMode==='sold'?'Sold To':'Added To'?></label><input type="date" name="date_to" value="<?=htmlspecialchars($date_to)?>"></div><?php endif;?><div class="filter-actions"><button class="btn"><i class="fas fa-search"></i> Filter</button><a class="btn secondary" href="<?=$reportMode?>.php">Reset</a><a class="btn excel" href="export_excel.php?<?=htmlspecialchars(http_build_query(array_merge($_GET,['report'=>$reportMode])))?>"><i class="fas fa-file-excel"></i> Export Excel</a></div></form></section>
 <section class="tablebox"><div class="scroll"><?php if(!$devices):?><div class="empty">No records found.</div><?php else:?><table><thead><tr>
 <?php if($ownerKey==='imans_hustle'):?><?php foreach(['Asset ID','MFG','Model','Form Factor','CPU','RAM','Storage','Serial','Grade','B.P','S.P','PROFIT','NOTES'] as $h):?><th><?=$h?></th><?php endforeach;?><?php else:?><th>#</th><?php foreach(['Asset ID','Buying $','Selling $','BP','SP','PROFIT','MFG','Model','CPU','RAM','Storage','Serial #','Grade','Touch Screen','Webcam','Notes','LOCATION'] as $h):?><th><?=$h?></th><?php endforeach;?><?php endif;?><th>Status</th><?php if($reportMode==='overview'):?><th>Maintenance / Changes</th><?php endif;?><?php if($reportMode==='sold'):?><th>Sold By</th><th>Sold At</th><th>Actual Selling Price</th><?php endif;?><th>Action</th></tr></thead><tbody>
 <?php foreach($devices as $rowIndex=>$d):?><tr>
@@ -258,4 +258,84 @@ $total=count($devices);$inStock=count(array_filter($devices,fn($d)=>$d['status']
 <?php else:?><?php $profit=actualProfit($d);?><td class="num"><?=($rowIndex+1)?></td><td><?=htmlspecialchars(dashCell($d['asset_id']??''))?></td><td class="money"><?=htmlspecialchars(dollarCell($d['symetic']??null))?></td><td class="money"><?=htmlspecialchars(dollarCell($d['dollar_value']??null))?></td><td class="money"><?=moneyCell($d['buying_price']??null)?></td><td class="money"><?=moneyCell(imanSp($d))?></td><td class="money <?=$profit!==null&&$profit<0?'profit-negative':'profit-positive'?>"><?=moneyCell($profit)?></td><td><?=htmlspecialchars(ownerManufacturer($d))?></td><td><strong><?=htmlspecialchars(ownerModelDisplay($d))?></strong><?php if(($d['_item_type']??'')==='monitor'):?><span class="typebadge">MONITOR</span><?php endif;?></td><td><?=htmlspecialchars(dashCell($d['processor']??''))?></td><td><?=!empty($d['ram'])?htmlspecialchars((string)$d['ram']).' GB':'-'?></td><td><?=htmlspecialchars(ownerStorage($d)?:'-')?></td><td class="sn"><?=htmlspecialchars(dashCell($d['serial_number']??''))?></td><td><?=htmlspecialchars(dashCell($d['grade']??''))?></td><td><?=htmlspecialchars(dashCell($d['touch']??''))?></td><td><?=htmlspecialchars(dashCell($d['webcam']??''))?></td><td class="notes"><?=htmlspecialchars(dashCell($d['owner_notes']??''))?></td><td><?=htmlspecialchars(dashCell($d['owner_location']??($d['branch']??'')))?></td><?php endif;?>
 <td><span class="badge <?=$d['status']==='Sold'?'sold':''?>"><?=htmlspecialchars($d['status'])?></span></td><?php if($reportMode==='overview'):?><td class="maint"><?=($d['_item_type']??'')==='device'?htmlspecialchars(ownerMaint($maintenance[$d['serial_number']]??[])):'-'?></td><?php endif;?><?php if($reportMode==='sold'):?><td><?=htmlspecialchars($d['sold_by_name']??'Unknown')?></td><td><?=$d['sold_at']?date('d M Y H:i',strtotime($d['sold_at'])):'—'?></td><td><?=moneyCell($d['selling_price']??null)?></td><?php endif;?><td class="action-cell"><?php if(($d['status']??'')==='In Stock'):?><button type="button" class="btn sale-btn" data-item-type="<?=htmlspecialchars($d['_item_type'])?>" data-serial="<?=htmlspecialchars($d['serial_number'])?>" data-model="<?=htmlspecialchars(ownerModelDisplay($d))?>"><i class="fas fa-receipt"></i> Update Sale Details</button><?php else:?><button type="button" class="btn disabled" disabled><i class="fas fa-check"></i> Sold</button><?php endif;?></td></tr><?php endforeach;?></tbody></table><?php endif;?></div></section></main>
 <div class="modal-bg" id="saleModal"><div class="modal"><div class="modal-head"><div><strong>Update Sale Details</strong><div id="saleItemLabel" style="font-size:.8rem;color:var(--m);margin-top:.2rem"></div></div><button type="button" class="close" id="closeModal">&times;</button></div><form method="post" class="modal-body"><input type="hidden" name="update_sale_details" value="1"><input type="hidden" name="csrf_token" value="<?=htmlspecialchars($_SESSION['owner_report_csrf'])?>"><input type="hidden" name="item_type" id="modalItemType"><input type="hidden" name="serial_number" id="modalSerial"><div class="g"><label>Sales Person</label><select name="sales_person" required><option value="">-- Select Sales Person --</option><?php foreach($salesPeople as $sp):?><option value="<?=$sp['id']?>"><?=htmlspecialchars($sp['full_name'])?></option><?php endforeach;?></select></div><div class="g"><label>Selling Price (KES)</label><input type="number" name="selling_price" min="0.01" step="0.01" required></div><div class="g"><label>Payment Status</label><select name="payment_status" required><option value="">-- Select --</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option></select></div><div class="g"><label>Payment Method <span style="font-weight:400;color:var(--m)">(Optional)</span></label><select name="payment_method"><option value="">-- Not specified --</option><option value="cash">Cash</option><option value="mpesa-till">M-Pesa Till</option><option value="mpesa-pochi">M-Pesa Pochi</option><option value="bank-transfer">Bank Transfer</option></select></div><div class="g"><label>Notes <span style="font-weight:400;color:var(--m)">(Optional)</span></label><textarea name="sale_notes" placeholder="Enter sale notes, reference, customer details, or any other relevant note"></textarea></div><div class="modal-actions"><button type="button" class="btn secondary" id="cancelModal">Cancel</button><button type="submit" class="btn"><i class="fas fa-save"></i> Save Sale Details</button></div></form></div></div>
-<script>const modal=document.getElementById('saleModal');const close=()=>modal.classList.remove('open');document.querySelectorAll('.sale-btn').forEach(b=>b.addEventListener('click',()=>{document.getElementById('modalItemType').value=b.dataset.itemType;document.getElementById('modalSerial').value=b.dataset.serial;document.getElementById('saleItemLabel').textContent=b.dataset.model+' — SN: '+b.dataset.serial;modal.classList.add('open')}));document.getElementById('closeModal').addEventListener('click',close);document.getElementById('cancelModal').addEventListener('click',close);modal.addEventListener('click',e=>{if(e.target===modal)close()});</script></body></html>
+<script>
+const modal=document.getElementById('saleModal');
+const close=()=>modal.classList.remove('open');
+
+function bindSaleButtons(){
+    document.querySelectorAll('.sale-btn').forEach(b=>{
+        b.addEventListener('click',()=>{
+            document.getElementById('modalItemType').value=b.dataset.itemType;
+            document.getElementById('modalSerial').value=b.dataset.serial;
+            document.getElementById('saleItemLabel').textContent=b.dataset.model+' — SN: '+b.dataset.serial;
+            modal.classList.add('open');
+        });
+    });
+}
+
+bindSaleButtons();
+document.getElementById('closeModal').addEventListener('click',close);
+document.getElementById('cancelModal').addEventListener('click',close);
+modal.addEventListener('click',e=>{if(e.target===modal)close()});
+
+// AJAX serial-number search: results refresh automatically while typing.
+// The normal Filter button remains available and continues to submit the form normally.
+const filterForm=document.getElementById('inventoryFilterForm');
+const serialSearch=document.getElementById('serialSearch');
+let serialTimer=null;
+let serialRequest=null;
+
+async function runSerialAjaxSearch(){
+    if(!filterForm || !serialSearch) return;
+
+    if(serialRequest) serialRequest.abort();
+    serialRequest=new AbortController();
+
+    const params=new URLSearchParams(new FormData(filterForm));
+    const target=window.location.pathname+'?'+params.toString();
+
+    serialSearch.setAttribute('aria-busy','true');
+
+    try{
+        const response=await fetch(target,{
+            method:'GET',
+            headers:{'X-Requested-With':'XMLHttpRequest'},
+            signal:serialRequest.signal,
+            cache:'no-store'
+        });
+        if(!response.ok) throw new Error('Search request failed');
+
+        const html=await response.text();
+        const doc=new DOMParser().parseFromString(html,'text/html');
+        const newStats=doc.querySelector('.stats');
+        const newTable=doc.querySelector('.tablebox');
+        const currentStats=document.querySelector('.stats');
+        const currentTable=document.querySelector('.tablebox');
+
+        if(newStats && currentStats) currentStats.replaceWith(newStats);
+        if(newTable && currentTable) currentTable.replaceWith(newTable);
+
+        // Keep Export Excel aligned with the currently displayed AJAX results.
+        const exportLink=filterForm.querySelector('a.excel');
+        if(exportLink){
+            const exportParams=new URLSearchParams(params);
+            exportParams.set('report',<?=json_encode($reportMode)?>);
+            exportLink.href='export_excel.php?'+exportParams.toString();
+        }
+
+        window.history.replaceState(null,'',target);
+        bindSaleButtons();
+    }catch(error){
+        if(error.name!=='AbortError') console.error('Serial AJAX search error:',error);
+    }finally{
+        serialSearch.removeAttribute('aria-busy');
+    }
+}
+
+if(serialSearch){
+    serialSearch.addEventListener('input',()=>{
+        clearTimeout(serialTimer);
+        serialTimer=setTimeout(runSerialAjaxSearch,350);
+    });
+}
+</script></body></html>

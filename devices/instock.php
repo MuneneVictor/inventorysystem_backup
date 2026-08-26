@@ -573,10 +573,10 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <div class="filter-section">
         <div class="filter-title"><i class="fas fa-filter"></i> Filter Devices</div>
-        <form method="GET" class="filter-grid">
+        <form method="GET" class="filter-grid" id="instockFilterForm">
             <div class="filter-group">
                 <label>Serial Number</label>
-                <input type="text" name="serial" placeholder="e.g., 5CG..." value="<?= htmlspecialchars($filter_serial) ?>">
+                <input type="text" name="serial" id="instockSerialSearch" placeholder="e.g., 5CG..." value="<?= htmlspecialchars($filter_serial) ?>" autocomplete="off">
             </div>
             <div class="filter-group">
                 <label>Model Name</label>
@@ -855,5 +855,61 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </script>
 
 <?php require_once "../includes/footer.php"; ?>
+
+<script>
+(function(){
+    const form = document.getElementById('instockFilterForm');
+    const serialInput = document.getElementById('instockSerialSearch');
+    if (!form || !serialInput) return;
+
+    let timer = null;
+    let controller = null;
+
+    async function ajaxFilter() {
+        if (controller) controller.abort();
+        controller = new AbortController();
+        const params = new URLSearchParams(new FormData(form));
+        const url = form.action || window.location.pathname;
+        try {
+            const response = await fetch(url + '?' + params.toString(), {
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                signal: controller.signal
+            });
+            if (!response.ok) throw new Error('Search request failed');
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const newStats = doc.querySelector('.stats-row');
+            const newTable = doc.querySelector('.table-wrapper');
+            const stats = document.querySelector('.stats-row');
+            const table = document.querySelector('.table-wrapper');
+            if (newStats && stats) stats.innerHTML = newStats.innerHTML;
+            if (newTable && table) table.innerHTML = newTable.innerHTML;
+            history.replaceState(null, '', url + (params.toString() ? '?' + params.toString() : ''));
+            bindSaleButtons();
+        } catch (e) {
+            if (e.name !== 'AbortError') console.error(e);
+        }
+    }
+
+    serialInput.addEventListener('input', function(){
+        clearTimeout(timer);
+        timer = setTimeout(ajaxFilter, 300);
+    });
+
+    function bindSaleButtons(){
+        document.querySelectorAll('.open-sale-modal').forEach(function(btn){
+            if (btn.dataset.ajaxBound === '1') return;
+            btn.dataset.ajaxBound = '1';
+            btn.addEventListener('click', function(){
+                if (typeof openSaleDetailsModal === 'function') {
+                    openSaleDetailsModal(this.dataset.serial, this.dataset.model);
+                }
+            });
+        });
+    }
+    bindSaleButtons();
+})();
+</script>
+
 </body>
 </html>

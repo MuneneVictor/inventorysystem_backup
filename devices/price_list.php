@@ -11,6 +11,7 @@ if (!in_array($_SESSION['role'], ['super_admin', 'manager'])) {
 $filter_cargo = $_GET['cargo'] ?? '';
 $filter_category = $_GET['category'] ?? '';
 $filter_model = $_GET['model'] ?? '';
+$filter_serial = trim($_GET['serial'] ?? '');
 
 // Fetch distinct cargo numbers for dropdown
 $cargoStmt = $conn->query("SELECT DISTINCT cargo_number FROM devices WHERE cargo_number IS NOT NULL AND status = 'In Stock' ORDER BY cargo_number DESC");
@@ -59,6 +60,11 @@ if ($filter_category) {
 if ($filter_model) {
     $sql .= " AND d.model_name LIKE :model";
     $params['model'] = "%$filter_model%";
+}
+
+if ($filter_serial !== '') {
+    $sql .= " AND d.serial_number LIKE :serial";
+    $params['serial'] = "%$filter_serial%";
 }
 
 $sql .= "
@@ -400,7 +406,7 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <!-- Stats Cards -->
-    <div class="stats-row">
+    <div class="stats-row" id="priceStats">
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-boxes"></i></div>
             <div class="stat-value"><?= number_format(count($devices)) ?></div>
@@ -461,11 +467,17 @@ $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
                        value="<?= htmlspecialchars($filter_model) ?>"
                        onkeydown="handleEnterKey(event)">
             </div>
+
+            
+
+            <div class="filter-group" style="justify-content:flex-end">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+            </div>
         </form>
     </div>
 
     <!-- Price List Table -->
-    <div class="table-wrapper">
+    <div class="table-wrapper" id="priceTableWrapper">
         <div class="table-responsive">
             <?php if($devices): ?>
                 <table>
@@ -564,6 +576,46 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', adjustMainContent);
     window.addEventListener('orientationchange', adjustMainContent);
 });
+</script>
+
+
+<script>
+(function(){
+    const form = document.getElementById('filterForm');
+    const serialInput = document.getElementById('priceSerialSearch');
+    if (!form || !serialInput) return;
+
+    let timer = null;
+    let controller = null;
+    async function ajaxSearch(){
+        if (controller) controller.abort();
+        controller = new AbortController();
+        const params = new URLSearchParams(new FormData(form));
+        const url = form.action || window.location.pathname;
+        try {
+            const response = await fetch(url + '?' + params.toString(), {
+                headers: {'X-Requested-With':'XMLHttpRequest'},
+                signal: controller.signal
+            });
+            if (!response.ok) throw new Error('Search request failed');
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const newStats = doc.querySelector('#priceStats');
+            const newTable = doc.querySelector('#priceTableWrapper');
+            const stats = document.querySelector('#priceStats');
+            const table = document.querySelector('#priceTableWrapper');
+            if (newStats && stats) stats.innerHTML = newStats.innerHTML;
+            if (newTable && table) table.innerHTML = newTable.innerHTML;
+            history.replaceState(null, '', url + (params.toString() ? '?' + params.toString() : ''));
+        } catch(e){
+            if (e.name !== 'AbortError') console.error(e);
+        }
+    }
+    serialInput.addEventListener('input', function(){
+        clearTimeout(timer);
+        timer = setTimeout(ajaxSearch, 300);
+    });
+})();
 </script>
 
 </body>

@@ -1,39 +1,48 @@
 <?php
 ob_start();
-if (!isset($ownerKey,$ownerLabel)) die('Inventory export configuration missing.');
+if(!isset($ownerKey,$ownerLabel))die('Inventory export configuration missing.');
 session_start();
 require_once __DIR__.'/../config/db.php';
 require_once __DIR__.'/auth_check.php';
+require_once __DIR__.'/owner_inventory_access.php';
 require_once __DIR__.'/../vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-$role=$_SESSION['role'];$uid=(int)$_SESSION['user_id'];$userEmail = strtolower(trim($_SESSION['email'] ?? ''));
-$allowedEmails = [
-    'stephanie@mombasacomputers.co.ke',
-   ];
-$hasAccess =
-    $role === 'super_admin' ||
-    (
-        $role === 'inventory_admin' &&
-        in_array($userEmail, $allowedEmails, true)
-    );
 
-if (!$hasAccess) {
-    die('You Don\'t have Permission to view this page.');
+requireOwnerInventoryAccess($conn);
+
+$table=$ownerKey==='imans_hustle'?'iman_hustle_items':'iman_inventory_items';
+$type=$ownerKey==='imans_hustle'?'hustle':'inventory';
+$mode=trim((string)($_GET['report']??'overview'));if(!in_array($mode,['overview','instock','sold'],true))$mode='overview';
+$serial=trim((string)($_GET['serial']??''));$model=trim((string)($_GET['model']??''));$location=strtoupper(trim((string)($_GET['location']??'')));$status=trim((string)($_GET['status']??''));$df=trim((string)($_GET['date_from']??''));$dt=trim((string)($_GET['date_to']??''));
+if($mode==='overview'){if($df==='')$df=date('Y-m-01');if($dt==='')$dt=date('Y-m-d');}
+$sql="SELECT * FROM `$table` WHERE 1=1";$p=[];
+if($mode==='instock')$sql.=" AND status='In Stock'";elseif($mode==='sold')$sql.=" AND status='Sold'";elseif($status!==''){$sql.=' AND status=:s';$p['s']=$status;}
+if($serial!==''){$sql.=' AND serial_number LIKE :sn';$p['sn']="%$serial%";}if($model!==''){$sql.=' AND model_name LIKE :m';$p['m']="%$model%";}
+if($location!==''&&in_array($location,['KIMATHI','MOI','WAREHOUSE'],true)){$sql.=' AND location=:l';$p['l']=$location;}
+if($mode==='overview'){if($df!==''){$sql.=' AND DATE(date_added)>=:df';$p['df']=$df;}if($dt!==''){$sql.=' AND DATE(date_added)<=:dt';$p['dt']=$dt;}}
+if($mode==='sold'){if($df!==''){$sql.=' AND DATE(sold_at)>=:df';$p['df']=$df;}if($dt!==''){$sql.=' AND DATE(sold_at)<=:dt';$p['dt']=$dt;}}
+$sql.=' ORDER BY '.($mode==='sold'?'sold_at':'date_added').' DESC,id DESC';
+$st=$conn->prepare($sql);$st->execute($p);$rows=$st->fetchAll(PDO::FETCH_ASSOC);
+function xd($v){$v=trim((string)($v??''));return$v===''?'-':$v;}function xp($d){if(($d['selling_price']??null)!==null&&($d['buying_price']??null)!==null)return(float)$d['selling_price']-(float)$d['buying_price'];if(($d['planned_selling_price']??null)!==null&&($d['buying_price']??null)!==null)return(float)$d['planned_selling_price']-(float)$d['buying_price'];return'-';}
+$headers=$type==='hustle'?['#','Asset ID','MFG','Model','Item Type','Form Factor','CPU','RAM','Storage','Serial','Grade','B.P','S.P','PROFIT','NOTES','LOCATION','Status']:['#','Asset ID','Buying $','Selling $','BP','SP','PROFIT','MFG','Model','Item Type','CPU','RAM','Storage','Serial #','Grade','Touch Screen','Webcam','Notes','LOCATION','Status'];
+if($mode==='sold')array_push($headers,'Sales Person','Sold At','Actual Selling Price','Payment');
+$book=new Spreadsheet();$sheet=$book->getActiveSheet();$sheet->setTitle(substr($ownerLabel.' '.$mode,0,31));
+foreach($headers as$i=>$h)$sheet->setCellValue(Coordinate::stringFromColumnIndex($i+1).'1',$h);
+$last=Coordinate::stringFromColumnIndex(count($headers));$sheet->getStyle('A1:'.$last.'1')->getFont()->setBold(true);$sheet->getStyle('A1:'.$last.'1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFD7B729');
+$r=2;$n=1;
+foreach($rows as$d){
+ if($type==='hustle')$vals=[$n++,xd($d['asset_id']),xd($d['manufacturer']),xd($d['model_name']),xd($d['item_type']),xd($d['form_factor']),xd($d['processor']),xd($d['ram']),xd($d['storage']),xd($d['serial_number']),xd($d['grade']),$d['buying_price']??'-',$d['planned_selling_price']??'-',xp($d),xd($d['notes']),xd($d['location']),$d['status']];
+ else $vals=[$n++,xd($d['asset_id']),$d['buying_usd']??'-',$d['selling_usd']??'-',$d['buying_price']??'-',$d['planned_selling_price']??'-',xp($d),xd($d['manufacturer']),xd($d['model_name']),xd($d['item_type']),xd($d['processor']),xd($d['ram']),xd($d['storage']),xd($d['serial_number']),xd($d['grade']),xd($d['touch_screen']),xd($d['webcam']),xd($d['notes']),xd($d['location']),$d['status']];
+ if($mode==='sold')array_push($vals,xd($d['sales_person']),xd($d['sold_at']),$d['selling_price']??'-',xd($d['payment_status']));
+ foreach($vals as$i=>$v)$sheet->setCellValue(Coordinate::stringFromColumnIndex($i+1).$r,$v);$r++;
 }
-$mode=trim($_GET['report']??'overview');if(!in_array($mode,['overview','instock','sold'],true))$mode='overview';
-$user_branch='';if($role==='manager'){$q=$conn->prepare('SELECT branch FROM users WHERE id=?');$q->execute([$uid]);$user_branch=(string)($q->fetchColumn()?:'');}
-$serial=trim($_GET['serial']??'');$model=trim($_GET['model']??'');$branch=trim($_GET['branch']??'');$category=trim($_GET['category']??'');$status=trim($_GET['status']??'');$df=trim($_GET['date_from']??'');$dt=trim($_GET['date_to']??'');if($mode==='overview'){if($df==='')$df=date('Y-m-01');if($dt==='')$dt=date('Y-m-d');}
-function buildOwnerQuery($table,$alias,$ownerKey,$mode,$role,$user_branch,$branch,$serial,$model,$status,$df,$dt){$dateAdded=$table==='devices'?'date_added':'date_added';$sql="SELECT $alias.*,us.full_name sold_by_name FROM $table $alias LEFT JOIN users us ON us.id=$alias.sold_by WHERE $alias.inventory_owner=:owner";$p=['owner'=>$ownerKey];if($mode==='instock')$sql.=" AND $alias.status='In Stock'";elseif($mode==='sold')$sql.=" AND $alias.status='Sold'";elseif($status!==''){$sql.=" AND $alias.status=:status";$p['status']=$status;}if($role==='manager'&&$user_branch!==''){$sql.=" AND $alias.branch=:mb";$p['mb']=$user_branch;}elseif($branch!==''){$sql.=" AND $alias.branch=:br";$p['br']=$branch;}if($serial!==''){$sql.=" AND $alias.serial_number LIKE :sn";$p['sn']="%$serial%";}if($model!==''){$sql.=" AND $alias.model_name LIKE :model";$p['model']="%$model%";}if($mode==='overview'){if($df!==''){$sql.=" AND DATE($alias.date_added)>=:df";$p['df']=$df;}if($dt!==''){$sql.=" AND DATE($alias.date_added)<=:dt";$p['dt']=$dt;}}if($mode==='sold'){if($df!==''){$sql.=" AND DATE($alias.sold_at)>=:df";$p['df']=$df;}if($dt!==''){$sql.=" AND DATE($alias.sold_at)<=:dt";$p['dt']=$dt;}}return[$sql,$p];}
-$rows=[];
-if($category!=='monitor'){[$sql,$p]=buildOwnerQuery('devices','d',$ownerKey,$mode,$role,$user_branch,$branch,$serial,$model,$status,$df,$dt);if($category!==''){$sql.=' AND d.category_id=:cat';$p['cat']=(int)$category;}$sql='SELECT q.*,c.category_name FROM ('.$sql.') q LEFT JOIN categories c ON c.id=q.category_id';$st=$conn->prepare($sql);$st->execute($p);foreach($st->fetchAll(PDO::FETCH_ASSOC) as $r){$r['_type']='device';$rows[]=$r;}}
-if($category===''||$category==='monitor'){[$sql,$p]=buildOwnerQuery('monitors','m',$ownerKey,$mode,$role,$user_branch,$branch,$serial,$model,$status,$df,$dt);$st=$conn->prepare($sql);$st->execute($p);foreach($st->fetchAll(PDO::FETCH_ASSOC) as $r){$r['_type']='monitor';$r['processor']=null;$r['ram']=null;$r['storage_capacity']=null;$r['storage_type']=null;$r['touch']=null;$r['webcam']=null;if(empty($r['form_factor']))$r['form_factor']='Monitor'.(!empty($r['size_inches'])?' - '.$r['size_inches'].'"':'');$rows[]=$r;}}
-usort($rows,fn($a,$b)=>strcmp((string)($b[$mode==='sold'?'sold_at':'date_added']??''),(string)($a[$mode==='sold'?'sold_at':'date_added']??'')));
-$maint=[];if($mode==='overview'){ $sns=array_column(array_filter($rows,fn($r)=>$r['_type']==='device'),'serial_number');if($sns){$ph=implode(',',array_fill(0,count($sns),'?'));$m=$conn->prepare("SELECT m.*,u.full_name performed_by_name FROM maintenance m LEFT JOIN users u ON u.id=m.performed_by WHERE m.device_serial IN ($ph) ORDER BY m.date_performed ASC");$m->execute($sns);foreach($m->fetchAll(PDO::FETCH_ASSOC) as $r)$maint[$r['device_serial']][]=$r;}}
-function exDash($v){$v=trim((string)($v??''));return $v===''?'-':$v;}function exStorage($d){return !empty($d['storage_capacity'])?$d['storage_capacity'].'GB '.($d['storage_type']??''):'-';}function exDollar($v){if($v===null||trim((string)$v)==='')return '-';$raw=str_replace([',','$'],'',trim((string)$v));return is_numeric($raw)?'$'.number_format((float)$raw,2):'$'.trim((string)$v);}function exMfg($d){$v=trim((string)($d['manufacturer']??''));if($v!=='')return$v;$m=strtoupper((string)($d['model_name']??''));foreach(['HP'=>'HP','DELL'=>'Dell','LENOVO'=>'Lenovo','ACER'=>'Acer','ASUS'=>'ASUS'] as $k=>$v)if(strpos($m,$k)!==false)return$v;return'-';}function exProfit($d){if(($d['selling_price']??null)===null||($d['selling_price']??'')===''||($d['buying_price']??null)===null||($d['buying_price']??'')==='')return '-';return(float)$d['selling_price']-(float)$d['buying_price'];}function exSp($d){$v=(($d['selling_price']??null)!==null&&($d['selling_price']??'')!=='')?$d['selling_price']:($d['price']??null);return$v===null||$v===''?'-':$v;}function exMaint($rows){if(!$rows)return'No maintenance records';$o=[];foreach($rows as$r){$c=[];if($r['old_ram']!==null||$r['new_ram']!==null)$c[]='RAM: '.($r['old_ram']??'?').'GB -> '.($r['new_ram']??'?').'GB';if($r['old_storage']!==null||$r['new_storage']!==null)$c[]='Storage: '.($r['old_storage']??'?').'GB -> '.($r['new_storage']??'?').'GB';if(!empty($r['notes']))$c[]='Notes: '.$r['notes'];$o[]=date('d M Y H:i',strtotime($r['date_performed'])).' - '.implode('; ',$c);}return implode("\n",$o);}function exModel($d){$m=exDash($d['model_name']??'');if(($d['_type']??'')==='monitor'&&!empty($d['size_inches']))$m.=' ('.$d['size_inches'].'\")';return$m;}
-$headers=$ownerKey==='imans_hustle'?['Asset ID','MFG','Model','Form Factor','CPU','RAM','Storage','Serial','Grade','B.P','S.P','PROFIT','NOTES']:['#','Asset ID','Buying $','Selling $','BP','SP','PROFIT','MFG','Model','CPU','RAM','Storage','Serial #','Grade','Touch Screen','Webcam','Notes','LOCATION'];$headers[]='Status';if($mode==='overview')$headers[]='Maintenance / Changes';if($mode==='sold'){$headers[]='Sold By';$headers[]='Sold At';$headers[]='Actual Selling Price';}
-$book=new Spreadsheet();$sheet=$book->getActiveSheet();$title=$mode==='overview'?'Overview':($mode==='instock'?'In Stock':'Sold');$sheet->setTitle(substr($ownerLabel.' '.$title,0,31));$last=Coordinate::stringFromColumnIndex(count($headers));$sheet->setCellValue('A1',$ownerLabel.' - '.$title);$sheet->mergeCells('A1:'.$last.'1');$sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);$sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);$row=$mode==='overview'?4:3;if($mode==='overview'){$sheet->setCellValue('A2','Date range: '.$df.' to '.$dt);$sheet->mergeCells('A2:'.$last.'2');}foreach($headers as$i=>$h)$sheet->setCellValue(Coordinate::stringFromColumnIndex($i+1).$row,$h);$sheet->getStyle('A'.$row.':'.$last.$row)->getFont()->setBold(true);$sheet->getStyle('A'.$row.':'.$last.$row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFD7B729');$r=$row+1;$idx=1;foreach($rows as$d){if($ownerKey==='imans_hustle'){$profit=exProfit($d);$vals=[exDash($d['asset_id']??''),exMfg($d),exModel($d),exDash($d['form_factor']??''),exDash($d['processor']??''),!empty($d['ram'])?$d['ram'].' GB':'-',exStorage($d),$d['serial_number'],exDash($d['grade']??''),$d['buying_price']??'-',exSp($d),$profit==='-'?($d['owner_profit']??'-'):$profit,exDash($d['owner_notes']??'')];}else{$vals=[$idx++,exDash($d['asset_id']??''),exDollar($d['symetic']??null),exDollar($d['dollar_value']??null),$d['buying_price']??'-',exSp($d),exProfit($d),exMfg($d),exModel($d),exDash($d['processor']??''),!empty($d['ram'])?$d['ram'].' GB':'-',exStorage($d),exDash($d['serial_number']??''),exDash($d['grade']??''),exDash($d['touch']??''),exDash($d['webcam']??''),exDash($d['owner_notes']??''),exDash($d['owner_location']??($d['branch']??''))];}$vals[]=$d['status']??'';if($mode==='overview')$vals[]=$d['_type']==='device'?exMaint($maint[$d['serial_number']]??[]):'-';if($mode==='sold'){$vals[]=$d['sold_by_name']??'Unknown';$vals[]=$d['sold_at']?date('Y-m-d H:i',strtotime($d['sold_at'])):'';$vals[]=$d['selling_price']??'';}foreach($vals as$i=>$v)$sheet->setCellValue(Coordinate::stringFromColumnIndex($i+1).$r,$v);$r++;}for($i=1;$i<=count($headers);$i++)$sheet->getColumnDimension(Coordinate::stringFromColumnIndex($i))->setAutoSize(true);$sheet->getStyle('A'.$row.':'.$last.max($row,$r-1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);$sheet->freezePane('A'.($row+1));$filename=preg_replace('/[^A-Za-z0-9_-]+/','_',strtolower($ownerLabel.'_'.$mode.'_'.date('Y-m-d'))).'.xlsx';while(ob_get_level()>0)ob_end_clean();header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');header('Content-Disposition: attachment; filename="'.$filename.'"');header('Cache-Control: max-age=0');(new Xlsx($book))->save('php://output');exit;
+for($i=1;$i<=count($headers);$i++)$sheet->getColumnDimension(Coordinate::stringFromColumnIndex($i))->setAutoSize(true);
+$sheet->getStyle('A1:'.$last.max(1,$r-1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+$sheet->freezePane('A2');
+while(ob_get_level())ob_end_clean();
+$fn=preg_replace('/[^A-Za-z0-9_-]+/','_',strtolower($ownerLabel.'_'.$mode.'_'.date('Y-m-d'))).'.xlsx';
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');header('Content-Disposition: attachment; filename="'.$fn.'"');(new Xlsx($book))->save('php://output');exit;

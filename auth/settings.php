@@ -24,7 +24,8 @@ $defaults = [
     'work_end_time' => '18:00:00',
     'timezone' => 'Africa/Nairobi',
     'blocked_day_message' => 'The system is closed today. Please log in on the next working day.',
-    'outside_hours_message' => 'The system is currently outside working hours. Please try again during the allowed login period.'
+    'outside_hours_message' => 'The system is currently outside working hours. Please try again during the allowed login period.',
+    'owner_inventory_allowed_emails' => 'stephanie@mombasacomputers.co.ke'
 ];
 
 function loadLoginSettings(PDO $conn, array $defaults): array {
@@ -60,10 +61,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $timezone = trim($_POST['timezone'] ?? 'Africa/Nairobi');
         $blockedDayMessage = trim($_POST['blocked_day_message'] ?? '');
         $outsideHoursMessage = trim($_POST['outside_hours_message'] ?? '');
+        $ownerInventoryEmailsRaw = trim($_POST['owner_inventory_allowed_emails'] ?? '');
+        $ownerInventoryEmails = [];
+        foreach (preg_split('/[\\s,;]+/', strtolower($ownerInventoryEmailsRaw)) ?: [] as $candidate) {
+            $candidate = trim($candidate);
+            if ($candidate === '') continue;
+            if (!filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
+                $error = "Invalid owner-inventory access email: {$candidate}";
+                break;
+            }
+            $ownerInventoryEmails[] = $candidate;
+        }
+        $ownerInventoryEmailsCsv = implode(',', array_values(array_unique($ownerInventoryEmails)));
 
         $validTime = static fn($v) => preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $v);
 
-        if (!$validTime($workStart) || !$validTime($workEnd)) {
+        if ($error !== '') {
+            // Email validation error already prepared above.
+        } elseif (!$validTime($workStart) || !$validTime($workEnd)) {
             $error = "Please enter valid working hours.";
         } elseif (!in_array($timezone, timezone_identifiers_list(), true)) {
             $error = "Please select a valid timezone.";
@@ -72,11 +87,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $sql = "INSERT INTO login_access_settings
                         (id, restrictions_enabled, blocked_days, enforce_working_hours,
                          work_start_time, work_end_time, timezone, blocked_day_message,
-                         outside_hours_message, updated_by, updated_at)
+                         outside_hours_message, owner_inventory_allowed_emails, updated_by, updated_at)
                         VALUES
                         (1, :enabled, :blocked_days, :enforce_hours,
                          :start_time, :end_time, :timezone, :blocked_message,
-                         :hours_message, :updated_by, NOW())
+                         :hours_message, :owner_inventory_emails, :updated_by, NOW())
                         ON DUPLICATE KEY UPDATE
                          restrictions_enabled = VALUES(restrictions_enabled),
                          blocked_days = VALUES(blocked_days),
@@ -86,6 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                          timezone = VALUES(timezone),
                          blocked_day_message = VALUES(blocked_day_message),
                          outside_hours_message = VALUES(outside_hours_message),
+                         owner_inventory_allowed_emails = VALUES(owner_inventory_allowed_emails),
                          updated_by = VALUES(updated_by),
                          updated_at = NOW()";
 
@@ -99,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'timezone' => $timezone,
                     'blocked_message' => $blockedDayMessage,
                     'hours_message' => $outsideHoursMessage,
+                    'owner_inventory_emails' => $ownerInventoryEmailsCsv,
                     'updated_by' => (int)($_SESSION['user_id'] ?? 0)
                 ]);
 
@@ -270,6 +287,20 @@ require_once "../includes/sidebar.php";
             <label class="field" style="margin-top:1rem;">
                 Message shown outside working hours
                 <textarea name="outside_hours_message"><?= htmlspecialchars($settings['outside_hours_message']) ?></textarea>
+            </label>
+        </div>
+
+
+        <div class="card">
+            <h2><i class="fas fa-boxes-stacked"></i> Iman Inventory and Iman's Hustle Access</h2>
+            <p class="help">
+                Super Admin always has access. Add the email addresses of any other users who should be able to open,
+                search, upload, add, edit, update specs, export and update sale details in the two independent owner inventories.
+                Separate multiple emails with commas, spaces or new lines.
+            </p>
+            <label class="field">
+                Allowed email addresses
+                <textarea name="owner_inventory_allowed_emails" placeholder="stephanie@mombasacomputers.co.ke"><?= htmlspecialchars((string)$settings['owner_inventory_allowed_emails']) ?></textarea>
             </label>
         </div>
 

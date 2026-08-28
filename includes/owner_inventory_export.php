@@ -18,13 +18,16 @@ $table=$ownerKey==='imans_hustle'?'iman_hustle_items':'iman_inventory_items';
 $type=$ownerKey==='imans_hustle'?'hustle':'inventory';
 $mode=trim((string)($_GET['report']??'overview'));if(!in_array($mode,['overview','instock','sold'],true))$mode='overview';
 $serial=trim((string)($_GET['serial']??''));$model=trim((string)($_GET['model']??''));$location=strtoupper(trim((string)($_GET['location']??'')));$status=trim((string)($_GET['status']??''));$df=trim((string)($_GET['date_from']??''));$dt=trim((string)($_GET['date_to']??''));
-if($mode==='overview'){if($df==='')$df=date('Y-m-01');if($dt==='')$dt=date('Y-m-d');}
+$isSearch=($serial!==''||$model!=='');
+if($isSearch){$df='';$dt='';}
+else{if($df==='')$df=date('Y-m-01');if($dt==='')$dt=date('Y-m-d');}
 $sql="SELECT * FROM `$table` WHERE 1=1";$p=[];
 if($mode==='instock')$sql.=" AND status='In Stock'";elseif($mode==='sold')$sql.=" AND status='Sold'";elseif($status!==''){$sql.=' AND status=:s';$p['s']=$status;}
-if($serial!==''){$sql.=' AND serial_number LIKE :sn';$p['sn']="%$serial%";}if($model!==''){$sql.=' AND model_name LIKE :m';$p['m']="%$model%";}
+if($serial!==''){$sql.=' AND serial_number LIKE :sn';$p['sn']=$serial."%";}if($model!==''){$sql.=' AND model_name LIKE :m';$p['m']=$model."%";}
 if($location!==''&&in_array($location,['KIMATHI','MOI','WAREHOUSE'],true)){$sql.=' AND location=:l';$p['l']=$location;}
-if($mode==='overview'){if($df!==''){$sql.=' AND DATE(date_added)>=:df';$p['df']=$df;}if($dt!==''){$sql.=' AND DATE(date_added)<=:dt';$p['dt']=$dt;}}
-if($mode==='sold'){if($df!==''){$sql.=' AND DATE(sold_at)>=:df';$p['df']=$df;}if($dt!==''){$sql.=' AND DATE(sold_at)<=:dt';$p['dt']=$dt;}}
+$dateColumn=$mode==='sold'?'sold_at':'date_added';
+if($df!==''){$sql.=" AND $dateColumn>=:df";$p['df']=$df.' 00:00:00';}
+if($dt!==''){$sql.=" AND $dateColumn<:dt";$p['dt']=date('Y-m-d',strtotime($dt.' +1 day')).' 00:00:00';}
 $sql.=' ORDER BY '.($mode==='sold'?'sold_at':'date_added').' DESC,id DESC';
 $st=$conn->prepare($sql);$st->execute($p);$rows=$st->fetchAll(PDO::FETCH_ASSOC);
 function xd($v){$v=trim((string)($v??''));return$v===''?'-':$v;}function xp($d){if(($d['selling_price']??null)!==null&&($d['buying_price']??null)!==null)return(float)$d['selling_price']-(float)$d['buying_price'];if(($d['planned_selling_price']??null)!==null&&($d['buying_price']??null)!==null)return(float)$d['planned_selling_price']-(float)$d['buying_price'];return'-';}

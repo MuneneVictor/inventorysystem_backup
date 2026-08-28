@@ -2,6 +2,7 @@
 $userEmail = strtolower(trim($_SESSION['email'] ?? ''));
 $allowedEmails = [
     'stephanie@mombasacomputers.co.ke',
+    'munene23.v@student.cuk.ac.ke',
 ];
 ?>
 <!DOCTYPE html>
@@ -73,7 +74,7 @@ $allowedEmails = [
                 $imanhusitems = [
                     ['Inventory Overview', '../imanhus/overview', 'fas fa-boxes-stacked'],
                 ];
-                if ($role === 'super_admin') {
+                if ($role === 'super_admin' || in_array($userEmail, $allowedEmails, true)) {
                     $imanhusitems[] = ['Instock', '../imanhus/instock', 'fas fa-box'];
                     $imanhusitems[] = ['Sold', '../imanhus/sold', 'fas fa-money-bill-wave'];
                 }
@@ -85,7 +86,7 @@ $allowedEmails = [
                 $imaninvitems = [
                     ['Inventory Overview', '../imaninv/overview', 'fas fa-boxes-stacked'],
                 ];
-                if ($role === 'super_admin') {
+                if ($role === 'super_admin' || in_array($userEmail, $allowedEmails, true)) {
                     $imaninvitems[] = ['Instock', '../imaninv/instock', 'fas fa-box'];
                     $imaninvitems[] = ['Sold', '../imaninv/sold', 'fas fa-money-bill-wave'];
                 }
